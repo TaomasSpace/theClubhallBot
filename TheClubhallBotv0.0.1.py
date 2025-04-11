@@ -320,6 +320,7 @@ async def stab(interaction: discord.Interaction, user: discord.Member):
             if gif_url:
                 embed = discord.Embed(title=f"{interaction.user.name} stabs {user.name}!", color=discord.Color.red())
                 embed.set_image(url=gif_url)
+                print(gif_url)
                 if not has_role(user, OWNER_ROLE_NAME) and not has_role(user, "CEO"):
                     await user.timeout(datetime.now(timezone.utc) + timedelta(seconds=10), reason="You got stabbed")
                 await interaction.response.send_message(embed=embed)
