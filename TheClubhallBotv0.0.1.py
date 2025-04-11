@@ -278,20 +278,6 @@ cooldown_cache = {}
 async def stab(interaction: discord.Interaction, user: discord.Member):
     import random
 
-    if not has_role(interaction.user, OWNER_ROLE_NAME):
-        user_id = interaction.user.id
-        now = datetime.now().timestamp()
-        last_time = cooldown_cache.get(user_id, 0)
-
-        if now - last_time < 120:
-            seconds_left = int(120 - (now - last_time))
-            await interaction.response.send_message(
-                f"You're on cooldown! Try again in {seconds_left} seconds.",
-                ephemeral=True
-            )
-            return
-        cooldown_cache[user_id] = now
-
     special_gif_url = "https://i.pinimg.com/originals/15/dd/94/15dd945571c75b2a0f5141c313fb7dc6.gif"  
     sender_id = interaction.user.id
     try:
@@ -303,8 +289,6 @@ async def stab(interaction: discord.Interaction, user: discord.Member):
             if random.random() < chance:
                 embed = discord.Embed(title=f"{interaction.user.name} tried to stab themselves... and succeeded?!", color=discord.Color.red())
                 embed.set_image(url=special_gif_url)
-                if not has_role(user, OWNER_ROLE_NAME) and not has_role(user, "CEO"):
-                    await user.timeout(datetime.now(timezone.utc) + timedelta(seconds=40), reason="You succesfully stabbed yourself")
                 await interaction.response.send_message(embed=embed)
                 return
             else:
@@ -320,8 +304,6 @@ async def stab(interaction: discord.Interaction, user: discord.Member):
                 embed = discord.Embed(title=f"{interaction.user.name} stabs {user.name}!", color=discord.Color.red())
                 embed.set_image(url=gif_url)
                 print(gif_url)
-                if not has_role(user, OWNER_ROLE_NAME) and not has_role(user, "CEO"):
-                    await user.timeout(datetime.now(timezone.utc) + timedelta(seconds=20), reason="You got stabbed")
                 await interaction.response.send_message(embed=embed)
             else:
                 await interaction.response.send_message("No stab GIFs found in the database.", ephemeral=True)
