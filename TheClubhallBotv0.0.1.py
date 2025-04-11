@@ -176,7 +176,7 @@ async def on_member_join(member):
     channel = bot.get_channel(WELCOME_CHANNEL_ID)
     if channel:
         server_name = member.guild.name
-        member_count = member.guild.member_count
+        member_count = member.guild.member_count - 12
         message = (
             f"Welcome new member {member.mention}! <3\n"
             f"Thanks for joining **{server_name}**.\n"
@@ -311,7 +311,7 @@ async def stab(interaction: discord.Interaction, user: discord.Member):
                 await interaction.response.send_message("You can't stab yourself... or can you?", ephemeral=True)
                 return
 
-        chance = 0.40 
+        chance = 0.50
         if has_role(interaction.user, OWNER_ROLE_NAME):
             chance = 0.90
         if random.random() < chance:
