@@ -4,6 +4,7 @@ from discord import app_commands, ui
 import sqlite3
 import random
 from datetime import datetime, timedelta, timezone
+from discord.app_commands import CommandOnCooldown, Cooldown
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -271,27 +272,25 @@ async def request(interaction: discord.Interaction, user: discord.Member, amount
         view=view
     )
 
-
-def cooldown_for_non_owner(rate, per):
-    def wrapper():
-        async def dummy(interaction):
-            return True
-
-        decorated = app_commands.checks.cooldown(rate, per)(dummy)
-
-        async def predicate(interaction: discord.Interaction):
-            if has_role(interaction.user, OWNER_ROLE_NAME):
-                return True
-            return await decorated.predicate(interaction)
-
-        return app_commands.check(predicate)
-    return wrapper()
-
+cooldown_cache = {}
 
 @bot.tree.command(name="stab", description="Stab someone with anime style")
-@cooldown_for_non_owner(rate=1, per=120)
 async def stab(interaction: discord.Interaction, user: discord.Member):
     import random
+
+    if not has_role(interaction.user, OWNER_ROLE_NAME):
+        user_id = interaction.user.id
+        now = datetime.now().timestamp()
+        last_time = cooldown_cache.get(user_id, 0)
+
+        if now - last_time < 120:
+            seconds_left = int(120 - (now - last_time))
+            await interaction.response.send_message(
+                f"You're on cooldown! Try again in {seconds_left} seconds.",
+                ephemeral=True
+            )
+            return
+        cooldown_cache[user_id] = now
 
     special_gif_url = "https://i.pinimg.com/originals/15/dd/94/15dd945571c75b2a0f5141c313fb7dc6.gif"  
     sender_id = interaction.user.id
@@ -305,16 +304,16 @@ async def stab(interaction: discord.Interaction, user: discord.Member):
                 embed = discord.Embed(title=f"{interaction.user.name} tried to stab themselves... and succeeded?!", color=discord.Color.red())
                 embed.set_image(url=special_gif_url)
                 if not has_role(user, OWNER_ROLE_NAME) and not has_role(user, "CEO"):
-                    await user.timeout(datetime.now(timezone.utc) + timedelta(seconds=30), reason="You succesfully stabbed yourself")
+                    await user.timeout(datetime.now(timezone.utc) + timedelta(seconds=40), reason="You succesfully stabbed yourself")
                 await interaction.response.send_message(embed=embed)
                 return
             else:
                 await interaction.response.send_message("You can't stab yourself... or can you?", ephemeral=True)
                 return
 
-        chance = 0.35 
+        chance = 0.40 
         if has_role(interaction.user, OWNER_ROLE_NAME):
-            chance = 0.80
+            chance = 0.90
         if random.random() < chance:
             gif_url = get_random_stab_gif()
             if gif_url:
@@ -322,7 +321,7 @@ async def stab(interaction: discord.Interaction, user: discord.Member):
                 embed.set_image(url=gif_url)
                 print(gif_url)
                 if not has_role(user, OWNER_ROLE_NAME) and not has_role(user, "CEO"):
-                    await user.timeout(datetime.now(timezone.utc) + timedelta(seconds=10), reason="You got stabbed")
+                    await user.timeout(datetime.now(timezone.utc) + timedelta(seconds=20), reason="You got stabbed")
                 await interaction.response.send_message(embed=embed)
             else:
                 await interaction.response.send_message("No stab GIFs found in the database.", ephemeral=True)
