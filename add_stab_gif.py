@@ -1,8 +1,17 @@
-#add_stab_gif.py
+# replace_stab_gifs.py
 
 import sqlite3
 
 DB_PATH = 'users.db'
+URL_FILE = 'stabGifUrls.txt'
+
+def clear_stab_gifs():
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute('DELETE FROM stab_gifs')
+    conn.commit()
+    conn.close()
+    print("🗑️ Existing stab GIFs cleared.")
 
 def add_stab_gif(url: str):
     conn = sqlite3.connect(DB_PATH)
@@ -10,11 +19,22 @@ def add_stab_gif(url: str):
     cursor.execute('INSERT INTO stab_gifs (url) VALUES (?)', (url,))
     conn.commit()
     conn.close()
-    print("✅ GIF URL added successfully!")
+
+def load_urls_from_file():
+    urls = []
+    with open(URL_FILE, 'r', encoding='utf-8') as f:
+        for line in f:
+            line = line.strip()
+            if line.startswith("http") and "gif" in line:
+                urls.append(line)
+    return urls
 
 if __name__ == "__main__":
-    url = input("Paste the GIF URL to add: ").strip()
-    if url:
+    clear_stab_gifs()
+    urls = load_urls_from_file()
+
+    for url in urls:
         add_stab_gif(url)
-    else:
-        print("⚠️ No URL provided.")
+        print(f"✅ Added: {url}")
+
+    print(f"\n🎉 Done! {len(urls)} GIFs added from {URL_FILE}.")

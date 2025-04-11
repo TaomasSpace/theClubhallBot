@@ -278,7 +278,13 @@ cooldown_cache = {}
 async def stab(interaction: discord.Interaction, user: discord.Member):
     import random
 
-    special_gif_url = "https://i.pinimg.com/originals/15/dd/94/15dd945571c75b2a0f5141c313fb7dc6.gif"  
+    special_gifs = [
+        "https://i.pinimg.com/originals/15/dd/94/15dd945571c75b2a0f5141c313fb7dc6.gif",
+        "https://i.gifer.com/E65z.gif",
+        "https://i.makeagif.com/media/12-15-2017/I2zZ0u.gif",
+        "https://media.tenor.com/2pCPJqG46awAAAAM/yes-adventure-time.gif"
+    ]
+
     sender_id = interaction.user.id
     try:
         if user.id == sender_id:
@@ -287,8 +293,12 @@ async def stab(interaction: discord.Interaction, user: discord.Member):
                 chance = 0.75 
 
             if random.random() < chance:
-                embed = discord.Embed(title=f"{interaction.user.name} tried to stab themselves... and succeeded?!", color=discord.Color.red())
-                embed.set_image(url=special_gif_url)
+                selected_gif = random.choice(special_gifs)
+                embed = discord.Embed(
+                    title=f"{interaction.user.name} tried to stab themselves... and succeeded?!",
+                    color=discord.Color.red()
+                )
+                embed.set_image(url=selected_gif)
                 await interaction.response.send_message(embed=embed)
                 return
             else:
@@ -318,7 +328,7 @@ async def stab(interaction: discord.Interaction, user: discord.Member):
             ]
             await interaction.response.send_message(random.choice(fail_messages))
     except:
-        await interaction.response.send_message("you cant stab someone with higher permission than me. (No owners and no CEO's)", ephemeral=True)
+        await interaction.response.send_message("You can't stab someone with higher permission than me. (No owners and no CEO's)", ephemeral=True)
 
 with open("code.txt", "r") as file:
     TOKEN = file.read().strip()
