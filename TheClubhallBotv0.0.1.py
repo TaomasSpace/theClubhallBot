@@ -305,14 +305,14 @@ async def stab(interaction: discord.Interaction, user: discord.Member):
                 embed = discord.Embed(title=f"{interaction.user.name} tried to stab themselves... and succeeded?!", color=discord.Color.red())
                 embed.set_image(url=special_gif_url)
                 if not has_role(user, OWNER_ROLE_NAME) and not has_role(user, "CEO"):
-                    await user.timeout(datetime.now(timezone.utc) + timedelta(seconds=40), reason="You succesfully stabbed yourself")
+                    await user.timeout(datetime.now(timezone.utc) + timedelta(seconds=30), reason="You succesfully stabbed yourself")
                 await interaction.response.send_message(embed=embed)
                 return
             else:
                 await interaction.response.send_message("You can't stab yourself... or can you?", ephemeral=True)
                 return
 
-        chance = 0.30  
+        chance = 0.35 
         if has_role(interaction.user, OWNER_ROLE_NAME):
             chance = 0.80
         if random.random() < chance:
@@ -321,7 +321,7 @@ async def stab(interaction: discord.Interaction, user: discord.Member):
                 embed = discord.Embed(title=f"{interaction.user.name} stabs {user.name}!", color=discord.Color.red())
                 embed.set_image(url=gif_url)
                 if not has_role(user, OWNER_ROLE_NAME) and not has_role(user, "CEO"):
-                    await user.timeout(datetime.now(timezone.utc) + timedelta(seconds=20), reason="You got stabbed")
+                    await user.timeout(datetime.now(timezone.utc) + timedelta(seconds=10), reason="You got stabbed")
                 await interaction.response.send_message(embed=embed)
             else:
                 await interaction.response.send_message("No stab GIFs found in the database.", ephemeral=True)
