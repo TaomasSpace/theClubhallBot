@@ -3,6 +3,7 @@ from discord.ext import commands
 from discord import app_commands, ui
 import sqlite3
 import random
+from datetime import datetime, timedelta, timezone
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -271,48 +272,71 @@ async def request(interaction: discord.Interaction, user: discord.Member, amount
     )
 
 
+def cooldown_for_non_owner(rate, per):
+    def wrapper():
+        async def dummy(interaction):
+            return True
+
+        decorated = app_commands.checks.cooldown(rate, per)(dummy)
+
+        async def predicate(interaction: discord.Interaction):
+            if has_role(interaction.user, OWNER_ROLE_NAME):
+                return True
+            return await decorated.predicate(interaction)
+
+        return app_commands.check(predicate)
+    return wrapper()
+
+
 @bot.tree.command(name="stab", description="Stab someone with anime style")
+@cooldown_for_non_owner(rate=1, per=120)
 async def stab(interaction: discord.Interaction, user: discord.Member):
     import random
 
     special_gif_url = "https://i.pinimg.com/originals/15/dd/94/15dd945571c75b2a0f5141c313fb7dc6.gif"  
     sender_id = interaction.user.id
+    try:
+        if user.id == sender_id:
+            chance = 0.20  
+            if has_role(interaction.user, OWNER_ROLE_NAME):
+                chance = 0.75 
 
-    if user.id == sender_id:
-        chance = 0.20  # 20% default
+            if random.random() < chance:
+                embed = discord.Embed(title=f"{interaction.user.name} tried to stab themselves... and succeeded?!", color=discord.Color.red())
+                embed.set_image(url=special_gif_url)
+                if not has_role(user, OWNER_ROLE_NAME) and not has_role(user, "CEO"):
+                    await user.timeout(datetime.now(timezone.utc) + timedelta(seconds=40), reason="You succesfully stabbed yourself")
+                await interaction.response.send_message(embed=embed)
+                return
+            else:
+                await interaction.response.send_message("You can't stab yourself... or can you?", ephemeral=True)
+                return
+
+        chance = 0.30  
         if has_role(interaction.user, OWNER_ROLE_NAME):
-            chance = 0.75  # 75% wenn Owner
-
+            chance = 0.80
         if random.random() < chance:
-            embed = discord.Embed(title=f"{interaction.user.name} tried to stab themselves... and succeeded?!", color=discord.Color.red())
-            embed.set_image(url=special_gif_url)
-            await interaction.response.send_message(embed=embed)
-            return
+            gif_url = get_random_stab_gif()
+            if gif_url:
+                embed = discord.Embed(title=f"{interaction.user.name} stabs {user.name}!", color=discord.Color.red())
+                embed.set_image(url=gif_url)
+                if not has_role(user, OWNER_ROLE_NAME) and not has_role(user, "CEO"):
+                    await user.timeout(datetime.now(timezone.utc) + timedelta(seconds=20), reason="You got stabbed")
+                await interaction.response.send_message(embed=embed)
+            else:
+                await interaction.response.send_message("No stab GIFs found in the database.", ephemeral=True)
         else:
-            await interaction.response.send_message("You can't stab yourself... or can you?", ephemeral=True)
-            return
-
-    chance = 0.50  
-    if has_role(interaction.user, OWNER_ROLE_NAME):
-        chance = 0.90  
-    if random.random() < chance:
-        gif_url = get_random_stab_gif()
-        if gif_url:
-            embed = discord.Embed(title=f"{interaction.user.name} stabs {user.name}!", color=discord.Color.red())
-            embed.set_image(url=gif_url)
-            await interaction.response.send_message(embed=embed)
-        else:
-            await interaction.response.send_message("No stab GIFs found in the database.", ephemeral=True)
-    else:
-        fail_messages = [
-            "Isn't that illegal?",
-            "You don't have a knife.",
-            "You missed completely!",
-            "They dodged like a ninja!",
-            "You changed your mind last second.",
-            "Your knife broke!"
-        ]
-        await interaction.response.send_message(random.choice(fail_messages))
+            fail_messages = [
+                "Isn't that illegal?",
+                "You don't have a knife.",
+                "You missed completely!",
+                "They dodged like a ninja!",
+                "You changed your mind last second.",
+                "Your knife broke!"
+            ]
+            await interaction.response.send_message(random.choice(fail_messages))
+    except:
+        await interaction.response.send_message("you cant stab someone with higher permission than me. (No owners and no CEO's)", ephemeral=True)
 
 with open("code.txt", "r") as file:
     TOKEN = file.read().strip()
