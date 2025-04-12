@@ -2,9 +2,9 @@ import discord
 from discord.ext import commands
 from discord import app_commands, ui
 import sqlite3
-import random
 from datetime import datetime, timedelta, timezone
 from discord.app_commands import CommandOnCooldown, Cooldown
+from random import random, choice
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -112,7 +112,7 @@ def get_random_stab_gif():
     results = cursor.fetchall()
     conn.close()
     if results:
-        return random.choice(results)[0]
+        return choice(results)[0]
     else:
         return None
 
@@ -276,7 +276,6 @@ cooldown_cache = {}
 
 @bot.tree.command(name="stab", description="Stab someone with anime style")
 async def stab(interaction: discord.Interaction, user: discord.Member):
-    import random
 
     special_gifs = [
         "https://i.pinimg.com/originals/15/dd/94/15dd945571c75b2a0f5141c313fb7dc6.gif",
@@ -292,8 +291,8 @@ async def stab(interaction: discord.Interaction, user: discord.Member):
             if has_role(interaction.user, OWNER_ROLE_NAME):
                 chance = 0.75 
 
-            if random.random() < chance:
-                selected_gif = random.choice(special_gifs)
+            if random() < chance:
+                selected_gif = choice(special_gifs)
                 embed = discord.Embed(
                     title=f"{interaction.user.name} tried to stab themselves... and succeeded?!",
                     color=discord.Color.red()
@@ -308,7 +307,7 @@ async def stab(interaction: discord.Interaction, user: discord.Member):
         chance = 0.50
         if has_role(interaction.user, OWNER_ROLE_NAME):
             chance = 0.90
-        if random.random() < chance:
+        if random() < chance:
             gif_url = get_random_stab_gif()
             if gif_url:
                 embed = discord.Embed(title=f"{interaction.user.name} stabs {user.name}!", color=discord.Color.red())
@@ -326,7 +325,7 @@ async def stab(interaction: discord.Interaction, user: discord.Member):
                 "You changed your mind last second.",
                 "Your knife broke!"
             ]
-            await interaction.response.send_message(random.choice(fail_messages))
+            await interaction.response.send_message(choice(fail_messages))
     except:
         await interaction.response.send_message("You can't stab someone with higher permission than me. (No owners and no CEO's)", ephemeral=True)
 

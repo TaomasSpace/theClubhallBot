@@ -1,11 +1,11 @@
-# replace_stab_gifs.py
+# replace_gifs.py
 
 import sqlite3
 
 DB_PATH = 'users.db'
 URL_FILE = 'stabGifUrls.txt'
 
-def clear_stab_gifs():
+def clear_gifs():
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute('DELETE FROM stab_gifs')
@@ -13,7 +13,7 @@ def clear_stab_gifs():
     conn.close()
     print("🗑️ Existing stab GIFs cleared.")
 
-def add_stab_gif(url: str):
+def add_gif(url: str):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute('INSERT INTO stab_gifs (url) VALUES (?)', (url,))
@@ -30,11 +30,11 @@ def load_urls_from_file():
     return urls
 
 if __name__ == "__main__":
-    clear_stab_gifs()
+    clear_gifs()
     urls = load_urls_from_file()
 
     for url in urls:
-        add_stab_gif(url)
+        add_gif(url)
         print(f"✅ Added: {url}")
 
     print(f"\n🎉 Done! {len(urls)} GIFs added from {URL_FILE}.")
