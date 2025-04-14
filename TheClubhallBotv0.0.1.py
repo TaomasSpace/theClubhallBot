@@ -5,6 +5,7 @@ import sqlite3
 from datetime import datetime, timedelta, timezone
 from discord.app_commands import CommandOnCooldown, Cooldown
 from random import random, choice
+import asyncio
 
 intents = discord.Intents.default()
 intents.message_content = True
