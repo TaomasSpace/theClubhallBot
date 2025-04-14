@@ -329,6 +329,28 @@ async def stab(interaction: discord.Interaction, user: discord.Member):
     except:
         await interaction.response.send_message("You can't stab someone with higher permission than me. (No owners and no CEO's)", ephemeral=True)
 
+    @bot.tree.command(name="gamble", description="Gamble your coins and try to double them!")
+    async def gamble(interaction: discord.Interaction, amount: int):
+        user_id = str(interaction.user.id)
+        register_user(user_id, interaction.user.name)
+
+        if amount < 10:
+            await interaction.response.send_message("Minimum bet is 10 good boy coins.", ephemeral=True)
+            return
+
+        balance = get_money(user_id)
+        if amount > balance:
+            await interaction.response.send_message("You don't have enough good boy coins!", ephemeral=True)
+            return
+
+        if random() < 0.5:
+            set_money(user_id, balance + amount)
+            await interaction.response.send_message(f"You won! Your {amount} coins turned into {amount * 2}.")
+        else:
+            set_money(user_id, balance - amount)
+            await interaction.response.send_message(f"You lost! {amount} coins are gone.")
+
+
 with open("code.txt", "r") as file:
     TOKEN = file.read().strip()
 
