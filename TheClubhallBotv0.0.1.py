@@ -5,6 +5,8 @@ import sqlite3
 from datetime import datetime, timedelta, timezone
 from discord.app_commands import CommandOnCooldown, Cooldown
 from random import random, choice
+from discord.app_commands import cooldown, check
+import asyncio
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -329,26 +331,62 @@ async def stab(interaction: discord.Interaction, user: discord.Member):
     except:
         await interaction.response.send_message("You can't stab someone with higher permission than me. (No owners and no CEO's)", ephemeral=True)
 
-@bot.tree.command(name="gamble", description="Gamble your coins and try to double them!")
+def is_owner_or_cooldown():
+    async def predicate(interaction: discord.Interaction):
+        return has_role(interaction.user, OWNER_ROLE_NAME)
+    return check(predicate)
+
+@bot.tree.command(name="gamble", description="Gamble your coins for a chance to win more!")
+@cooldown(1, 90.0, key=lambda i: i.user.id)
 async def gamble(interaction: discord.Interaction, amount: int):
     user_id = str(interaction.user.id)
     register_user(user_id, interaction.user.name)
 
     if amount < 10:
-        await interaction.response.send_message("Minimum bet is 10 good boy coins.", ephemeral=True)
+        await interaction.response.send_message("🎲 Minimum bet is 10 good boy coins.", ephemeral=True)
         return
 
     balance = get_money(user_id)
     if amount > balance:
-        await interaction.response.send_message("You don't have enough good boy coins!", ephemeral=True)
+        await interaction.response.send_message("❌ You don't have enough good boy coins!", ephemeral=True)
         return
 
-    if random() < 0.5:
-        set_money(user_id, balance + amount)
-        await interaction.response.send_message(f"You won! Your {amount} coins turned into {amount * 2}.")
+    # Rolling Message
+    await interaction.response.send_message("🎲 Rolling the dice...", ephemeral=False)
+    await asyncio.sleep(2)
+
+    # Multipliers and probabilities
+    roll = random()
+    if roll < 0.05:
+        multiplier = 3
+        message = "💎 JACKPOT! 3x WIN!"
+    elif roll < 0.30:
+        multiplier = 2
+        message = "🔥 Double win!"
+    elif roll < 0.60:
+        multiplier = 1
+        message = "😐 You broke even."
     else:
-        set_money(user_id, balance - amount)
-        await interaction.response.send_message(f"You lost! {amount} coins are gone.")
+        multiplier = 0
+        message = "💀 You lost everything..."
+
+    new_amount = amount * multiplier
+    set_money(user_id, balance - amount + new_amount)
+
+    emoji_result = {
+        3: "💎",
+        2: "🔥",
+        1: "😐",
+        0: "💀"
+    }
+
+    await interaction.edit_original_response(
+        content=(
+            f"{emoji_result[multiplier]} **{interaction.user.name}**, you bet **{amount}** coins.\n"
+            f"{message}\n"
+            f"You now have **{get_money(user_id)}** good boy coins."
+        )
+    )
 
 
 with open("code.txt", "r") as file:
