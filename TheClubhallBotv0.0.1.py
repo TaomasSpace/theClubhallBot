@@ -5,8 +5,6 @@ import sqlite3
 from datetime import datetime, timedelta, timezone
 from discord.app_commands import CommandOnCooldown, Cooldown
 from random import random, choice
-from discord.app_commands import cooldown, check
-import asyncio
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -331,13 +329,7 @@ async def stab(interaction: discord.Interaction, user: discord.Member):
     except:
         await interaction.response.send_message("You can't stab someone with higher permission than me. (No owners and no CEO's)", ephemeral=True)
 
-def is_owner_or_cooldown():
-    async def predicate(interaction: discord.Interaction):
-        return has_role(interaction.user, OWNER_ROLE_NAME)
-    return check(predicate)
-
 @bot.tree.command(name="gamble", description="Gamble your coins for a chance to win more!")
-@cooldown(1, 90.0, key=lambda i: i.user.id)
 async def gamble(interaction: discord.Interaction, amount: int):
     user_id = str(interaction.user.id)
     register_user(user_id, interaction.user.name)
@@ -387,7 +379,6 @@ async def gamble(interaction: discord.Interaction, amount: int):
             f"You now have **{get_money(user_id)}** good boy coins."
         )
     )
-
 
 with open("code.txt", "r") as file:
     TOKEN = file.read().strip()
