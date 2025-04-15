@@ -189,7 +189,7 @@ async def on_member_join(member):
 
 @bot.event
 async def on_member_remove(member):
-    channel = bot.get_channel(1351475070312255501)
+    channel = bot.get_channel(1361778101176107311)
     if channel:
         member_count = member.guild.member_count
         message = f"It seems {member.name} has left us... We are now **{member_count}** members."
