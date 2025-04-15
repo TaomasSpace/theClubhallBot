@@ -52,6 +52,7 @@ def init_db():
         )
     ''')
     cursor.execute('INSERT OR IGNORE INTO server (id, max_coins) VALUES (1, ?)', (DEFAULT_MAX_COINS,))
+    cursor.execute('UPDATE users SET money = 5 WHERE money = 0')
     conn.commit()
     conn.close()
 
@@ -61,7 +62,7 @@ def register_user(user_id, username):
     cursor.execute('SELECT * FROM users WHERE user_id = ?', (user_id,))
     if cursor.fetchone() is None:
         cursor.execute('INSERT INTO users (user_id, username, money) VALUES (?, ?, ?)',
-                       (user_id, username, 0))
+                    (user_id, username, 5))
     conn.commit()
     conn.close()
 
