@@ -335,8 +335,8 @@ async def gamble(interaction: discord.Interaction, amount: int):
     user_id = str(interaction.user.id)
     register_user(user_id, interaction.user.name)
 
-    if amount < 10:
-        await interaction.response.send_message("🎲 Minimum bet is 10 good boy coins.", ephemeral=True)
+    if amount < 2:
+        await interaction.response.send_message("🎲 Minimum bet is 2 good boy coins.", ephemeral=True)
         return
 
     balance = get_money(user_id)
@@ -344,11 +344,9 @@ async def gamble(interaction: discord.Interaction, amount: int):
         await interaction.response.send_message("❌ You don't have enough good boy coins!", ephemeral=True)
         return
 
-    # Rolling Message
     await interaction.response.send_message("🎲 Rolling the dice...", ephemeral=False)
     await asyncio.sleep(2)
 
-    # Multipliers and probabilities
     roll = random()
     if roll < 0.05:
         multiplier = 3
