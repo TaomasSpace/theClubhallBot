@@ -136,12 +136,12 @@ class RequestView(ui.View):
         receiver_balance = get_money(str(self.receiver_id))
 
         if receiver_balance < self.amount:
-            await interaction.response.send_message("You don't have enough good boy coins to accept this request.", ephemeral=True)
+            await interaction.response.send_message("You don't have enough clubhall coins to accept this request.", ephemeral=True)
             return
 
         set_money(str(self.receiver_id), receiver_balance - self.amount)
         set_money(str(self.sender_id), sender_balance + self.amount)
-        await interaction.response.edit_message(content=f"✅ Request accepted. {self.amount} good boy coins sent!", view=None)
+        await interaction.response.edit_message(content=f"✅ Request accepted. {self.amount} clubhall coins sent!", view=None)
 
     @ui.button(label="Decline", style=discord.ButtonStyle.danger)
     async def decline(self, interaction: discord.Interaction, button: ui.Button):
@@ -197,23 +197,23 @@ async def on_member_remove(member):
 
 
 # === SLASH COMMANDS ===
-@bot.tree.command(name="money", description="Check your good boy coin balance")
+@bot.tree.command(name="money", description="Check your clubhall coin balance")
 async def money(interaction: discord.Interaction):
     user_id = str(interaction.user.id)
     register_user(user_id, interaction.user.name)
     money = get_money(user_id)
-    await interaction.response.send_message(f"You have {money} good boy coins.", ephemeral=True)
+    await interaction.response.send_message(f"You have {money} clubhall coins.", ephemeral=True)
 
-@bot.tree.command(name="balance", description="Check someone else's good boy coin balance")
+@bot.tree.command(name="balance", description="Check someone else's clubhall coin balance")
 async def balance(interaction: discord.Interaction, user: discord.Member):
     register_user(str(user.id), user.name)
     money = get_money(str(user.id))
-    await interaction.response.send_message(f"{user.name} has {money} good boy coins.")
+    await interaction.response.send_message(f"{user.name} has {money} clubhall coins.")
 
 @bot.tree.command(name="give", description="Give coins to a user (Admin/Owner only)")
 async def give(interaction: discord.Interaction, user: discord.Member, amount: int):
     if not has_role(interaction.user, ADMIN_ROLE_NAME) and not has_role(interaction.user, OWNER_ROLE_NAME):
-        await interaction.response.send_message("You don't have permission to give good boy coins.", ephemeral=True)
+        await interaction.response.send_message("You don't have permission to give clubhall coins.", ephemeral=True)
         return
 
     register_user(str(user.id), user.name)
@@ -221,34 +221,34 @@ async def give(interaction: discord.Interaction, user: discord.Member, amount: i
     max_limit = get_max_coins()
 
     if total + amount > max_limit and not has_role(interaction.user, OWNER_ROLE_NAME):
-        await interaction.response.send_message(f"good boy coin limit of {max_limit} reached!", ephemeral=True)
+        await interaction.response.send_message(f"clubhall coin limit of {max_limit} reached!", ephemeral=True)
         return
 
     current = get_money(str(user.id))
     set_money(str(user.id), current + amount)
-    await interaction.response.send_message(f"{amount} good boy coins added to {user.name}.")
+    await interaction.response.send_message(f"{amount} clubhall coins added to {user.name}.")
 
-@bot.tree.command(name="remove", description="Remove good boy coins from a user (Admin/Owner only)")
+@bot.tree.command(name="remove", description="Remove clubhall coins from a user (Admin/Owner only)")
 async def remove(interaction: discord.Interaction, user: discord.Member, amount: int):
     if not has_role(interaction.user, ADMIN_ROLE_NAME) and not has_role(interaction.user, OWNER_ROLE_NAME):
-        await interaction.response.send_message("You don't have permission to remove good boy coins.", ephemeral=True)
+        await interaction.response.send_message("You don't have permission to remove clubhall coins.", ephemeral=True)
         return
 
     current = get_money(str(user.id))
     set_money(str(user.id), max(0, current - amount))
-    await interaction.response.send_message(f"{amount} good boy coins removed from {user.name}.")
+    await interaction.response.send_message(f"{amount} clubhall coins removed from {user.name}.")
 
-@bot.tree.command(name="spend", description="Spend your own good boy coins")
+@bot.tree.command(name="spend", description="Spend your own clubhall coins")
 async def spend(interaction: discord.Interaction, amount: int):
     user_id = str(interaction.user.id)
     current = get_money(user_id)
     if amount > current:
-        await interaction.response.send_message("You don't have enough good boy coins.", ephemeral=True)
+        await interaction.response.send_message("You don't have enough clubhall coins.", ephemeral=True)
         return
     set_money(user_id, current - amount)
-    await interaction.response.send_message(f"You spent {amount} good boy coins.")
+    await interaction.response.send_message(f"You spent {amount} clubhall coins.")
 
-@bot.tree.command(name="setlimit", description="Set the maximum good boy coins limit (Owner only)")
+@bot.tree.command(name="setlimit", description="Set the maximum clubhall coins limit (Owner only)")
 async def setlimit(interaction: discord.Interaction, new_limit: int):
     if not has_role(interaction.user, OWNER_ROLE_NAME):
         await interaction.response.send_message("Only the owner can change the limit.", ephemeral=True)
@@ -256,13 +256,13 @@ async def setlimit(interaction: discord.Interaction, new_limit: int):
     set_max_coins(new_limit)
     await interaction.response.send_message(f"New coin limit set to {new_limit}.")
 
-@bot.tree.command(name="request", description="Request good boy coins from another user")
+@bot.tree.command(name="request", description="Request clubhall coins from another user")
 async def request(interaction: discord.Interaction, user: discord.Member, amount: int, reason: str):
     sender_id = interaction.user.id
     receiver_id = user.id
 
     if sender_id == receiver_id:
-        await interaction.response.send_message("You can't request good boy coins from yourself.", ephemeral=True)
+        await interaction.response.send_message("You can't request clubhall coins from yourself.", ephemeral=True)
         return
 
     register_user(str(sender_id), interaction.user.name)
@@ -270,7 +270,7 @@ async def request(interaction: discord.Interaction, user: discord.Member, amount
 
     view = RequestView(sender_id, receiver_id, amount)
     await interaction.response.send_message(
-        f"{user.mention}, {interaction.user.name} requests **{amount}** good boy coins for: _{reason}_",
+        f"{user.mention}, {interaction.user.name} requests **{amount}** clubhall coins for: _{reason}_",
         view=view
     )
 
@@ -337,12 +337,12 @@ async def gamble(interaction: discord.Interaction, amount: int):
     register_user(user_id, interaction.user.name)
 
     if amount < 2:
-        await interaction.response.send_message("🎲 Minimum bet is 2 good boy coins.", ephemeral=True)
+        await interaction.response.send_message("🎲 Minimum bet is 2 clubhall coins.", ephemeral=True)
         return
 
     balance = get_money(user_id)
     if amount > balance:
-        await interaction.response.send_message("❌ You don't have enough good boy coins!", ephemeral=True)
+        await interaction.response.send_message("❌ You don't have enough clubhall coins!", ephemeral=True)
         return
 
     await interaction.response.send_message("🎲 Rolling the dice...", ephemeral=False)
@@ -376,7 +376,7 @@ async def gamble(interaction: discord.Interaction, amount: int):
         content=(
             f"{emoji_result[multiplier]} **{interaction.user.name}**, you bet **{amount}** coins.\n"
             f"{message}\n"
-            f"You now have **{get_money(user_id)}** good boy coins."
+            f"You now have **{get_money(user_id)}** clubhall coins."
         )
     )
 
