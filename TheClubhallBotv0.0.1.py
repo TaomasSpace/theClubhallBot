@@ -280,6 +280,69 @@ async def request(interaction: discord.Interaction, user: discord.Member, amount
 
 cooldown_cache = {}
 
+@bot.tree.command(name="punch", description="Punch someone with anime style")
+async def punch(interaction: discord.Interaction, user: discord.Member):
+    punch_gifs = [
+        "https://media1.tenor.com/m/BoYBoopIkBcAAAAC/anime-smash.gif",
+        "https://media4.giphy.com/media/NuiEoMDbstN0J2KAiH/giphy.gif",
+        "https://i.pinimg.com/originals/8a/ab/09/8aab09880ff9226b1c73ee4c2ddec883.gif",
+        "https://i.pinimg.com/originals/8d/50/60/8d50607e59db86b5afcc21304194ba57.gif",
+        "https://i.imgur.com/g91XPGA.gif",
+        "https://i.makeagif.com/media/3-16-2021/CKcOa2.gif",
+        "https://i.pinimg.com/originals/a5/2e/ba/a52eba768035cb7ae66f15f3c66bb184.gif",
+        "https://i.gifer.com/BKZ9.gif",
+        "https://i.imgur.com/47ctNlt.gif",
+        "https://gifdb.com/images/high/anime-punch-shiki-granbell-radiant-oxj18jt2n2c6vvky.gif",
+        "https://i.pinimg.com/originals/48/d5/59/48d55975d1c4ec1aa74f4646962bb815.gif",
+        "https://i.gifer.com/9eUJ.gif",
+        "https://giffiles.alphacoders.com/131/13126.gif",
+        "https://media.tenor.com/0ssFlowQEUQAAAAM/naru-punch.gif",
+        "https://media0.giphy.com/media/arbHBoiUWUgmc/giphy.gif",
+        "https://i.pinimg.com/originals/17/5c/f2/175cf269b6df62b75a5d25a0ed45e954.gif",
+        "https://i.imgur.com/GsMjksq.gif",
+        "https://media.tenor.com/VuF2NpuuLJsAAAAM/kanon-anime.gif",
+        "https://i2.kym-cdn.com/photos/images/original/000/989/495/3b8.gif",
+        "https://i.gifer.com/1Ky5.gif",
+        "https://i.pinimg.com/originals/86/c3/ce/86c3ce1869454a96b138fe66992fa3b7.gif",
+        "https://i.imgur.com/q6qjskO.gif",
+        "https://racco.neocities.org/Saved%20Pictures/4ff4ab319bfb9a43bb8b526ef4fb222c.gif",
+        "https://i.makeagif.com/media/4-14-2015/5JqC6M.gif",
+        "https://static.wikia.nocookie.net/fzero-facts/images/d/d0/Falcon_Punch_%28anime_version%29.gif",
+        "https://gifdb.com/images/high/anime-punch-meliodas-seven-clovers-f4bn40bmcsmy98qw.gif",
+        "https://media.tenor.com/wTzNeEgfPicAAAAM/anime-punch.gif",
+        "https://64.media.tumblr.com/7e30bb1047071490ac65828b96ef71a8/tumblr_nhgcpaDTOj1snbyiqo1_500.gif",
+        "https://gifdb.com/images/high/anime-fight-funny-punch-s4n15b8fw49plyhd.gif",
+        "https://i.pinimg.com/originals/b2/b1/16/b2b116143040bc3bb2e1e89a87de0f5f.gif",
+        "https://gifdb.com/images/high/anime-saki-saki-powerful-punch-xzs7ab1am1a8e80o.gif",
+        "https://media.tenor.com/yA_KtmPI1EMAAAAM/hxh-hunter-x-hunter.gif",
+        "https://media.tenor.com/images/7a582f32ef2ed527c0f113f81a696ae3/tenor.gif",
+        "https://i.imgur.com/qWpGotd.gif",
+        "https://media4.giphy.com/media/2t9s7k3IlI6bcOdPj1/giphy.gif",
+        "https://gifdb.com/images/high/yoruichi-bleach-anime-punch-ground-explode-destroy-city-h51x0wsb4rb7qmpz.gif",
+        "https://i.pinimg.com/originals/d7/c3/0e/d7c30e46a937aaade4d7bc20eb09339b.gif",
+        "https://upgifs.com//img/gifs/2C12FgA3jVbby.gif",
+        "https://gifdb.com/images/high/anime-punch-damian-desmond-gun4qnn5009sa1ne.gif",
+        "https://giffiles.alphacoders.com/200/200628.gif",
+        "https://i.imgflip.com/1zx1tj.gif"
+    ]
+
+    if user.id == interaction.user.id:
+        await interaction.response.send_message("You can't punch yourself ... or maybe you can?", ephemeral=True)
+        return
+
+    if not punch_gifs:
+        await interaction.response.send_message("No Punch GIFs stored!", ephemeral=True)
+        return
+
+    selected_gif = choice(punch_gifs)
+    embed = discord.Embed(
+        title=f"{interaction.user.name} punches {user.name}!",
+        color=discord.Colour.red()
+    )
+    embed.set_image(url=selected_gif)
+
+    await interaction.response.send_message(embed=embed)
+
 @bot.tree.command(name="stab", description="Stab someone with anime style")
 async def stab(interaction: discord.Interaction, user: discord.Member):
 
