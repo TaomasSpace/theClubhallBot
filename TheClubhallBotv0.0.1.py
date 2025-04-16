@@ -175,6 +175,10 @@ WELCOME_CHANNEL_ID = 1351487186557734942
 
 @bot.event
 async def on_member_join(member):
+    role = discord.utils.get(member.guild.roles, name="Member")
+    if role:
+        await member.add_roles(role)
+
     channel = bot.get_channel(WELCOME_CHANNEL_ID)
     if channel:
         server_name = member.guild.name
