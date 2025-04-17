@@ -182,7 +182,7 @@ async def on_member_join(member):
     channel = bot.get_channel(WELCOME_CHANNEL_ID)
     if channel:
         server_name = member.guild.name
-        member_count = member.guild.member_count - 12
+        member_count = member.guild.member_count
         message = (
             f"Welcome new member {member.mention}! <3\n"
             f"Thanks for joining **{server_name}**.\n"
@@ -446,6 +446,58 @@ async def gamble(interaction: discord.Interaction, amount: int):
             f"You now have **{get_money(user_id)}** clubhall coins."
         )
     )
+
+@bot.tree.command(name="giveaway", description="Start a giveaway (only Admin/Owner)")
+@app_commands.describe(duration="duration in minutes", prize="Prize")
+async def giveaway(interaction: discord.Interaction,
+                   duration: int,
+                   prize: str):
+
+    if (not has_role(interaction.user, ADMIN_ROLE_NAME) and
+        not has_role(interaction.user, OWNER_ROLE_NAME)):
+        await interaction.response.send_message(
+            "Only admins and owners can use this command",
+            ephemeral=True
+        )
+        return
+
+    embed = discord.Embed(
+        title="🎉 GIVEAWAY 🎉",
+        description=(
+            f"React with 🎉 to win **{prize}**!\n"
+            f"🔔 Duration: **{duration} min**."
+        ),
+        color=discord.Color.gold()
+    )
+    embed.set_footer(
+        text=f"Created by: {interaction.user.display_name}",
+        icon_url=interaction.user.display_avatar.url
+    )
+
+    await interaction.response.send_message(embed=embed)
+    giveaway_msg = await interaction.original_response()
+    await giveaway_msg.add_reaction("🎉")
+
+    await asyncio.sleep(duration * 60)
+
+    refreshed = await giveaway_msg.channel.fetch_message(giveaway_msg.id)
+
+    reaction = discord.utils.get(refreshed.reactions, emoji="🎉")
+    if reaction is None:
+        await refreshed.reply("No one has participated.")
+        return
+
+    users = [u async for u in reaction.users() if not u.bot]
+    if not users:
+        await refreshed.reply("No one has participated.")
+        return
+
+    winner = choice(users)
+    await refreshed.reply(
+        f"🎊 Congratulation! {winner.mention}! "
+        f"You have won **{prize}** 🎉"
+    )
+
 
 with open("code.txt", "r") as file:
     TOKEN = file.read().strip()
