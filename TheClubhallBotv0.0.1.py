@@ -511,6 +511,45 @@ async def giveaway(interaction: discord.Interaction,
         f"You have won **{prize}** 🎉"
     )
 
+@bot.tree.command(name="goon", description="goon to someone on the server")
+async def goon(interaction: discord.Interaction, user: discord.Member):
+
+    die_gifs = [
+        "https://images-ext-1.discordapp.net/external/NsMNJnl7MWCPxMK2Q-MdPdUApR3VX8-nxpDFhdWl7PI/https/media.tenor.com/wQZWGLcXSgYAAAPo/you-died-link.gif",
+    ]
+
+    goon_gifs = [
+        "https://images-ext-1.discordapp.net/external/aFNUqz7T07oOHvYQG1_DRBccPglRx_nRzshRGe0NDW8/https/media.tenor.com/LYFIesZUNiEAAAPo/lebron-james-lebron.gif",
+    ]
+
+    sender_id = interaction.user.id
+    try:
+        if user.id == sender_id:
+                await interaction.response.send_message("You cant goon to yourself", ephemeral=True)
+
+        chance = 0.95
+        if random() < chance:
+            gif_url = choice(goon_gifs)
+            if gif_url:
+                embed = discord.Embed(title=f"{interaction.user.name} goons to {user.name}!", color=discord.Color.red())
+                embed.set_image(url=gif_url)
+                print(gif_url)
+                await interaction.response.send_message(embed=embed)
+            else:
+                await interaction.response.send_message("No goon GIFs found in the database.", ephemeral=False)
+        else:
+                gif_url = choice(die_gifs)
+                if gif_url:
+                    embed = discord.Embed(title=f"{interaction.user.name} dies because of gooning!", color=discord.Color.red())
+                    embed.set_image(url=gif_url)
+                    print(gif_url)
+                    await interaction.response.send_message(embed=embed)
+                else:
+                    await interaction.response.send_message("No die GIFs found in the database.", ephemeral=False)
+    except:
+        await interaction.response.send_message("Command didnt work, sry :(", ephemeral=True)
+
+
 
 with open("code.txt", "r") as file:
     TOKEN = file.read().strip()
