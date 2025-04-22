@@ -762,12 +762,14 @@ webhook_cache: dict[int, discord.Webhook] = {}
 
 async def get_channel_webhook(channel: discord.TextChannel) -> discord.Webhook:
     wh = webhook_cache.get(channel.id)
-    if wh and not wh.is_deleted():
+    if wh:                       #   <— reicht völlig
         return wh
+
     webhooks = await channel.webhooks()
     wh = discord.utils.get(webhooks, name="LowercaseRelay")
     if wh is None:
         wh = await channel.create_webhook(name="LowercaseRelay")
+
     webhook_cache[channel.id] = wh
     return wh
 
