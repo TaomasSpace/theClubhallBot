@@ -20,6 +20,8 @@ OWNER_ROLE_NAME = "Owner"
 ADMIN_ROLE_NAME = "Admin"
 DEFAULT_MAX_COINS = 3000
 DAILY_REWARD = 10
+WELCOME_CHANNEL_ID = 1351487186557734942 
+LOG_CHANNEL_ID = 1364226902289813514
 
 TRIGGER_RESPONSES = {
     "シャドウストーム": "Our beautiful majestic Emperor シャドウストーム! Long live our beloved King 👑",
@@ -183,8 +185,6 @@ async def on_message(message):
             break
 
     await bot.process_commands(message)  
-
-WELCOME_CHANNEL_ID = 1351487186557734942 
 
 @bot.event
 async def on_member_join(member):
@@ -672,6 +672,18 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(
 
 @bot.tree.error
 async def on_app_error(inter: discord.Interaction, error: Exception):
+    log_ch = bot.get_channel(LOG_CHANNEL_ID)
+    if log_ch:
+        embed = discord.Embed(
+            title="Command error",
+            colour=discord.Colour.red(),
+            timestamp=datetime.utcnow(),
+            description=f"```py\n{error}\n```"
+        )
+        embed.add_field(name="Command", value=inter.command.qualified_name)
+        embed.add_field(name="User", value=f"{inter.user} (`{inter.user.id}`)", inline=False)
+        embed.add_field(name="Channel", value=f"{inter.channel.mention}", inline=False)
+        await log_ch.send(embed=embed)
     if isinstance(error, CommandOnCooldown):
         await inter.response.send_message(
             f"⏱ Cooldown: try again in {error.retry_after:.0f}s.",
@@ -685,6 +697,28 @@ async def on_app_error(inter: discord.Interaction, error: Exception):
         await inter.followup.send("Oops, something went wrong 😵", ephemeral=True)
     else:
         await inter.response.send_message("Oops, something went wrong 😵", ephemeral=True)
+
+# === LOG COMMANDS ===
+@bot.event
+async def on_app_command_completion(inter: discord.Interaction,
+                                    command: app_commands.Command):
+    """Wird ausgelöst, sobald ein Slash‑/Context‑Command ohne Fehler fertig ist."""
+    log_ch = bot.get_channel(LOG_CHANNEL_ID)
+    if log_ch is None:
+        return                             
+    opts = ", ".join(
+        f"{k}={v}" for k, v in inter.data.get('options', [])
+    ) or "–"
+    embed = discord.Embed(
+        title="Command executed",
+        colour=discord.Colour.blue(),
+        timestamp=datetime.utcnow()
+    )
+    embed.add_field(name="Command", value=f"/{command.qualified_name}")
+    embed.add_field(name="User", value=f"{inter.user} (`{inter.user.id}`)", inline=False)
+    embed.add_field(name="Channel", value=f"{inter.channel.mention}", inline=False)
+    embed.add_field(name="Options", value=opts, inline=False)
+    await log_ch.send(embed=embed)
 
 with open("code.txt", "r") as file:
     TOKEN = file.read().strip()
