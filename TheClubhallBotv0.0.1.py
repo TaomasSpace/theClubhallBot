@@ -550,7 +550,7 @@ async def goon(interaction: discord.Interaction, user: discord.Member):
         await interaction.response.send_message("Command didnt work, sry :(", ephemeral=True)
 
 @bot.tree.command(name="dance", description="hit a cool dance")
-async def dance(interaction: discord.Interaction, user: discord.Member):
+async def dance(interaction: discord.Interaction):
 
     dance_gifs = [
         "https://i.pinimg.com/originals/97/2d/aa/972daa47f0ce9cd21f79af88195b4c07.gif",
