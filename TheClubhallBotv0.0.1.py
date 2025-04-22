@@ -6,6 +6,7 @@ from datetime import datetime, timedelta, timezone
 from discord.app_commands import CommandOnCooldown, Cooldown
 from random import random, choice
 import asyncio
+import logging
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -17,7 +18,8 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 DB_PATH = 'users.db'
 OWNER_ROLE_NAME = "Owner"
 ADMIN_ROLE_NAME = "Admin"
-DEFAULT_MAX_COINS = 1000
+DEFAULT_MAX_COINS = 3000
+DAILY_REWARD = 10
 
 TRIGGER_RESPONSES = {
     "シャドウストーム": "Our beautiful majestic Emperor シャドウストーム! Long live our beloved King 👑",
@@ -26,7 +28,6 @@ TRIGGER_RESPONSES = {
     "taoma": "Our beautiful majestic Emperor TAOMA™! Long live our beloved King 👑",
     "тaoma": "Our beautiful majestic Emperor TAOMA™! Long live our beloved King 👑"
 }
-
 
 # === DATABASE SETUP ===
 def init_db():
@@ -46,7 +47,25 @@ def init_db():
         )
     ''')
     cursor.execute('INSERT OR IGNORE INTO server (id, max_coins) VALUES (1, ?)', (DEFAULT_MAX_COINS,))
-    cursor.execute('UPDATE users SET money = 5 WHERE money = 0')
+    cursor.execute("PRAGMA table_info(users)")
+    columns = [col[1] for col in cursor.fetchall()]
+    if "last_claim" not in columns:
+        cursor.execute("ALTER TABLE users ADD COLUMN last_claim TEXT")
+    conn.commit()
+    conn.close()
+
+def get_last_claim(user_id: str):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute('SELECT last_claim FROM users WHERE user_id = ?', (user_id,))
+    row = cursor.fetchone()
+    conn.close()
+    return datetime.fromisoformat(row[0]) if row and row[0] else None
+
+def set_last_claim(user_id: str, ts: datetime):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute('UPDATE users SET last_claim = ? WHERE user_id = ?', (ts.isoformat(), user_id))
     conn.commit()
     conn.close()
 
@@ -97,6 +116,17 @@ def set_max_coins(new_limit):
     cursor.execute('UPDATE server SET max_coins = ? WHERE id = 1', (new_limit,))
     conn.commit()
     conn.close()
+
+def get_top_users(limit: int = 10):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute(
+        'SELECT username, money FROM users ORDER BY money DESC LIMIT ?',
+        (limit,)
+    )
+    rows = cursor.fetchall()
+    conn.close()
+    return rows
 
 def has_role(member: discord.Member, role_name):
     return any(role.name == role_name for role in member.roles)
@@ -460,6 +490,11 @@ async def gamble(interaction: discord.Interaction, amount: int):
         )
     )
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(name)s: %(message)s"
+)
+
 @bot.tree.command(name="giveaway", description="Start a giveaway (only Admin/Owner)")
 @app_commands.describe(duration="duration in minutes", prize="Prize")
 async def giveaway(interaction: discord.Interaction,
@@ -585,6 +620,71 @@ async def dance(interaction: discord.Interaction):
     except:
         await interaction.response.send_message("Command didnt work, sry :(", ephemeral=True)
 
+# === LEADERBOARD ===
+@bot.tree.command(name="topcoins", description="Show the richest players")
+@app_commands.describe(count="How many spots to display (1–25)?")
+async def topcoins(interaction: discord.Interaction, count: int = 10):
+    count = max(1, min(count, 25))
+    top = get_top_users(count)
+
+    if not top:
+        await interaction.response.send_message("No data yet 🤷‍♂️")
+        return
+
+    lines = [f"**#{i + 1:02d}**  {name} – **{coins}** 💰" for i, (name, coins) in enumerate(top)]
+    embed = discord.Embed(
+        title=f"🏆 Top {count} Coin Holders",
+        description="\n".join(lines),
+        colour=discord.Colour.gold()
+    )
+    await interaction.response.send_message(embed=embed)
+
+# === GLOBAL ERROR HANDLER ===
+logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(name)s: %(message)s")
+
+@bot.tree.error
+async def on_app_error(inter: discord.Interaction, error: Exception):
+    if isinstance(error, CommandOnCooldown):
+        await inter.response.send_message(
+            f"⏱ Cooldown: try again in {error.retry_after:.0f}s.",
+            ephemeral=True
+        )
+        return
+
+    logging.exception("Slash-command error", exc_info=error)
+
+    if inter.response.is_done():
+        await inter.followup.send("Oops, something went wrong 😵", ephemeral=True)
+    else:
+        await inter.response.send_message("Oops, something went wrong 😵", ephemeral=True)
+
+# === DAILY REWARD ===
+@bot.tree.command(name="daily", description="Claim your daily coins (24 h cooldown)")
+async def daily(interaction: discord.Interaction):
+    user_id = str(interaction.user.id)
+    register_user(user_id, interaction.user.display_name)
+
+    now = datetime.utcnow()
+    last = get_last_claim(user_id)
+
+    if last and now - last < timedelta(hours=24):
+        remaining = timedelta(hours=24) - (now - last)
+        hours, seconds = divmod(int(remaining.total_seconds()), 3600)
+        minutes = seconds // 60
+        await interaction.response.send_message(
+            f"⏳ You can claim again in **{hours} h {minutes} min**.",
+            ephemeral=True
+        )
+        return
+
+    current = get_money(user_id)
+    set_money(user_id, current + DAILY_REWARD)
+    set_last_claim(user_id, now)
+
+    await interaction.response.send_message(
+        f"✅ {DAILY_REWARD} Coins added! You now have **{current + DAILY_REWARD}** 💰.",
+        ephemeral=True
+    )
 
 with open("code.txt", "r") as file:
     TOKEN = file.read().strip()
