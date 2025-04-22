@@ -549,6 +549,40 @@ async def goon(interaction: discord.Interaction, user: discord.Member):
     except:
         await interaction.response.send_message("Command didnt work, sry :(", ephemeral=True)
 
+@bot.tree.command(name="dance", description="hit a cool dance")
+async def dance(interaction: discord.Interaction, user: discord.Member):
+
+    dance_gifs = [
+        "https://i.pinimg.com/originals/97/2d/aa/972daa47f0ce9cd21f79af88195b4c07.gif",
+        "https://media.tenor.com/GOYRQva4UeoAAAAM/anime-dance.gif",
+        "https://media.tenor.com/4QvbP2MXNjkAAAAM/guts-berserk.gif",
+        "https://i.pinimg.com/originals/ce/7a/f8/ce7af890d23444939a9ed0b019dc46c6.gif",
+        "https://media0.giphy.com/media/RLJxQtX8Hs7XytaoyX/200w.gif",
+        "https://media4.giphy.com/media/lyN5qwcbXWXr2fUjBa/200.gif",
+        "https://media2.giphy.com/media/euMGM3uD3NHva/200w.gif",
+        "https://media.tenor.com/PKD99ODryUMAAAAM/rinrinne-rinne.gif",
+        "https://i.imgur.com/AMA4d7I.gif",
+        "https://usagif.com/wp-content/uploads/gify/39-anime-dance-girl-usagif.gif",
+        "https://media1.giphy.com/media/11lxCeKo6cHkJy/200.gif",
+        "https://gamingforevermore.weebly.com/uploads/2/5/8/9/25893592/6064743_orig.gif",
+        "https://media1.giphy.com/media/M8ubTcdyKsJAj5DsLC/200w.gif",
+        "https://www.icegif.com/wp-content/uploads/2024/02/icegif-497.gif",
+        "https://i.imgur.com/jhFy1dS.gif",
+        "https://gifsec.com/wp-content/uploads/2022/10/anime-dance-gif-26.gif",
+        "https://i.redd.it/d5jtphmm52931.gif",
+    ]
+
+    try:
+        gif_url = choice(dance_gifs)
+        if gif_url:
+            embed = discord.Embed(title=f"{interaction.user.name} Dances", color=discord.Color.red())
+            embed.set_image(url=gif_url)
+            print(gif_url)
+            await interaction.response.send_message(embed=embed)
+        else:
+            await interaction.response.send_message("No Dance GIFs found in the database.", ephemeral=False)
+    except:
+        await interaction.response.send_message("Command didnt work, sry :(", ephemeral=True)
 
 
 with open("code.txt", "r") as file:
