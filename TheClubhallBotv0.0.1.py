@@ -639,26 +639,7 @@ async def topcoins(interaction: discord.Interaction, count: int = 10):
     )
     await interaction.response.send_message(embed=embed)
 
-# === GLOBAL ERROR HANDLER ===
-logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(name)s: %(message)s")
-
-@bot.tree.error
-async def on_app_error(inter: discord.Interaction, error: Exception):
-    if isinstance(error, CommandOnCooldown):
-        await inter.response.send_message(
-            f"⏱ Cooldown: try again in {error.retry_after:.0f}s.",
-            ephemeral=True
-        )
-        return
-
-    logging.exception("Slash-command error", exc_info=error)
-
-    if inter.response.is_done():
-        await inter.followup.send("Oops, something went wrong 😵", ephemeral=True)
-    else:
-        await inter.response.send_message("Oops, something went wrong 😵", ephemeral=True)
-
-# === DAILY REWARD ===
+    # === DAILY REWARD ===
 @bot.tree.command(name="daily", description="Claim your daily coins (24 h cooldown)")
 async def daily(interaction: discord.Interaction):
     user_id = str(interaction.user.id)
@@ -685,6 +666,25 @@ async def daily(interaction: discord.Interaction):
         f"✅ {DAILY_REWARD} Coins added! You now have **{current + DAILY_REWARD}** 💰.",
         ephemeral=True
     )
+
+# === GLOBAL ERROR HANDLER ===
+logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(name)s: %(message)s")
+
+@bot.tree.error
+async def on_app_error(inter: discord.Interaction, error: Exception):
+    if isinstance(error, CommandOnCooldown):
+        await inter.response.send_message(
+            f"⏱ Cooldown: try again in {error.retry_after:.0f}s.",
+            ephemeral=True
+        )
+        return
+
+    logging.exception("Slash-command error", exc_info=error)
+
+    if inter.response.is_done():
+        await inter.followup.send("Oops, something went wrong 😵", ephemeral=True)
+    else:
+        await inter.response.send_message("Oops, something went wrong 😵", ephemeral=True)
 
 with open("code.txt", "r") as file:
     TOKEN = file.read().strip()
