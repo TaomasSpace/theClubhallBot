@@ -22,6 +22,7 @@ DEFAULT_MAX_COINS = 3000
 DAILY_REWARD = 10
 WELCOME_CHANNEL_ID = 1351487186557734942 
 LOG_CHANNEL_ID = 1364226902289813514
+lowercase_locked: set[int] = set()          # User‑IDs
 
 TRIGGER_RESPONSES = {
     "シャドウストーム": "Our beautiful majestic Emperor シャドウストーム! Long live our beloved King 👑",
@@ -441,6 +442,26 @@ async def stab(interaction: discord.Interaction, user: discord.Member):
     except:
         await interaction.response.send_message("You can't stab someone with higher permission than me. (No owners and no CEO's)", ephemeral=True)
 
+@bot.tree.command(name="forcelowercase",
+                  description="Force a member's messages to lowercase (toggle)")
+@app_commands.describe(member="Member to lock/unlock")
+@app_commands.checks.has_permissions(manage_messages=True)
+async def forcelowercase(interaction: discord.Interaction,
+                         member: discord.Member):
+
+    if member.id in lowercase_locked:
+        lowercase_locked.remove(member.id)
+        await interaction.response.send_message(
+            f"🔓 {member.display_name} unlocked – messages stay unchanged.",
+            ephemeral=True
+        )
+    else:
+        lowercase_locked.add(member.id)
+        await interaction.response.send_message(
+            f"🔒 {member.display_name} locked – messages will be lower‑cased.",
+            ephemeral=True
+        )
+
 @bot.tree.command(name="gamble", description="Gamble your coins for a chance to win more!")
 async def gamble(interaction: discord.Interaction, amount: int):
     user_id = str(interaction.user.id)
@@ -725,7 +746,6 @@ def format_options(data: dict) -> str:
     result = []
 
     for opt in data.get("options", []):
-        # Sub‑command (= type 1) besitzt eigene Unter‑Optionen
         if opt.get("type") == 1:
             inner = ", ".join(
                 f"{o['name']}={o.get('value')}"
@@ -736,6 +756,41 @@ def format_options(data: dict) -> str:
             result.append(f"{opt['name']}={opt.get('value')}")
 
     return ", ".join(result) or "–"
+
+# === Message‑Intercept ===
+webhook_cache: dict[int, discord.Webhook] = {}
+
+async def get_channel_webhook(channel: discord.TextChannel) -> discord.Webhook:
+    wh = webhook_cache.get(channel.id)
+    if wh and not wh.is_deleted():
+        return wh
+    webhooks = await channel.webhooks()
+    wh = discord.utils.get(webhooks, name="LowercaseRelay")
+    if wh is None:
+        wh = await channel.create_webhook(name="LowercaseRelay")
+    webhook_cache[channel.id] = wh
+    return wh
+
+@bot.event
+async def on_message(message: discord.Message):
+    if message.author.bot or message.webhook_id:
+        return
+
+    if message.author.id not in lowercase_locked:
+        return
+
+    try:
+        await message.delete()
+    except discord.Forbidden:
+        return  
+
+    wh = await get_channel_webhook(message.channel)
+    await wh.send(
+        content=message.content.lower(),
+        username=message.author.display_name,
+        avatar_url=message.author.display_avatar.url,
+        allowed_mentions=discord.AllowedMentions.all()
+    )
 
 with open("code.txt", "r") as file:
     TOKEN = file.read().strip()
