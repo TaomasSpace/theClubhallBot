@@ -187,15 +187,15 @@ async def on_member_remove(member):
 @bot.tree.command(name="money", description="Check your clubhall coin balance")
 async def money(interaction: discord.Interaction):
     user_id = str(interaction.user.id)
-    register_user(user_id, interaction.user.name)
+    register_user(user_id, interaction.user.display_name)
     money = get_money(user_id)
     await interaction.response.send_message(f"You have {money} clubhall coins.", ephemeral=True)
 
 @bot.tree.command(name="balance", description="Check someone else's clubhall coin balance")
 async def balance(interaction: discord.Interaction, user: discord.Member):
-    register_user(str(user.id), user.name)
+    register_user(str(user.id), user.display_name)
     money = get_money(str(user.id))
-    await interaction.response.send_message(f"{user.name} has {money} clubhall coins.")
+    await interaction.response.send_message(f"{user.display_name} has {money} clubhall coins.")
 
 @bot.tree.command(name="give", description="Give coins to a user (Admin/Owner only)")
 async def give(interaction: discord.Interaction, user: discord.Member, amount: int):
@@ -203,7 +203,7 @@ async def give(interaction: discord.Interaction, user: discord.Member, amount: i
         await interaction.response.send_message("You don't have permission to give clubhall coins.", ephemeral=True)
         return
 
-    register_user(str(user.id), user.name)
+    register_user(str(user.id), user.display_name)
     total = get_total_money()
     max_limit = get_max_coins()
 
@@ -213,7 +213,7 @@ async def give(interaction: discord.Interaction, user: discord.Member, amount: i
 
     current = get_money(str(user.id))
     set_money(str(user.id), current + amount)
-    await interaction.response.send_message(f"{amount} clubhall coins added to {user.name}.")
+    await interaction.response.send_message(f"{amount} clubhall coins added to {user.display_name}.")
 
 @bot.tree.command(name="remove", description="Remove clubhall coins from a user (Admin/Owner only)")
 async def remove(interaction: discord.Interaction, user: discord.Member, amount: int):
@@ -223,7 +223,7 @@ async def remove(interaction: discord.Interaction, user: discord.Member, amount:
 
     current = get_money(str(user.id))
     set_money(str(user.id), max(0, current - amount))
-    await interaction.response.send_message(f"{amount} clubhall coins removed from {user.name}.")
+    await interaction.response.send_message(f"{amount} clubhall coins removed from {user.display_name}.")
 
 @bot.tree.command(name="spend", description="Spend your own clubhall coins")
 async def spend(interaction: discord.Interaction, amount: int):
@@ -252,12 +252,12 @@ async def request(interaction: discord.Interaction, user: discord.Member, amount
         await interaction.response.send_message("You can't request clubhall coins from yourself.", ephemeral=True)
         return
 
-    register_user(str(sender_id), interaction.user.name)
-    register_user(str(receiver_id), user.name)
+    register_user(str(sender_id), interaction.user.display_name)
+    register_user(str(receiver_id), user.display_name)
 
     view = RequestView(sender_id, receiver_id, amount)
     await interaction.response.send_message(
-        f"{user.mention}, {interaction.user.name} requests **{amount}** clubhall coins for: _{reason}_",
+        f"{user.mention}, {interaction.user.display_name} requests **{amount}** clubhall coins for: _{reason}_",
         view=view
     )
 
@@ -319,7 +319,7 @@ async def punch(interaction: discord.Interaction, user: discord.Member):
 
     selected_gif = choice(punch_gifs)
     embed = discord.Embed(
-        title=f"{interaction.user.name} punches {user.name}!",
+        title=f"{interaction.user.display_name} punches {user.display_name}!",
         color=discord.Colour.red()
     )
     embed.set_image(url=selected_gif)
@@ -376,7 +376,7 @@ async def stab(interaction: discord.Interaction, user: discord.Member):
             if random() < chance:
                 selected_gif = choice(special_gifs)
                 embed = discord.Embed(
-                    title=f"{interaction.user.name} tried to stab themselves... and succeeded?!",
+                    title=f"{interaction.user.display_name} tried to stab themselves... and succeeded?!",
                     color=discord.Color.red()
                 )
                 embed.set_image(url=selected_gif)
@@ -392,7 +392,7 @@ async def stab(interaction: discord.Interaction, user: discord.Member):
         if random() < chance:
             gif_url = choice(stab_gifs)
             if gif_url:
-                embed = discord.Embed(title=f"{interaction.user.name} stabs {user.name}!", color=discord.Color.red())
+                embed = discord.Embed(title=f"{interaction.user.display_name} stabs {user.display_name}!", color=discord.Color.red())
                 embed.set_image(url=gif_url)
                 print(gif_url)
                 await interaction.response.send_message(embed=embed)
@@ -414,7 +414,7 @@ async def stab(interaction: discord.Interaction, user: discord.Member):
 @bot.tree.command(name="gamble", description="Gamble your coins for a chance to win more!")
 async def gamble(interaction: discord.Interaction, amount: int):
     user_id = str(interaction.user.id)
-    register_user(user_id, interaction.user.name)
+    register_user(user_id, interaction.user.display_name)
 
     if amount < 2:
         await interaction.response.send_message("🎲 Minimum bet is 2 clubhall coins.", ephemeral=True)
@@ -454,7 +454,7 @@ async def gamble(interaction: discord.Interaction, amount: int):
 
     await interaction.edit_original_response(
         content=(
-            f"{emoji_result[multiplier]} **{interaction.user.name}**, you bet **{amount}** coins.\n"
+            f"{emoji_result[multiplier]} **{interaction.user.display_name}**, you bet **{amount}** coins.\n"
             f"{message}\n"
             f"You now have **{get_money(user_id)}** clubhall coins."
         )
@@ -531,7 +531,7 @@ async def goon(interaction: discord.Interaction, user: discord.Member):
         if random() < chance:
             gif_url = choice(goon_gifs)
             if gif_url:
-                embed = discord.Embed(title=f"{interaction.user.name} goons to {user.name}!", color=discord.Color.red())
+                embed = discord.Embed(title=f"{interaction.user.display_name} goons to {user.display_name}!", color=discord.Color.red())
                 embed.set_image(url=gif_url)
                 print(gif_url)
                 await interaction.response.send_message(embed=embed)
@@ -540,7 +540,7 @@ async def goon(interaction: discord.Interaction, user: discord.Member):
         else:
                 gif_url = choice(die_gifs)
                 if gif_url:
-                    embed = discord.Embed(title=f"{interaction.user.name} dies because of gooning!", color=discord.Color.red())
+                    embed = discord.Embed(title=f"{interaction.user.display_name} dies because of gooning!", color=discord.Color.red())
                     embed.set_image(url=gif_url)
                     print(gif_url)
                     await interaction.response.send_message(embed=embed)
@@ -570,12 +570,13 @@ async def dance(interaction: discord.Interaction):
         "https://i.imgur.com/jhFy1dS.gif",
         "https://gifsec.com/wp-content/uploads/2022/10/anime-dance-gif-26.gif",
         "https://i.redd.it/d5jtphmm52931.gif",
+        "https://images-wixmp-ed30a86b8c4ca887773594c2.wixmp.com/f/11a8fe33-328d-4dce-8c62-09fbfdfa4467/dh0aiaw-c412949f-3b1f-43f6-9c70-de76a18eaef1.gif?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1cm46YXBwOjdlMGQxODg5ODIyNjQzNzNhNWYwZDQxNWVhMGQyNmUwIiwiaXNzIjoidXJuOmFwcDo3ZTBkMTg4OTgyMjY0MzczYTVmMGQ0MTVlYTBkMjZlMCIsIm9iaiI6W1t7InBhdGgiOiJcL2ZcLzExYThmZTMzLTMyOGQtNGRjZS04YzYyLTA5ZmJmZGZhNDQ2N1wvZGgwYWlhdy1jNDEyOTQ5Zi0zYjFmLTQzZjYtOWM3MC1kZTc2YTE4ZWFlZjEuZ2lmIn1dXSwiYXVkIjpbInVybjpzZXJ2aWNlOmZpbGUuZG93bmxvYWQiXX0.s2bQH9zNTvXzUJMAp2BeuioND_4aq6IUTcrRDidBqvo",
     ]
 
     try:
         gif_url = choice(dance_gifs)
         if gif_url:
-            embed = discord.Embed(title=f"{interaction.user.name} Dances", color=discord.Color.red())
+            embed = discord.Embed(title=f"{interaction.user.display_name} Dances", color=discord.Color.red())
             embed.set_image(url=gif_url)
             print(gif_url)
             await interaction.response.send_message(embed=embed)
