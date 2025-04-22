@@ -702,13 +702,12 @@ async def on_app_error(inter: discord.Interaction, error: Exception):
 @bot.event
 async def on_app_command_completion(inter: discord.Interaction,
                                     command: app_commands.Command):
-    """Wird ausgelöst, sobald ein Slash‑/Context‑Command ohne Fehler fertig ist."""
     log_ch = bot.get_channel(LOG_CHANNEL_ID)
-    if log_ch is None:
-        return                             
-    opts = ", ".join(
-        f"{k}={v}" for k, v in inter.data.get('options', [])
-    ) or "–"
+    if not log_ch:
+        return
+
+    opts = format_options(inter.data)
+
     embed = discord.Embed(
         title="Command executed",
         colour=discord.Colour.blue(),
@@ -716,9 +715,27 @@ async def on_app_command_completion(inter: discord.Interaction,
     )
     embed.add_field(name="Command", value=f"/{command.qualified_name}")
     embed.add_field(name="User", value=f"{inter.user} (`{inter.user.id}`)", inline=False)
-    embed.add_field(name="Channel", value=f"{inter.channel.mention}", inline=False)
+    embed.add_field(name="Channel", value=inter.channel.mention, inline=False)
     embed.add_field(name="Options", value=opts, inline=False)
+
     await log_ch.send(embed=embed)
+
+def format_options(data: dict) -> str:
+    """Flattens options (incl. sub‑commands) into 'name=value' CSV."""
+    result = []
+
+    for opt in data.get("options", []):
+        # Sub‑command (= type 1) besitzt eigene Unter‑Optionen
+        if opt.get("type") == 1:
+            inner = ", ".join(
+                f"{o['name']}={o.get('value')}"
+                for o in opt.get("options", [])
+            ) or "–"
+            result.append(f"{opt['name']}({inner})")
+        else:
+            result.append(f"{opt['name']}={opt.get('value')}")
+
+    return ", ".join(result) or "–"
 
 with open("code.txt", "r") as file:
     TOKEN = file.read().strip()
