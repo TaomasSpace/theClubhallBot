@@ -18,6 +18,8 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 DB_PATH = 'users.db'
 OWNER_ROLE_NAME = "Owner"
 ADMIN_ROLE_NAME = "Admin"
+SHEHER_ROLE_NAME = "She/Her"
+HEHIM_ROLE_NAME = "He/Him"
 DEFAULT_MAX_COINS = 3000
 DAILY_REWARD = 10
 WELCOME_CHANNEL_ID = 1351487186557734942 
@@ -657,6 +659,52 @@ async def dance(interaction: discord.Interaction):
     except:
         await interaction.response.send_message("Command didnt work, sry :(", ephemeral=True)
 
+@bot.tree.command(name="good boy/girl", description="Tell someone he/she is a good boy/girl")
+async def good(interaction: discord.Interaction, user: discord.Member):
+
+    sheher_gifs = [
+        "https://media1.tenor.com/m/EXlBWDEJhIQAAAAd/cat-kitten.gif",
+        "https://media1.tenor.com/m/ENcB_TMNJAYAAAAd/ruby-ruby-hoshino.gif",
+        "https://media1.tenor.com/m/6-MIKH3o1BkAAAAd/anime-cute.gif",
+    ]
+    hehim_gifs = [
+        "https://media1.tenor.com/m/FJApjvQ0aJQAAAAd/my-boy.gif",
+        "https://media1.tenor.com/m/sIMPVgqJ07QAAAAd/yandere-knife.gif",
+        "https://media.discordapp.net/attachments/1241701136227110932/1241711528831356998/caption.gif?ex=680a1dfa&is=6808cc7a&hm=875565279cbad6af5b42c4610c96856f17446e3a95222ad26cbd81a97448ff80&=&width=498&height=960",
+    ]
+    undefined_gifs = sheher_gifs + hehim_gifs
+    try:
+        if has_role(interaction.user, SHEHER_ROLE_NAME):
+            gif_url = choice(sheher_gifs)
+            if gif_url:
+                embed = discord.Embed(title=f"{interaction.user.display_name} calls {user.display_name} a good girl", color=discord.Color.red())
+                embed.set_image(url=gif_url)
+                print(gif_url)
+                await interaction.response.send_message(embed=embed)
+            else:
+                await interaction.response.send_message("No good girl GIFs found in the database.", ephemeral=False)
+        elif has_role(interaction.user, HEHIM_ROLE_NAME):
+            gif_url = choice(hehim_gifs)
+            if gif_url:
+                embed = discord.Embed(title=f"{interaction.user.display_name} calls {user.display_name} a good boy", color=discord.Color.red())
+                embed.set_image(url=gif_url)
+                print(gif_url)
+                await interaction.response.send_message(embed=embed)
+            else:
+                await interaction.response.send_message("No good boy GIFs found in the database.", ephemeral=False)
+        else:
+            gif_url = choice(undefined_gifs)
+            if gif_url:
+                embed = discord.Embed(title=f"{interaction.user.display_name} calls {user.display_name} a good child", color=discord.Color.red())
+                embed.set_image(url=gif_url)
+                print(gif_url)
+                await interaction.response.send_message(embed=embed)
+            else:
+                await interaction.response.send_message("No good person GIFs found in the database.", ephemeral=False)
+
+    except:
+        await interaction.response.send_message("Command didnt work, sry :(", ephemeral=True)
+
 # === LEADERBOARD ===
 @bot.tree.command(name="topcoins", description="Show the richest players")
 @app_commands.describe(count="How many spots to display (1–25)?")
@@ -676,7 +724,7 @@ async def topcoins(interaction: discord.Interaction, count: int = 10):
     )
     await interaction.response.send_message(embed=embed)
 
-    # === DAILY REWARD ===
+# === DAILY REWARD ===
 @bot.tree.command(name="daily", description="Claim your daily coins (24 h cooldown)")
 async def daily(interaction: discord.Interaction):
     user_id = str(interaction.user.id)
