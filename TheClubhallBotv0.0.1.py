@@ -662,23 +662,23 @@ async def dance(interaction: discord.Interaction):
 @bot.tree.command(name="good", description="Tell someone he/she is a good boy/girl")
 async def good(interaction: discord.Interaction, user: discord.Member):
     sheher_gifs = [
-        "https://media1.tenor.com/m/EXlBWDEJhIQAAAAd/cat-kitten.gif",
-        "https://media1.tenor.com/m/ENcB_TMNJAYAAAAd/ruby-ruby-hoshino.gif",
-        "https://media1.tenor.com/m/6-MIKH3o1BkAAAAd/anime-cute.gif",
-        "https://media1.tenor.com/m/hXlKC_Va6mgAAAAd/daddys-good.gif",
-        "https://media1.tenor.com/m/h4iOZke1ESMAAAAd/anime-pat.gif",
-        "https://media1.tenor.com/m/4MCocODtY4EAAAAd/anime-head-rub.gif",
-        "https://media1.tenor.com/m/jsOSJ9i3C6YAAAAd/sierra-good-girl.gif",
+        "https://c.tenor.com/EXlBWDEJhIQAAAAd/tenor.gif",
+        "https://c.tenor.com/ENcB_TMNJAYAAAAd/tenor.gif",
+        "https://c.tenor.com/6-MIKH3o1BkAAAAd/tenor.gif",
+        "https://c.tenor.com/hXlKC_Va6mgAAAAd/tenor.gif",
+        "https://c.tenor.com/h4iOZke1ESMAAAAd/tenor.gif",
+        "https://c.tenor.com/4MCocODtY4EAAAAd/tenor.gif",
+        "https://c.tenor.com/jsOSJ9i3C6YAAAAd/tenor.gif",
     ]
     hehim_gifs = [
-        "https://media1.tenor.com/m/FJApjvQ0aJQAAAAd/my-boy.gif",
-        "https://media1.tenor.com/m/sIMPVgqJ07QAAAAd/yandere-knife.gif",
-        "https://media.discordapp.net/attachments/1241701136227110932/1241711528831356998/caption.gif?ex=680a1dfa&is=6808cc7a&hm=875565279cbad6af5b42c4610c96856f17446e3a95222ad26cbd81a97448ff80&=&width=498&height=960",
-        "https://media1.tenor.com/m/ZzTZ9p6dsccAAAAd/head-pat.gif",
-        "https://media1.tenor.com/m/LZMc6NWsxgUAAAAd/good-boy-whisper.gif",
-        "https://media1.tenor.com/m/UA4AsiQLhZYAAAAd/teto-kasane-teto.gif",
-        "https://media1.tenor.com/m/roTBuOK3MeMAAAAd/head-pat-good-boy.gif",
-        "https://media1.tenor.com/m/txwU-nHbUiQAAAAd/good-boy-pat-on-head.gif",
+        "https://c.tenor.com/FJApjvQ0aJQAAAAd/tenor.gif",
+        "https://c.tenor.com/sIMPVgqJ07QAAAAd/tenor.gif",
+        "https://media.discordapp.net/attachments/1241701136227110932/1241711528831356998/caption.gif?ex=680a1dfa&is=6808cc7a&hm=875565279cbad6af5b42c4610c96856f17446e3a95222ad26cbd81a97448ff80&=&width=440&height=848",
+        "https://c.tenor.com/ZzTZ9p6dsccAAAAd/tenor.gif",
+        "https://c.tenor.com/LZMc6NWsxgUAAAAd/tenor.gif",
+        "https://c.tenor.com/UA4AsiQLhZYAAAAd/tenor.gif",
+        "https://c.tenor.com/roTBuOK3MeMAAAAd/tenor.gif",
+        "https://c.tenor.com/txwU-nHbUiQAAAAd/tenor.gif",
     ]
     undefined_gifs = sheher_gifs + hehim_gifs
     try:
