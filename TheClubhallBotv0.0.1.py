@@ -32,7 +32,7 @@ TRIGGER_RESPONSES = {
     "shadow": "Our beautiful majestic Emperor TAOMA™! Long live our beloved King 👑",
     "taoma": "Our beautiful majestic Emperor TAOMA™! Long live our beloved King 👑",
     "Taoma": "Our beautiful majestic Emperor TAOMA™! Long live our beloved King 👑",
-    "King": "Our beautiful majestic Emperor TAOMA™! Long live our beloved King 👑"
+    " King": "Our beautiful majestic Emperor TAOMA™! Long live our beloved King 👑"
 }
 
 # === DATABASE SETUP ===
