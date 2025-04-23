@@ -533,6 +533,27 @@ logging.basicConfig(
     format="%(asctime)s | %(levelname)s | %(name)s: %(message)s"
 )
 
+@bot.tree.command(name="imitate", description="Imitate a user's message (Admin/Owner only)")
+@app_commands.describe(user="User to imitate", msg="The message to send")
+async def imitate(interaction: discord.Interaction, user: discord.Member, msg: str):
+    if not has_role(interaction.user, ADMIN_ROLE_NAME) and not has_role(interaction.user, OWNER_ROLE_NAME):
+        await interaction.response.send_message("You don't have permission to use this command.", ephemeral=True)
+        return
+
+    channel = interaction.channel
+    webhook = await get_channel_webhook(channel)
+
+    try:
+        await webhook.send(
+            content=msg,
+            username=user.display_name,
+            avatar_url=user.display_avatar.url,
+            allowed_mentions=discord.AllowedMentions.none()
+        )
+        await interaction.response.send_message("✅ Message sent.", ephemeral=True)
+    except Exception as e:
+        await interaction.response.send_message(f"❌ Failed to imitate: {e}", ephemeral=True)
+
 @bot.tree.command(name="giveaway", description="Start a giveaway (only Admin/Owner)")
 @app_commands.describe(duration="duration in minutes", prize="Prize")
 async def giveaway(interaction: discord.Interaction,
