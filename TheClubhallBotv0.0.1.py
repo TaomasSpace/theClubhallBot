@@ -668,6 +668,7 @@ async def good(interaction: discord.Interaction, user: discord.Member):
         "https://media1.tenor.com/m/hXlKC_Va6mgAAAAd/daddys-good.gif",
         "https://media1.tenor.com/m/h4iOZke1ESMAAAAd/anime-pat.gif",
         "https://media1.tenor.com/m/4MCocODtY4EAAAAd/anime-head-rub.gif",
+        "https://media1.tenor.com/m/jsOSJ9i3C6YAAAAd/sierra-good-girl.gif",
     ]
     hehim_gifs = [
         "https://media1.tenor.com/m/FJApjvQ0aJQAAAAd/my-boy.gif",
@@ -677,10 +678,11 @@ async def good(interaction: discord.Interaction, user: discord.Member):
         "https://media1.tenor.com/m/LZMc6NWsxgUAAAAd/good-boy-whisper.gif",
         "https://media1.tenor.com/m/UA4AsiQLhZYAAAAd/teto-kasane-teto.gif",
         "https://media1.tenor.com/m/roTBuOK3MeMAAAAd/head-pat-good-boy.gif",
+        "https://media1.tenor.com/m/txwU-nHbUiQAAAAd/good-boy-pat-on-head.gif",
     ]
     undefined_gifs = sheher_gifs + hehim_gifs
     try:
-        if has_role(interaction.user, SHEHER_ROLE_NAME):
+        if has_role(user, SHEHER_ROLE_NAME):
             gif_url = choice(sheher_gifs)
             if gif_url:
                 embed = discord.Embed(title=f"{interaction.user.display_name} calls {user.display_name} a good girl", color=discord.Color.red())
@@ -689,7 +691,7 @@ async def good(interaction: discord.Interaction, user: discord.Member):
                 await interaction.response.send_message(embed=embed)
             else:
                 await interaction.response.send_message("No good girl GIFs found in the database.", ephemeral=False)
-        elif has_role(interaction.user, HEHIM_ROLE_NAME):
+        elif has_role(user, HEHIM_ROLE_NAME):
             gif_url = choice(hehim_gifs)
             if gif_url:
                 embed = discord.Embed(title=f"{interaction.user.display_name} calls {user.display_name} a good boy", color=discord.Color.red())
