@@ -659,14 +659,15 @@ async def dance(interaction: discord.Interaction):
     except:
         await interaction.response.send_message("Command didnt work, sry :(", ephemeral=True)
 
-@bot.tree.command(name="good boy/girl", description="Tell someone he/she is a good boy/girl")
+@bot.tree.command(name="good", description="Tell someone he/she is a good boy/girl")
 async def good(interaction: discord.Interaction, user: discord.Member):
-
     sheher_gifs = [
         "https://media1.tenor.com/m/EXlBWDEJhIQAAAAd/cat-kitten.gif",
         "https://media1.tenor.com/m/ENcB_TMNJAYAAAAd/ruby-ruby-hoshino.gif",
         "https://media1.tenor.com/m/6-MIKH3o1BkAAAAd/anime-cute.gif",
         "https://media1.tenor.com/m/hXlKC_Va6mgAAAAd/daddys-good.gif",
+        "https://media1.tenor.com/m/h4iOZke1ESMAAAAd/anime-pat.gif",
+        "https://media1.tenor.com/m/4MCocODtY4EAAAAd/anime-head-rub.gif",
     ]
     hehim_gifs = [
         "https://media1.tenor.com/m/FJApjvQ0aJQAAAAd/my-boy.gif",
@@ -675,6 +676,7 @@ async def good(interaction: discord.Interaction, user: discord.Member):
         "https://media1.tenor.com/m/ZzTZ9p6dsccAAAAd/head-pat.gif",
         "https://media1.tenor.com/m/LZMc6NWsxgUAAAAd/good-boy-whisper.gif",
         "https://media1.tenor.com/m/UA4AsiQLhZYAAAAd/teto-kasane-teto.gif",
+        "https://media1.tenor.com/m/roTBuOK3MeMAAAAd/head-pat-good-boy.gif",
     ]
     undefined_gifs = sheher_gifs + hehim_gifs
     try:
