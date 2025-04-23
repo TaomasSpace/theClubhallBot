@@ -29,7 +29,7 @@ TRIGGER_RESPONSES = {
     "goodyb": "Our beautiful majestic Emperor goodyb! Long live our beloved King 👑",
     "shadow": "Our beautiful majestic Emperor TAOMA™! Long live our beloved King 👑",
     "taoma": "Our beautiful majestic Emperor TAOMA™! Long live our beloved King 👑",
-    "тaoma": "Our beautiful majestic Emperor TAOMA™! Long live our beloved King 👑",
+    "Taoma": "Our beautiful majestic Emperor TAOMA™! Long live our beloved King 👑",
     "King": "Our beautiful majestic Emperor TAOMA™! Long live our beloved King 👑",
     "king": "Our beautiful majestic Emperor TAOMA™! Long live our beloved King 👑"
 }
