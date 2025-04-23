@@ -30,8 +30,7 @@ TRIGGER_RESPONSES = {
     "shadow": "Our beautiful majestic Emperor TAOMA™! Long live our beloved King 👑",
     "taoma": "Our beautiful majestic Emperor TAOMA™! Long live our beloved King 👑",
     "Taoma": "Our beautiful majestic Emperor TAOMA™! Long live our beloved King 👑",
-    "King": "Our beautiful majestic Emperor TAOMA™! Long live our beloved King 👑",
-    "king": "Our beautiful majestic Emperor TAOMA™! Long live our beloved King 👑"
+    "King": "Our beautiful majestic Emperor TAOMA™! Long live our beloved King 👑"
 }
 
 # === DATABASE SETUP ===
@@ -178,16 +177,30 @@ async def on_ready():
 
 @bot.event
 async def on_message(message):
-    if message.author.bot:
+    if message.author.bot or message.webhook_id:
         return
 
+    if message.author.id in lowercase_locked:
+        try:
+            await message.delete()
+        except discord.Forbidden:
+            return
+
+        wh = await get_channel_webhook(message.channel)
+        await wh.send(
+            content=message.content.lower(),
+            username=message.author.display_name,
+            avatar_url=message.author.display_avatar.url,
+            allowed_mentions=discord.AllowedMentions.all()
+        )
+
     content = message.content.lower()
-    for trigger, response in TRIGGER_RESPONSES.items():
+    for trigger, reply in TRIGGER_RESPONSES.items():
         if trigger.lower() in content:
-            await message.channel.send(response)
+            await message.channel.send(reply)
             break
 
-    await bot.process_commands(message)  
+    await bot.process_commands(message)
 
 @bot.event
 async def on_member_join(member):
@@ -775,27 +788,6 @@ async def get_channel_webhook(channel: discord.TextChannel) -> discord.Webhook:
 
     webhook_cache[channel.id] = wh
     return wh
-
-@bot.event
-async def on_message(message: discord.Message):
-    if message.author.bot or message.webhook_id:
-        return
-
-    if message.author.id not in lowercase_locked:
-        return
-
-    try:
-        await message.delete()
-    except discord.Forbidden:
-        return  
-
-    wh = await get_channel_webhook(message.channel)
-    await wh.send(
-        content=message.content.lower(),
-        username=message.author.display_name,
-        avatar_url=message.author.display_avatar.url,
-        allowed_mentions=discord.AllowedMentions.all()
-    )
 
 with open("code.txt", "r") as file:
     TOKEN = file.read().strip()
