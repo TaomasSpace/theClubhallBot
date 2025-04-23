@@ -629,6 +629,7 @@ async def dance(interaction: discord.Interaction):
         "https://gifsec.com/wp-content/uploads/2022/10/anime-dance-gif-26.gif",
         "https://i.redd.it/d5jtphmm52931.gif",
         "https://images-wixmp-ed30a86b8c4ca887773594c2.wixmp.com/f/11a8fe33-328d-4dce-8c62-09fbfdfa4467/dh0aiaw-c412949f-3b1f-43f6-9c70-de76a18eaef1.gif?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1cm46YXBwOjdlMGQxODg5ODIyNjQzNzNhNWYwZDQxNWVhMGQyNmUwIiwiaXNzIjoidXJuOmFwcDo3ZTBkMTg4OTgyMjY0MzczYTVmMGQ0MTVlYTBkMjZlMCIsIm9iaiI6W1t7InBhdGgiOiJcL2ZcLzExYThmZTMzLTMyOGQtNGRjZS04YzYyLTA5ZmJmZGZhNDQ2N1wvZGgwYWlhdy1jNDEyOTQ5Zi0zYjFmLTQzZjYtOWM3MC1kZTc2YTE4ZWFlZjEuZ2lmIn1dXSwiYXVkIjpbInVybjpzZXJ2aWNlOmZpbGUuZG93bmxvYWQiXX0.s2bQH9zNTvXzUJMAp2BeuioND_4aq6IUTcrRDidBqvo",
+        "https://media.tenor.com/xXdBqOdY_jAAAAAM/nino-nakano.gif",
     ]
 
     try:
