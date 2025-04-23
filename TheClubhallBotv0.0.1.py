@@ -666,11 +666,15 @@ async def good(interaction: discord.Interaction, user: discord.Member):
         "https://media1.tenor.com/m/EXlBWDEJhIQAAAAd/cat-kitten.gif",
         "https://media1.tenor.com/m/ENcB_TMNJAYAAAAd/ruby-ruby-hoshino.gif",
         "https://media1.tenor.com/m/6-MIKH3o1BkAAAAd/anime-cute.gif",
+        "https://media1.tenor.com/m/hXlKC_Va6mgAAAAd/daddys-good.gif",
     ]
     hehim_gifs = [
         "https://media1.tenor.com/m/FJApjvQ0aJQAAAAd/my-boy.gif",
         "https://media1.tenor.com/m/sIMPVgqJ07QAAAAd/yandere-knife.gif",
         "https://media.discordapp.net/attachments/1241701136227110932/1241711528831356998/caption.gif?ex=680a1dfa&is=6808cc7a&hm=875565279cbad6af5b42c4610c96856f17446e3a95222ad26cbd81a97448ff80&=&width=498&height=960",
+        "https://media1.tenor.com/m/ZzTZ9p6dsccAAAAd/head-pat.gif",
+        "https://media1.tenor.com/m/LZMc6NWsxgUAAAAd/good-boy-whisper.gif",
+        "https://media1.tenor.com/m/UA4AsiQLhZYAAAAd/teto-kasane-teto.gif",
     ]
     undefined_gifs = sheher_gifs + hehim_gifs
     try:
