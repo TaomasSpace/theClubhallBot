@@ -75,14 +75,17 @@ def init_db():
     cursor.execute("PRAGMA table_info(users)")
     existing = {col[1] for col in cursor.fetchall()}
     for col, default in [
-        ("last_quest", ""),
+        ("last_quest", ""),          # Text-Spalte
         ("stat_points", 0),
         ("intelligence", 1),
         ("strength", 1),
         ("stealth", 1)
     ]:
         if col not in existing:
-            cursor.execute(f"ALTER TABLE users ADD COLUMN {col} INTEGER DEFAULT {default}")
+            if col == "last_quest":
+                cursor.execute("ALTER TABLE users ADD COLUMN last_quest TEXT")    # oder TEXT DEFAULT '' 
+            else:
+                cursor.execute(f"ALTER TABLE users ADD COLUMN {col} INTEGER DEFAULT {default}")
 
     conn.commit()
     conn.close()
