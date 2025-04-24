@@ -613,7 +613,9 @@ async def allocate(interaction: discord.Interaction, stat: str, points: int):
 # =====================================================================
 #                              STEAL COMMAND
 # =====================================================================
+STEAL_COOLDOWN = app_commands.checks.cooldown(rate=1, per=30*60)
 
+@STEAL_COOLDOWN
 @bot.tree.command(name="steal", description="Attempt to steal coins from another user (needs stealth ≥ 3)")
 async def steal(interaction: discord.Interaction, target: discord.Member):
     if target.id == interaction.user.id:
