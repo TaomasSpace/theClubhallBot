@@ -39,7 +39,7 @@ TRIGGER_RESPONSES = {
     "shadow": "Our beautiful majestic Emperor TAOMA™! Long live our beloved King 👑",
     "taoma": "Our beautiful majestic Emperor TAOMA™! Long live our beloved King 👑",
     "Taoma": "Our beautiful majestic Emperor TAOMA™! Long live our beloved King 👑",
-    " King": "Our beautiful majestic Emperor TAOMA™! Long live our beloved King 👑"
+    " King": "Our beautiful majestic Emperor TAOMA™! Long live our beloved King 👑",
 }
 
 # =====================================================================
@@ -637,14 +637,12 @@ async def steal(interaction: discord.Interaction, target: discord.Member):
     actor_stealth = actor_stats['stealth']
     target_stealth = target_stats['stealth']
 
-    # success probability
     success_chance = actor_stealth / (actor_stealth + target_stealth)
 
     if random() > success_chance:
         await interaction.response.send_message("👀 You were caught and failed to steal any coins!")
         return
 
-    # amount to steal – max 25 % of target's money, scaled by stealth diff
     target_balance = get_money(tid)
     if target_balance < 5:
         await interaction.response.send_message("Target is too poor to bother...", ephemeral=True)
@@ -658,6 +656,104 @@ async def steal(interaction: discord.Interaction, target: discord.Member):
     set_money(uid, get_money(uid) + stolen_amt)
 
     await interaction.response.send_message(f"🕶️ Success! You stole **{stolen_amt}** coins from {target.display_name}.")
+
+# ==============================================================
+#                          HACK COMMAND
+#   – nutzt Intelligence vs. Intelligence
+# ==============================================================
+
+HACK_COOLDOWN = app_commands.checks.cooldown(rate=1, per=45*60)  
+
+@bot.tree.command(
+    name="hack",
+    description="Hack the bank to win coins – needs intelligence ≥ 3"
+)
+@HACK_COOLDOWN
+async def hack(interaction: discord.Interaction):
+    uid = str(interaction.user.id)
+    register_user(uid, interaction.user.display_name)
+
+    stats = get_stats(uid)
+    if stats["intelligence"] < 3:
+        await interaction.response.send_message(
+            "You need at least **3** Intelligence to attempt a hack.",
+            ephemeral=True
+        )
+        return
+
+    int_level = stats["intelligence"]
+    success = random() < min(0.20 + 0.05 * (int_level - 3), 0.80)
+
+    if not success:
+        loss = randint(1, 5) * int_level            # kleine Strafe
+        new_bal = max(0, get_money(uid) - loss)
+        set_money(uid, new_bal)
+        await interaction.response.send_message(
+            f"💻 Hack failed! Security traced you and you lost **{loss}** coins.",
+            ephemeral=True
+        )
+        return
+
+    reward = randint(10, 25) * int_level
+    set_money(uid, get_money(uid) + reward)
+    await interaction.response.send_message(
+        f"🖥️ Hack successful! You siphoned **{reward}** coins from the bank.",
+        ephemeral=True
+    )
+
+# ==============================================================
+#                        FIGHT / MUG COMMAND
+#   – nutzt Strength vs. Strength (Ziel-User)
+# ==============================================================
+
+FIGHT_COOLDOWN = app_commands.checks.cooldown(rate=1, per=30*60)   
+
+@bot.tree.command(
+    name="fight",
+    description="Fight someone for coins (needs strength ≥ 3)"
+)
+@FIGHT_COOLDOWN
+async def fight(interaction: discord.Interaction, target: discord.Member):
+    if target.id == interaction.user.id:
+        await interaction.response.send_message("You can't fight yourself!", ephemeral=True)
+        return
+
+    uid, tid = str(interaction.user.id), str(target.id)
+    register_user(uid, interaction.user.display_name)
+    register_user(tid, target.display_name)
+
+    atk = get_stats(uid)
+    defn = get_stats(tid)
+
+    if atk["strength"] < 3:
+        await interaction.response.send_message(
+            "You need at least **3** Strength to start a fight.",
+            ephemeral=True
+        )
+        return
+
+    atk_str, def_str = atk["strength"], defn["strength"]
+    win_chance = atk_str / (atk_str + def_str)
+
+    if random() > win_chance:
+        penalty = max(1, int(get_money(uid) * 0.10))
+        set_money(uid, get_money(uid) - penalty)
+        set_money(tid, get_money(tid) + penalty)
+        await interaction.response.send_message(
+            f"🥊 You lost the fight and paid **{penalty}** coins in damages to {target.display_name}."
+        )
+        return
+
+    target_coins = get_money(tid)
+    steal_pct = random() * min(0.05 + 0.03 * max(atk_str - def_str, 0), 0.20)
+    stolen = max(1, int(target_coins * steal_pct))
+
+    set_money(tid, target_coins - stolen)
+    set_money(uid, get_money(uid) + stolen)
+    await interaction.response.send_message(
+        f"💪 Victory! You took **{stolen}** coins from {target.display_name}."
+    )
+
 
 # =====================================================================
 #                     DAILY & OTHER ORIGINAL COMMANDS
