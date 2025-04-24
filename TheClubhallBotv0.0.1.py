@@ -837,34 +837,35 @@ async def on_app_command_completion(inter: discord.Interaction,
 def format_options(data: dict, interaction: discord.Interaction) -> str:
     result = []
 
-    users = {str(u.id): u for u in interaction.resolved.users.values()} if interaction.resolved and interaction.resolved.users else {}
+    resolved = data.get("resolved", {})
+    users_data = resolved.get("users", {}) if resolved else {}
 
     for opt in data.get("options", []):
         if opt.get("type") == 1:  # Subcommand
             inner = ", ".join(
-                _format_option(o, users)
+                _format_option(o, users_data)
                 for o in opt.get("options", [])
             ) or "–"
             result.append(f"{opt['name']}({inner})")
         else:
-            result.append(_format_option(opt, users))
+            result.append(_format_option(opt, users_data))
 
     return ", ".join(result) or "–"
 
 
-def _format_option(opt: dict, users: dict) -> str:
+def _format_option(opt: dict, users_data: dict) -> str:
     name = opt["name"]
     value = opt.get("value")
 
-    if opt["type"] == 6 and value:  # USER type
-        user = users.get(str(value))
-        if user:
-            return f"{name}={user.display_name} ({value})"
+    if opt["type"] == 6 and value:  
+        user = users_data.get(str(value))
+        if user and isinstance(user, dict):
+            username = user.get("global_name") or user.get("username", "Unknown")
+            return f"{name}={username} ({value})"
         else:
             return f"{name}=(unknown user) ({value})"
 
     return f"{name}={value}"
-
 
 # === Message‑Intercept ===
 webhook_cache: dict[int, discord.Webhook] = {}
