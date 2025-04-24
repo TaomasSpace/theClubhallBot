@@ -820,7 +820,7 @@ async def on_app_command_completion(inter: discord.Interaction,
     if not log_ch:
         return
 
-    opts = format_options(inter.data)
+    opts = format_options(inter.data, inter)
 
     embed = discord.Embed(
         title="Command executed",
@@ -834,31 +834,35 @@ async def on_app_command_completion(inter: discord.Interaction,
 
     await log_ch.send(embed=embed)
 
-def format_options(data: dict) -> str:
-    """Flattens options (incl. sub‑commands) into 'name=DisplayName (ID)' CSV."""
+def format_options(data: dict, interaction: discord.Interaction) -> str:
     result = []
+
+    users = {str(u.id): u for u in interaction.resolved.users.values()} if interaction.resolved and interaction.resolved.users else {}
 
     for opt in data.get("options", []):
         if opt.get("type") == 1:  # Subcommand
             inner = ", ".join(
-                _format_option(o)
+                _format_option(o, users)
                 for o in opt.get("options", [])
             ) or "–"
             result.append(f"{opt['name']}({inner})")
         else:
-            result.append(_format_option(opt))
+            result.append(_format_option(opt, users))
 
     return ", ".join(result) or "–"
 
-def _format_option(opt: dict) -> str:
+
+def _format_option(opt: dict, users: dict) -> str:
     name = opt["name"]
     value = opt.get("value")
 
-    if opt["type"] == 6:
-        user_obj = opt.get("user", None)
-        if isinstance(user_obj, dict):
-            username = user_obj.get("global_name") or user_obj.get("username", "Unknown")
-            return f"{name}={username} ({value})"
+    if opt["type"] == 6 and value:  # USER type
+        user = users.get(str(value))
+        if user:
+            return f"{name}={user.display_name} ({value})"
+        else:
+            return f"{name}=(unknown user) ({value})"
+
     return f"{name}={value}"
 
 
