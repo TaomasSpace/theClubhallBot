@@ -536,7 +536,7 @@ logging.basicConfig(
 @bot.tree.command(name="imitate", description="Imitate a user's message (Admin/Owner only)")
 @app_commands.describe(user="User to imitate", msg="The message to send")
 async def imitate(interaction: discord.Interaction, user: discord.Member, msg: str):
-    if not has_role(interaction.user, ADMIN_ROLE_NAME) and not has_role(interaction.user, OWNER_ROLE_NAME):
+    if not has_role(interaction.user, ADMIN_ROLE_NAME) and not has_role(interaction.user, OWNER_ROLE_NAME) and not has_role(interaction.user, "Rae‘s boyfriend") and not has_role(interaction.user, "Marmalades Boyfriend"):
         await interaction.response.send_message("You don't have permission to use this command.", ephemeral=True)
         return
 
