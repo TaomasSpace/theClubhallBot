@@ -2,12 +2,13 @@ import discord
 from discord.ext import commands
 from discord import app_commands, ui
 import sqlite3
-from datetime import datetime, timedelta, timezone
-from discord.app_commands import CommandOnCooldown, Cooldown
-from random import random, choice
+from datetime import datetime, timedelta
+from discord.app_commands import CommandOnCooldown
+from random import random, choice, randint
 import asyncio
 import logging
 
+# === INTENTS & BOT ===
 intents = discord.Intents.default()
 intents.message_content = True
 intents.guilds = True
@@ -15,6 +16,7 @@ intents.members = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
+# === CONSTANTS ===
 DB_PATH = 'users.db'
 OWNER_ROLE_NAME = "Owner"
 ADMIN_ROLE_NAME = "Admin"
@@ -22,10 +24,15 @@ SHEHER_ROLE_NAME = "She/Her"
 HEHIM_ROLE_NAME = "He/Him"
 DEFAULT_MAX_COINS = 3000
 DAILY_REWARD = 10
-WELCOME_CHANNEL_ID = 1351487186557734942 
+WELCOME_CHANNEL_ID = 1351487186557734942
 LOG_CHANNEL_ID = 1364226902289813514
-lowercase_locked: set[int] = set()          # User‑IDs
+STAT_PRICE_PERCENT = 0.03333          
+QUEST_COOLDOWN_HOURS = 3
+STAT_NAMES = ["intelligence", "strength", "stealth"]
 
+lowercase_locked: set[int] = set()
+
+# === TRIGGERS ===
 TRIGGER_RESPONSES = {
     "シャドウストーム": "Our beautiful majestic Emperor シャドウストーム! Long live our beloved King 👑",
     "goodyb": "Our beautiful majestic Emperor goodyb! Long live our beloved King 👑",
@@ -35,17 +42,28 @@ TRIGGER_RESPONSES = {
     " King": "Our beautiful majestic Emperor TAOMA™! Long live our beloved King 👑"
 }
 
-# === DATABASE SETUP ===
+# =====================================================================
+#                              DATABASE
+# =====================================================================
+
 def init_db():
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
+
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS users (
             user_id TEXT PRIMARY KEY,
             username TEXT,
-            money INTEGER DEFAULT 0
+            money INTEGER DEFAULT 0,
+            last_claim TEXT,
+            last_quest TEXT,
+            stat_points INTEGER DEFAULT 0,
+            intelligence INTEGER DEFAULT 1,
+            strength INTEGER DEFAULT 1,
+            stealth INTEGER DEFAULT 1
         )
     ''')
+
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS server (
             id INTEGER PRIMARY KEY CHECK (id = 1),
@@ -53,12 +71,75 @@ def init_db():
         )
     ''')
     cursor.execute('INSERT OR IGNORE INTO server (id, max_coins) VALUES (1, ?)', (DEFAULT_MAX_COINS,))
+
     cursor.execute("PRAGMA table_info(users)")
-    columns = [col[1] for col in cursor.fetchall()]
-    if "last_claim" not in columns:
-        cursor.execute("ALTER TABLE users ADD COLUMN last_claim TEXT")
+    existing = {col[1] for col in cursor.fetchall()}
+    for col, default in [
+        ("last_quest", ""),
+        ("stat_points", 0),
+        ("intelligence", 1),
+        ("strength", 1),
+        ("stealth", 1)
+    ]:
+        if col not in existing:
+            cursor.execute(f"ALTER TABLE users ADD COLUMN {col} INTEGER DEFAULT {default}")
+
     conn.commit()
     conn.close()
+
+# ---------------------------------------------------------------------
+#                        GENERIC DB HELPERS
+# ---------------------------------------------------------------------
+
+def _fetchone(query: str, params=()):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute(query, params)
+    row = cursor.fetchone()
+    conn.close()
+    return row
+
+def _execute(query: str, params=()):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute(query, params)
+    conn.commit()
+    conn.close()
+
+# ---------- user registration ----------
+
+def register_user(user_id: str, username: str):
+    if not _fetchone('SELECT 1 FROM users WHERE user_id = ?', (user_id,)):
+        _execute('INSERT INTO users (user_id, username, money) VALUES (?,?,?)',
+                 (user_id, username, 5))
+
+# ---------- coins ----------
+
+def get_money(user_id: str) -> int:
+    row = _fetchone('SELECT money FROM users WHERE user_id = ?', (user_id,))
+    return row[0] if row else 0
+
+def set_money(user_id: str, amount: int):
+    _execute('UPDATE users SET money = ? WHERE user_id = ?', (amount, user_id))
+
+def get_total_money():
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute('SELECT SUM(money) FROM users')
+    result = cursor.fetchone()
+    conn.close()
+    return result[0] if result[0] else 0
+
+def get_top_users(limit: int = 10):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute(
+        'SELECT username, money FROM users ORDER BY money DESC LIMIT ?',
+        (limit,)
+    )
+    rows = cursor.fetchall()
+    conn.close()
+    return rows
 
 def get_last_claim(user_id: str):
     conn = sqlite3.connect(DB_PATH)
@@ -75,67 +156,57 @@ def set_last_claim(user_id: str, ts: datetime):
     conn.commit()
     conn.close()
 
-def register_user(user_id, username):
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute('SELECT * FROM users WHERE user_id = ?', (user_id,))
-    if cursor.fetchone() is None:
-        cursor.execute('INSERT INTO users (user_id, username, money) VALUES (?, ?, ?)',
-                    (user_id, username, 5))
-    conn.commit()
-    conn.close()
+# ---------- stats & stat‑points ----------
 
-def get_money(user_id):
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute('SELECT money FROM users WHERE user_id = ?', (user_id,))
-    result = cursor.fetchone()
-    conn.close()
-    return result[0] if result else 0
+def get_stats(user_id: str):
+    row = _fetchone('SELECT intelligence, strength, stealth, stat_points FROM users WHERE user_id = ?', (user_id,))
+    if not row:
+        return {s: 1 for s in STAT_NAMES} | {"stat_points": 0}
+    return dict(zip(STAT_NAMES + ["stat_points"], row))
 
-def set_money(user_id, amount):
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute('UPDATE users SET money = ? WHERE user_id = ?', (amount, user_id))
-    conn.commit()
-    conn.close()
+def add_stat_points(user_id: str, delta: int):
+    _execute('UPDATE users SET stat_points = stat_points + ? WHERE user_id = ?', (delta, user_id))
 
-def get_total_money():
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute('SELECT SUM(money) FROM users')
-    result = cursor.fetchone()
-    conn.close()
-    return result[0] if result[0] else 0
+def increase_stat(user_id: str, stat: str, amount: int):
+    if stat not in STAT_NAMES:
+        raise ValueError("invalid stat")
+    _execute(f'UPDATE users SET {stat} = {stat} + ?, stat_points = stat_points - ? WHERE user_id = ?', (amount, amount, user_id))
+
+# ---------- timing helpers ----------
+
+def get_timestamp(user_id: str, column: str):
+    row = _fetchone(f'SELECT {column} FROM users WHERE user_id = ?', (user_id,))
+    return datetime.fromisoformat(row[0]) if row and row[0] else None
+
+def set_timestamp(user_id: str, column: str, ts: datetime):
+    _execute(f'UPDATE users SET {column} = ? WHERE user_id = ?', (ts.isoformat(), user_id))
+
+# ---------- server helpers ----------
 
 def get_max_coins():
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute('SELECT max_coins FROM server WHERE id = 1')
-    result = cursor.fetchone()
-    conn.close()
-    return result[0]
+    return _fetchone('SELECT max_coins FROM server WHERE id = 1')[0]
 
-def set_max_coins(new_limit):
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute('UPDATE server SET max_coins = ? WHERE id = 1', (new_limit,))
-    conn.commit()
-    conn.close()
+def set_max_coins(limit: int):
+    _execute('UPDATE server SET max_coins = ? WHERE id = 1', (limit,))
 
-def get_top_users(limit: int = 10):
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute(
-        'SELECT username, money FROM users ORDER BY money DESC LIMIT ?',
-        (limit,)
-    )
-    rows = cursor.fetchall()
-    conn.close()
-    return rows
 
-def has_role(member: discord.Member, role_name):
+# =====================================================================
+#                              UTILITIES
+# =====================================================================
+
+def has_role(member: discord.Member, role_name: str):
     return any(role.name == role_name for role in member.roles)
+
+# ---------- webhook cache (unchanged) ----------
+webhook_cache: dict[int, discord.Webhook] = {}
+async def get_channel_webhook(channel: discord.TextChannel) -> discord.Webhook:
+    wh = webhook_cache.get(channel.id)
+    if wh:
+        return wh
+    webhooks = await channel.webhooks()
+    wh = discord.utils.get(webhooks, name="LowercaseRelay") or await channel.create_webhook(name="LowercaseRelay")
+    webhook_cache[channel.id] = wh
+    return wh
 
 # === REQUEST BUTTON VIEW ===
 class RequestView(ui.View):
@@ -170,24 +241,26 @@ class RequestView(ui.View):
 
         await interaction.response.edit_message(content="❌ Request declined.", view=None)
 
-# === DISCORD EVENTS ===
+# =====================================================================
+#                              EVENTS
+# =====================================================================
 @bot.event
 async def on_ready():
     init_db()
     await bot.tree.sync()
-    print(f'Bot is online as {bot.user}')
+    print(f"Bot is online as {bot.user}")
 
 @bot.event
-async def on_message(message):
+async def on_message(message: discord.Message):
     if message.author.bot or message.webhook_id:
         return
 
+    # force lowercase feature (unchanged)
     if message.author.id in lowercase_locked:
         try:
             await message.delete()
         except discord.Forbidden:
             return
-
         wh = await get_channel_webhook(message.channel)
         await wh.send(
             content=message.content.lower(),
@@ -196,6 +269,7 @@ async def on_message(message):
             allowed_mentions=discord.AllowedMentions.all()
         )
 
+    # Trigger‑responses
     content = message.content.lower()
     for trigger, reply in TRIGGER_RESPONSES.items():
         if trigger.lower() in content:
@@ -231,13 +305,14 @@ async def on_member_remove(member):
         await channel.send(message)
 
 
-# === SLASH COMMANDS ===
+# =====================================================================
+#                              SLASH COMMANDS – COINS (original)
+# =====================================================================
 @bot.tree.command(name="money", description="Check your clubhall coin balance")
 async def money(interaction: discord.Interaction):
     user_id = str(interaction.user.id)
     register_user(user_id, interaction.user.display_name)
-    money = get_money(user_id)
-    await interaction.response.send_message(f"You have {money} clubhall coins.", ephemeral=True)
+    await interaction.response.send_message(f"You have {get_money(user_id)} clubhall coins.", ephemeral=True)
 
 @bot.tree.command(name="balance", description="Check someone else's clubhall coin balance")
 async def balance(interaction: discord.Interaction, user: discord.Member):
@@ -458,6 +533,130 @@ async def stab(interaction: discord.Interaction, user: discord.Member):
             await interaction.response.send_message(choice(fail_messages))
     except:
         await interaction.response.send_message("You can't stab someone with higher permission than me. (No owners and no CEO's)", ephemeral=True)
+
+
+# =====================================================================
+#                              SLASH COMMANDS – STATS
+# =====================================================================
+
+@bot.tree.command(name="stats", description="Show your stats & unspent points")
+async def stats_cmd(interaction: discord.Interaction, user: discord.Member | None = None):
+    target = user or interaction.user
+    register_user(str(target.id), target.display_name)
+    stats = get_stats(str(target.id))
+    description = "\n".join(f"**{s.title()}**: {stats[s]}" for s in STAT_NAMES)
+    embed = discord.Embed(title=f"{target.display_name}'s Stats", description=description, colour=discord.Colour.green())
+    embed.set_footer(text=f"Unspent points: {stats['stat_points']}")
+    await interaction.response.send_message(embed=embed, ephemeral=(user is None))
+
+@bot.tree.command(name="quest", description="Complete a short quest to earn stat‑points (3 h CD)")
+async def quest(interaction: discord.Interaction):
+    uid = str(interaction.user.id)
+    register_user(uid, interaction.user.display_name)
+
+    last = get_timestamp(uid, 'last_quest')
+    now = datetime.utcnow()
+    if last and now - last < timedelta(hours=QUEST_COOLDOWN_HOURS):
+        remain = timedelta(hours=QUEST_COOLDOWN_HOURS) - (now - last)
+        hrs, sec = divmod(int(remain.total_seconds()), 3600)
+        mins = sec // 60
+        await interaction.response.send_message(f"🕒 Next quest in {hrs} h {mins} min.", ephemeral=True)
+        return
+
+    earned = randint(1, 3)
+    add_stat_points(uid, earned)
+    set_timestamp(uid, 'last_quest', now)
+    await interaction.response.send_message(f"🏅 You completed the quest and earned **{earned}** stat‑point(s)!", ephemeral=True)
+
+@bot.tree.command(name="buypoints", description="Buy stat‑points with coins")
+async def buypoints(interaction: discord.Interaction, amount: int = 1):
+    if amount < 1:
+        await interaction.response.send_message("Specify a positive amount.", ephemeral=True)
+        return
+    uid = str(interaction.user.id)
+    register_user(uid, interaction.user.display_name)
+
+    price_per_point = int(get_max_coins() * STAT_PRICE_PERCENT)
+    cost = price_per_point * amount
+    balance = get_money(uid)
+    if balance < cost:
+        await interaction.response.send_message(f"❌ You need {cost} coins but only have {balance}.", ephemeral=True)
+        return
+    set_money(uid, balance - cost)
+    add_stat_points(uid, amount)
+    await interaction.response.send_message(f"✅ Purchased {amount} point(s) for {cost} coins.")
+
+@bot.tree.command(name="allocate", description="Spend stat‑points to increase a stat")
+@app_commands.describe(stat="Which stat? (intelligence/strength/stealth)", points="How many points to allocate")
+async def allocate(interaction: discord.Interaction, stat: str, points: int):
+    stat = stat.lower()
+    if stat not in STAT_NAMES:
+        await interaction.response.send_message("Invalid stat name.", ephemeral=True)
+        return
+    if points < 1:
+        await interaction.response.send_message("Points must be > 0.", ephemeral=True)
+        return
+
+    uid = str(interaction.user.id)
+    register_user(uid, interaction.user.display_name)
+    user_stats = get_stats(uid)
+    if user_stats['stat_points'] < points:
+        await interaction.response.send_message("Not enough unspent points.", ephemeral=True)
+        return
+
+    increase_stat(uid, stat, points)
+    await interaction.response.send_message(f"🔧 {stat.title()} increased by {points}.")
+
+# =====================================================================
+#                              STEAL COMMAND
+# =====================================================================
+
+@bot.tree.command(name="steal", description="Attempt to steal coins from another user (needs stealth ≥ 3)")
+async def steal(interaction: discord.Interaction, target: discord.Member):
+    if target.id == interaction.user.id:
+        await interaction.response.send_message("You can't steal from yourself!", ephemeral=True)
+        return
+
+    uid = str(interaction.user.id)
+    tid = str(target.id)
+    register_user(uid, interaction.user.display_name)
+    register_user(tid, target.display_name)
+
+    actor_stats = get_stats(uid)
+    target_stats = get_stats(tid)
+
+    if actor_stats['stealth'] < 3:
+        await interaction.response.send_message("You need at least **3** Stealth to attempt a steal.", ephemeral=True)
+        return
+
+    actor_stealth = actor_stats['stealth']
+    target_stealth = target_stats['stealth']
+
+    # success probability
+    success_chance = actor_stealth / (actor_stealth + target_stealth)
+
+    if random() > success_chance:
+        await interaction.response.send_message("👀 You were caught and failed to steal any coins!")
+        return
+
+    # amount to steal – max 25 % of target's money, scaled by stealth diff
+    target_balance = get_money(tid)
+    if target_balance < 5:
+        await interaction.response.send_message("Target is too poor to bother...", ephemeral=True)
+        return
+
+    max_pct = min(0.05 + 0.02 * max(actor_stealth - target_stealth, 0), 0.25)
+    stolen_pct = random() * max_pct
+    stolen_amt = max(1, int(target_balance * stolen_pct))
+
+    set_money(tid, target_balance - stolen_amt)
+    set_money(uid, get_money(uid) + stolen_amt)
+
+    await interaction.response.send_message(f"🕶️ Success! You stole **{stolen_amt}** coins from {target.display_name}.")
+
+# =====================================================================
+#                     DAILY & OTHER ORIGINAL COMMANDS
+# =====================================================================
 
 @bot.tree.command(name="forcelowercase",
                   description="Force a member's messages to lowercase (toggle)")
@@ -867,22 +1066,7 @@ def _format_option(opt: dict, users_data: dict) -> str:
 
     return f"{name}={value}"
 
-# === Message‑Intercept ===
-webhook_cache: dict[int, discord.Webhook] = {}
-
-async def get_channel_webhook(channel: discord.TextChannel) -> discord.Webhook:
-    wh = webhook_cache.get(channel.id)
-    if wh:                       #   <— reicht völlig
-        return wh
-
-    webhooks = await channel.webhooks()
-    wh = discord.utils.get(webhooks, name="LowercaseRelay")
-    if wh is None:
-        wh = await channel.create_webhook(name="LowercaseRelay")
-
-    webhook_cache[channel.id] = wh
-    return wh
-
+# === TOKEN ===
 with open("code.txt", "r") as file:
     TOKEN = file.read().strip()
 
