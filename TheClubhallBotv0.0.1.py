@@ -835,20 +835,32 @@ async def on_app_command_completion(inter: discord.Interaction,
     await log_ch.send(embed=embed)
 
 def format_options(data: dict) -> str:
-    """Flattens options (incl. sub‑commands) into 'name=value' CSV."""
+    """Flattens options (incl. sub‑commands) into 'name=DisplayName (ID)' CSV."""
     result = []
 
     for opt in data.get("options", []):
-        if opt.get("type") == 1:
+        if opt.get("type") == 1:  # Subcommand
             inner = ", ".join(
-                f"{o['name']}={o.get('value')}"
+                _format_option(o)
                 for o in opt.get("options", [])
             ) or "–"
             result.append(f"{opt['name']}({inner})")
         else:
-            result.append(f"{opt['name']}={opt.get('value')}")
+            result.append(_format_option(opt))
 
     return ", ".join(result) or "–"
+
+def _format_option(opt: dict) -> str:
+    name = opt["name"]
+    value = opt.get("value")
+
+    if opt["type"] == 6:
+        user_obj = opt.get("user", None)
+        if isinstance(user_obj, dict):
+            username = user_obj.get("global_name") or user_obj.get("username", "Unknown")
+            return f"{name}={username} ({value})"
+    return f"{name}={value}"
+
 
 # === Message‑Intercept ===
 webhook_cache: dict[int, discord.Webhook] = {}
