@@ -1128,39 +1128,58 @@ async def daily(interaction: discord.Interaction):
 #                     Shop COMMANDS
 # =====================================================================
 
-@bot.tree.command(name="addshoprole",
-                  description="Create / register a purchasable role (Owner/Admin)")
-@app_commands.describe(
-    name="Role name", price="Cost in coins",
-    reference="Place new role relative to this role",
-    above="Position new role one step above the reference?"
+@bot.tree.command(
+    name="addshoprole",
+    description="Create/register a purchasable role (Owner/Admin)"
 )
-async def addshoprole(inter: discord.Interaction,
-                      name: str,
-                      price: int,
-                      reference: discord.Role,
-                      above: bool = True):
+@app_commands.describe(
+    name="Role name",
+    price="Cost in coins",
+    color="#RRGGBB (hex)",
+    reference="Put the new role relative to this role (optional)",
+    above="If True, place *above* the reference; else below"
+)
+async def addshoprole(
+    inter: discord.Interaction,
+    name: str,
+    price: int,
+    color: str,
+    reference: discord.Role | None = None,
+    above: bool = True
+):
     if not (has_role(inter.user, OWNER_ROLE_NAME) or has_role(inter.user, ADMIN_ROLE_NAME)):
         await inter.response.send_message("No permission.", ephemeral=True)
+        return
+
+    try:
+        colour_obj = discord.Colour(int(color.lstrip("#"), 16))
+    except ValueError:
+        await inter.response.send_message("⚠️  Invalid hex colour.", ephemeral=True)
         return
 
     guild = inter.guild
     role = discord.utils.get(guild.roles, name=name)
     if role is None:
-        role = await guild.create_role(name=name, reason="Shop role")
+        role = await guild.create_role(name=name, colour=colour_obj, reason="Shop role")
 
-    new_pos = reference.position + (1 if above else 0)
-    try:
-        await role.edit(position=new_pos)
-    except discord.Forbidden:
-        await inter.response.send_message(
-            "❌ Bot cannot move the role - make sure,"
-            "that its highest role is above the target position.", ephemeral=True)
-        return
+    if reference:
+        new_pos = reference.position + (1 if above else 0)
+        try:
+            await role.edit(position=new_pos)
+        except discord.Forbidden:
+            await inter.response.send_message(
+                "❌ Bot kann die Rolle nicht verschieben. "
+                "Achte darauf, dass seine höchste Rolle über dem Ziel steht.",
+                ephemeral=True
+            )
+            return
 
-    add_shop_role(role.id, price)
+    add_shop_role(role.id, price) 
+
     await inter.response.send_message(
-        f"✅ Role: **{role.name}** (Prize: {price} clubhall coins) added.", ephemeral=True)
+        f"✅ Rolle **{role.name}** registriert (Preis {price} Coins).",
+        ephemeral=True
+    )
     
 @bot.tree.command(name="shop", description="Show all purchasable roles")
 async def shop(inter: discord.Interaction):
