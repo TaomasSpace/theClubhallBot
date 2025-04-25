@@ -30,7 +30,7 @@ STAT_PRICE_PERCENT = 0.03333
 QUEST_COOLDOWN_HOURS = 3
 STAT_NAMES = ["intelligence", "strength", "stealth"]
 ROLE_THRESHOLDS = {
-    "intelligence": ("Edgerunner", 50),
+    "intelligence": ("Neuromancer", 50),
     "strength":     ("Juggernaut", 50),
     "stealth":      ("Shadow", 50)
 }
