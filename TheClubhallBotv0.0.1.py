@@ -76,6 +76,12 @@ def init_db():
         )
     ''')
     cursor.execute('INSERT OR IGNORE INTO server (id, max_coins) VALUES (1, ?)', (DEFAULT_MAX_COINS,))
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS shop_roles (
+        role_id     TEXT PRIMARY KEY,
+        price       INTEGER NOT NULL
+    )
+    ''')
 
     cursor.execute("PRAGMA table_info(users)")
     existing = {col[1] for col in cursor.fetchall()}
@@ -197,6 +203,22 @@ def get_max_coins():
 def set_max_coins(limit: int):
     _execute('UPDATE server SET max_coins = ? WHERE id = 1', (limit,))
 
+# ---------- shop helpers ----------
+def add_shop_role(role_id: int, price: int):
+    _execute('INSERT OR REPLACE INTO shop_roles (role_id, price) VALUES (?,?)',
+             (role_id, price))
+
+def remove_shop_role(role_id: int):
+    _execute('DELETE FROM shop_roles WHERE role_id = ?', (role_id,))
+
+def get_shop_roles():
+    rows = _fetchone("SELECT role_id, price FROM shop_roles")  # liefert 1 Row
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT role_id, price FROM shop_roles")
+    rows = cursor.fetchall()
+    conn.close()
+    return rows 
 
 # =====================================================================
 #                              UTILITIES
@@ -1101,6 +1123,80 @@ async def daily(interaction: discord.Interaction):
         f"✅ {DAILY_REWARD} Coins added! You now have **{current + DAILY_REWARD}** 💰.",
         ephemeral=True
     )
+
+# =====================================================================
+#                     Shop COMMANDS
+# =====================================================================
+
+@bot.tree.command(name="addshoprole",
+                  description="Create / register a purchasable role (Owner/Admin)")
+@app_commands.describe(
+    name="Role name", price="Cost in coins",
+    reference="Place new role relative to this role",
+    above="Position new role one step above the reference?"
+)
+async def addshoprole(inter: discord.Interaction,
+                      name: str,
+                      price: int,
+                      reference: discord.Role,
+                      above: bool = True):
+    if not (has_role(inter.user, OWNER_ROLE_NAME) or has_role(inter.user, ADMIN_ROLE_NAME)):
+        await inter.response.send_message("No permission.", ephemeral=True)
+        return
+
+    guild = inter.guild
+    role = discord.utils.get(guild.roles, name=name)
+    if role is None:
+        role = await guild.create_role(name=name, reason="Shop role")
+
+    new_pos = reference.position + (1 if above else 0)
+    try:
+        await role.edit(position=new_pos)
+    except discord.Forbidden:
+        await inter.response.send_message(
+            "❌ Bot cannot move the role - make sure,"
+            "that its highest role is above the target position.", ephemeral=True)
+        return
+
+    add_shop_role(role.id, price)
+    await inter.response.send_message(
+        f"✅ Role: **{role.name}** (Prize: {price} clubhall coins) added.", ephemeral=True)
+    
+@bot.tree.command(name="shop", description="Show all purchasable roles")
+async def shop(inter: discord.Interaction):
+    entries = get_shop_roles()
+    if not entries:
+        await inter.response.send_message("The shop is empty.", ephemeral=True)
+        return
+
+    lines = []
+    for rid, price in entries:
+        role = inter.guild.get_role(int(rid))
+        if role:
+            lines.append(f"{role.mention} – **{price}** Coins")
+    embed = discord.Embed(title="🛒 Role Shop", description="\n".join(lines))
+    await inter.response.send_message(embed=embed)
+
+@bot.tree.command(name="buyrole", description="Buy a role from the shop")
+async def buyrole(inter: discord.Interaction, role: discord.Role):
+    row = _fetchone("SELECT price FROM shop_roles WHERE role_id = ?", (role.id,))
+    if not row:
+        await inter.response.send_message("This role does not exist in the shop.", ephemeral=True)
+        return
+    price = row[0]
+
+    uid = str(inter.user.id)
+    register_user(uid, inter.user.display_name)
+    balance = get_money(uid)
+    if balance < price:
+        await inter.response.send_message("❌ Not enough coins.", ephemeral=True)
+        return
+
+    set_money(uid, balance - price)
+    await inter.user.add_roles(role, reason="Shop purchase")
+    await inter.response.send_message(
+        f"🎉 Congratulation! You bought **{role.name}** for {price} clubhall coins.")
+
 
 # === GLOBAL ERROR HANDLER ===
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(name)s: %(message)s")
