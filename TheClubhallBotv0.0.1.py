@@ -29,6 +29,11 @@ LOG_CHANNEL_ID = 1364226902289813514
 STAT_PRICE_PERCENT = 0.03333          
 QUEST_COOLDOWN_HOURS = 3
 STAT_NAMES = ["intelligence", "strength", "stealth"]
+ROLE_THRESHOLDS = {
+    "intelligence": ("Edgerunner", 50),
+    "strength":     ("Juggernaut", 50),
+    "stealth":      ("Shadow", 50)
+}
 
 lowercase_locked: set[int] = set()
 
@@ -243,6 +248,21 @@ class RequestView(ui.View):
             return
 
         await interaction.response.edit_message(content="❌ Request declined.", view=None)
+
+async def sync_stat_roles(member: discord.Member):
+    stats = get_stats(str(member.id))
+    for stat, (role_name, threshold) in ROLE_THRESHOLDS.items():
+        role = discord.utils.get(member.guild.roles, name=role_name)
+        if role is None:
+            continue
+
+        has_role   = role in member.roles
+        meets_req  = stats[stat] >= threshold
+
+        if meets_req and not has_role:
+            await member.add_roles(role, reason=f"{stat} {stats[stat]} ≥ {threshold}")
+        elif not meets_req and has_role:
+            await member.remove_roles(role, reason=f"{stat} {stats[stat]} < {threshold}")
 
 # =====================================================================
 #                              EVENTS
@@ -608,6 +628,7 @@ async def allocate(interaction: discord.Interaction, stat: str, points: int):
         return
 
     increase_stat(uid, stat, points)
+    await sync_stat_roles(interaction.user)
     await interaction.response.send_message(f"🔧 {stat.title()} increased by {points}.")
 
 # =====================================================================
@@ -685,7 +706,7 @@ async def hack(interaction: discord.Interaction):
     success = random() < min(0.20 + 0.05 * (int_level - 3), 0.80)
 
     if not success:
-        loss = randint(1, 5) * int_level            # kleine Strafe
+        loss = randint(1, 5) * int_level            
         new_bal = max(0, get_money(uid) - loss)
         set_money(uid, new_bal)
         await interaction.response.send_message(
