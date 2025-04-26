@@ -26,7 +26,7 @@ DEFAULT_MAX_COINS = 3000
 DAILY_REWARD = 10
 WELCOME_CHANNEL_ID = 1351487186557734942
 LOG_CHANNEL_ID = 1364226902289813514
-STAT_PRICE_PERCENT = 0.03333          
+STAT_PRICE = 66          
 QUEST_COOLDOWN_HOURS = 3
 WEEKLY_REWARD = 50
 STAT_NAMES = ["intelligence", "strength", "stealth"]
@@ -655,7 +655,7 @@ async def buypoints(interaction: discord.Interaction, amount: int = 1):
     uid = str(interaction.user.id)
     register_user(uid, interaction.user.display_name)
 
-    price_per_point = int(get_max_coins() * STAT_PRICE_PERCENT)
+    price_per_point = int(STAT_PRICE)
     cost = price_per_point * amount
     balance = get_money(uid)
     if balance < cost:
