@@ -28,12 +28,16 @@ WELCOME_CHANNEL_ID = 1351487186557734942
 LOG_CHANNEL_ID = 1364226902289813514
 STAT_PRICE_PERCENT = 0.03333          
 QUEST_COOLDOWN_HOURS = 3
+WEEKLY_REWARD = 50
 STAT_NAMES = ["intelligence", "strength", "stealth"]
 ROLE_THRESHOLDS = {
     "intelligence": ("Neuromancer", 50),
     "strength":     ("Juggernaut", 50),
     "stealth":      ("Shadow", 50)
 }
+hack_cooldowns = {}
+fight_cooldowns = {}
+steal_cooldowns = {}
 
 lowercase_locked: set[int] = set()
 
@@ -86,15 +90,16 @@ def init_db():
     cursor.execute("PRAGMA table_info(users)")
     existing = {col[1] for col in cursor.fetchall()}
     for col, default in [
-        ("last_quest", ""),          # Text-Spalte
+        ("last_quest", ""),         
         ("stat_points", 0),
+        ("last_weekly", ""),
         ("intelligence", 1),
         ("strength", 1),
         ("stealth", 1)
     ]:
         if col not in existing:
             if col == "last_quest":
-                cursor.execute("ALTER TABLE users ADD COLUMN last_quest TEXT")    # oder TEXT DEFAULT '' 
+                cursor.execute("ALTER TABLE users ADD COLUMN last_quest TEXT")    
             else:
                 cursor.execute(f"ALTER TABLE users ADD COLUMN {col} INTEGER DEFAULT {default}")
 
@@ -135,6 +140,22 @@ def get_money(user_id: str) -> int:
 
 def set_money(user_id: str, amount: int):
     _execute('UPDATE users SET money = ? WHERE user_id = ?', (amount, user_id))
+
+def safe_add_coins(user_id: str, amount: int) -> int:
+    if amount <= 0:
+        return 0
+
+    current_total = get_total_money()
+    max_total = get_max_coins()
+    free_space = max_total - current_total
+
+    if free_space <= 0:
+        return 0
+
+    addable = min(amount, free_space)
+    old_balance = get_money(user_id)
+    set_money(user_id, old_balance + addable)
+    return addable
 
 def get_total_money():
     conn = sqlite3.connect(DB_PATH)
@@ -194,6 +215,22 @@ def get_timestamp(user_id: str, column: str):
 
 def set_timestamp(user_id: str, column: str, ts: datetime):
     _execute(f'UPDATE users SET {column} = ? WHERE user_id = ?', (ts.isoformat(), user_id))
+
+def get_last_weekly(user_id: str):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute('SELECT last_weekly FROM users WHERE user_id = ?', (user_id,))
+    row = cursor.fetchone()
+    conn.close()
+    return datetime.fromisoformat(row[0]) if row and row[0] else None
+
+def set_last_weekly(user_id: str, ts: datetime):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute('UPDATE users SET last_weekly = ? WHERE user_id = ?', (ts.isoformat(), user_id))
+    conn.commit()
+    conn.close()
+
 
 # ---------- server helpers ----------
 
@@ -372,16 +409,13 @@ async def give(interaction: discord.Interaction, user: discord.Member, amount: i
         return
 
     register_user(str(user.id), user.display_name)
-    total = get_total_money()
-    max_limit = get_max_coins()
-
-    if total + amount > max_limit and not has_role(interaction.user, OWNER_ROLE_NAME):
-        await interaction.response.send_message(f"clubhall coin limit of {max_limit} reached!", ephemeral=True)
-        return
-
-    current = get_money(str(user.id))
-    set_money(str(user.id), current + amount)
-    await interaction.response.send_message(f"{amount} clubhall coins added to {user.display_name}.")
+    added = safe_add_coins(str(user.id), amount)
+    if added == 0:
+        await interaction.response.send_message(f"Clubhall coin limit reached. No coins added.", ephemeral=True)
+    elif added < amount:
+        await interaction.response.send_message(f"Partial success: Only {added} coins added due to server limit.", ephemeral=True)
+    else:
+        await interaction.response.send_message(f"{added} clubhall coins added to {user.display_name}.")
 
 @bot.tree.command(name="remove", description="Remove clubhall coins from a user (Admin/Owner only)")
 async def remove(interaction: discord.Interaction, user: discord.Member, amount: int):
@@ -656,70 +690,69 @@ async def allocate(interaction: discord.Interaction, stat: str, points: int):
 # =====================================================================
 #                              STEAL COMMAND
 # =====================================================================
-STEAL_COOLDOWN = app_commands.checks.cooldown(rate=1, per=30*60)
-
-@STEAL_COOLDOWN
-@bot.tree.command(name="steal", description="Attempt to steal coins from another user (needs stealth ≥ 3)")
+@bot.tree.command(name="steal", description="Attempt to steal coins from another user (needs stealth ≥ 3)")
 async def steal(interaction: discord.Interaction, target: discord.Member):
     if target.id == interaction.user.id:
         await interaction.response.send_message("You can't steal from yourself!", ephemeral=True)
         return
-
-    uid = str(interaction.user.id)
-    tid = str(target.id)
+    uid, tid = str(interaction.user.id), str(target.id)
+    now = datetime.utcnow()
+    cooldown = steal_cooldowns.get(uid)
+    if cooldown and now - cooldown < timedelta(minutes=45):
+        remaining = timedelta(minutes=45) - (now - cooldown)
+        minutes, seconds = divmod(int(remaining.total_seconds()), 60)
+        await interaction.response.send_message(
+            f"⏳ You can steal again in **{minutes} minutes {seconds} seconds**.", ephemeral=True
+        )
+        return
     register_user(uid, interaction.user.display_name)
     register_user(tid, target.display_name)
-
     actor_stats = get_stats(uid)
     target_stats = get_stats(tid)
-
     if actor_stats['stealth'] < 3:
         await interaction.response.send_message("You need at least **3** Stealth to attempt a steal.", ephemeral=True)
         return
-
-    actor_stealth = actor_stats['stealth']
-    target_stealth = target_stats['stealth']
-
+    actor_stealth, target_stealth = actor_stats['stealth'], target_stats['stealth']
     success_chance = actor_stealth / (actor_stealth + target_stealth)
-
     if random() > success_chance:
-        await interaction.response.send_message("👀 You were caught and failed to steal any coins!")
+        await interaction.response.send_message("👀 You were caught and failed to steal any coins!", ephemeral=True)
         return
-
     target_balance = get_money(tid)
     if target_balance < 5:
         await interaction.response.send_message("Target is too poor to bother...", ephemeral=True)
         return
-
     max_pct = min(0.05 + 0.02 * max(actor_stealth - target_stealth, 0), 0.25)
     stolen_pct = random() * max_pct
     stolen_amt = max(1, int(target_balance * stolen_pct))
-
     set_money(tid, target_balance - stolen_amt)
-    set_money(uid, get_money(uid) + stolen_amt)
-
-    await interaction.response.send_message(f"🕶️ Success! You stole **{stolen_amt}** coins from {target.display_name}.")
+    safe_add_coins(uid, stolen_amt)
+    steal_cooldowns[uid] = datetime.utcnow()
+    await interaction.response.send_message(f"🕶️ Success! You stole **{stolen_amt}** coins from {target.display_name}.", ephemeral=True)
 
 # ==============================================================
 #                          HACK COMMAND
 #   – nutzt Intelligence vs. Intelligence
 # ==============================================================
 
-HACK_COOLDOWN = app_commands.checks.cooldown(rate=1, per=45*60)  
-
-@bot.tree.command(
-    name="hack",
-    description="Hack the bank to win coins – needs intelligence ≥ 3"
-)
-@HACK_COOLDOWN
+@bot.tree.command(name="hack", description="Hack the bank to win coins (needs intelligence ≥ 3)")
 async def hack(interaction: discord.Interaction):
     uid = str(interaction.user.id)
     register_user(uid, interaction.user.display_name)
 
+    now = datetime.utcnow()
+    cooldown = hack_cooldowns.get(uid)
+    if cooldown and now - cooldown < timedelta(minutes=45):
+        remaining = timedelta(minutes=45) - (now - cooldown)
+        minutes, seconds = divmod(int(remaining.total_seconds()), 60)
+        await interaction.response.send_message(
+            f"⏳ You can hack again in **{minutes} minutes {seconds} seconds**.", ephemeral=True
+        )
+        return
+
     stats = get_stats(uid)
     if stats["intelligence"] < 3:
         await interaction.response.send_message(
-            "You need at least **3** Intelligence to attempt a hack.",
+            "❌ You need at least **3** Intelligence to attempt a hack.",
             ephemeral=True
         )
         return
@@ -727,8 +760,10 @@ async def hack(interaction: discord.Interaction):
     int_level = stats["intelligence"]
     success = random() < min(0.20 + 0.05 * (int_level - 3), 0.80)
 
+    hack_cooldowns[uid] = now  # Cooldown wird **nur hier** nach Überprüfung gesetzt!
+
     if not success:
-        loss = randint(1, 5) * int_level            
+        loss = randint(1, 5) * int_level
         new_bal = max(0, get_money(uid) - loss)
         set_money(uid, new_bal)
         await interaction.response.send_message(
@@ -737,70 +772,99 @@ async def hack(interaction: discord.Interaction):
         )
         return
 
-    reward = randint(10, 25) * int_level
-    set_money(uid, get_money(uid) + reward)
-    await interaction.response.send_message(
-        f"🖥️ Hack successful! You siphoned **{reward}** coins from the bank.",
-        ephemeral=True
-    )
+    reward = randint(5, 12) * int_level
+    added = safe_add_coins(uid, reward)
+
+    if added > 0:
+        await interaction.response.send_message(
+            f"🔋 Hack successful! You siphoned **{added}** coins from the bank.",
+            ephemeral=True
+        )
+    else:
+        await interaction.response.send_message(
+            "⚠️ Hack succeeded but server coin limit reached. No coins added.",
+            ephemeral=True
+        )
 
 # ==============================================================
 #                        FIGHT / MUG COMMAND
 #   – nutzt Strength vs. Strength (Ziel-User)
 # ==============================================================
 
-FIGHT_COOLDOWN = app_commands.checks.cooldown(rate=1, per=30*60)   
-
-@bot.tree.command(
-    name="fight",
-    description="Fight someone for coins (needs strength ≥ 3)"
-)
-@FIGHT_COOLDOWN
+@bot.tree.command(name="fight", description="Fight someone for coins (needs strength ≥ 3)")
 async def fight(interaction: discord.Interaction, target: discord.Member):
     if target.id == interaction.user.id:
         await interaction.response.send_message("You can't fight yourself!", ephemeral=True)
         return
-
     uid, tid = str(interaction.user.id), str(target.id)
-    register_user(uid, interaction.user.display_name)
-    register_user(tid, target.display_name)
-
-    atk = get_stats(uid)
-    defn = get_stats(tid)
-
-    if atk["strength"] < 3:
+    now = datetime.utcnow()
+    cooldown = fight_cooldowns.get(uid)
+    if cooldown and now - cooldown < timedelta(minutes=45):
+        remaining = timedelta(minutes=45) - (now - cooldown)
+        minutes, seconds = divmod(int(remaining.total_seconds()), 60)
         await interaction.response.send_message(
-            "You need at least **3** Strength to start a fight.",
-            ephemeral=True
+            f"⏳ You can fight again in **{minutes} minutes {seconds} seconds**.", ephemeral=True
         )
         return
-
+    register_user(uid, interaction.user.display_name)
+    register_user(tid, target.display_name)
+    atk = get_stats(uid)
+    defn = get_stats(tid)
+    if atk["strength"] < 3:
+        await interaction.response.send_message("You need at least **3** Strength to start a fight.", ephemeral=True)
+        return
     atk_str, def_str = atk["strength"], defn["strength"]
     win_chance = atk_str / (atk_str + def_str)
-
     if random() > win_chance:
         penalty = max(1, int(get_money(uid) * 0.10))
         set_money(uid, get_money(uid) - penalty)
-        set_money(tid, get_money(tid) + penalty)
-        await interaction.response.send_message(
-            f"🥊 You lost the fight and paid **{penalty}** coins in damages to {target.display_name}."
-        )
+        safe_add_coins(tid, penalty)
+        await interaction.response.send_message(f"🏋️ You lost the fight and paid **{penalty}** coins in damages to {target.display_name}.", ephemeral=True)
         return
-
     target_coins = get_money(tid)
     steal_pct = random() * min(0.05 + 0.03 * max(atk_str - def_str, 0), 0.20)
     stolen = max(1, int(target_coins * steal_pct))
-
     set_money(tid, target_coins - stolen)
-    set_money(uid, get_money(uid) + stolen)
-    await interaction.response.send_message(
-        f"💪 Victory! You took **{stolen}** coins from {target.display_name}."
-    )
-
+    safe_add_coins(uid, stolen)
+    fight_cooldowns[uid] = datetime.utcnow()
+    await interaction.response.send_message(f"💪 Victory! You took **{stolen}** coins from {target.display_name}.", ephemeral=True)
 
 # =====================================================================
 #                     DAILY & OTHER ORIGINAL COMMANDS
 # =====================================================================
+
+@bot.tree.command(name="weekly", description="Claim your weekly clubhall coins (7d cooldown)")
+async def weekly(interaction: discord.Interaction):
+    user_id = str(interaction.user.id)
+    register_user(user_id, interaction.user.display_name)
+
+    now = datetime.utcnow()
+    last = get_last_weekly(user_id)
+
+    if last and now - last < timedelta(days=7):
+        remaining = timedelta(days=7) - (now - last)
+        days, seconds = divmod(int(remaining.total_seconds()), 86400)
+        hours, seconds = divmod(seconds, 3600)
+        minutes = seconds // 60
+        await interaction.response.send_message(
+            f"⏳ You can claim again in **{days} days {hours} hours {minutes} minutes**.",
+            ephemeral=True
+        )
+        return
+
+    added = safe_add_coins(user_id, WEEKLY_REWARD)
+    set_last_weekly(user_id, now)
+
+    if added > 0:
+        await interaction.response.send_message(
+            f"✅ {added} Coins added! You now have **{get_money(user_id)}** 💰.",
+            ephemeral=True
+        )
+    else:
+        await interaction.response.send_message(
+            "⚠️ Server coin limit reached. No weekly coins could be added.",
+            ephemeral=True
+        )
 
 @bot.tree.command(name="forcelowercase",
                   description="Force a member's messages to lowercase (toggle)")
@@ -1110,19 +1174,23 @@ async def daily(interaction: discord.Interaction):
         hours, seconds = divmod(int(remaining.total_seconds()), 3600)
         minutes = seconds // 60
         await interaction.response.send_message(
-            f"⏳ You can claim again in **{hours} h {minutes} min**.",
-            ephemeral=True
+            f"⏳ You can claim again in **{hours} h {minutes} min**.", ephemeral=True
         )
         return
 
-    current = get_money(user_id)
-    set_money(user_id, current + DAILY_REWARD)
+    added = safe_add_coins(user_id, DAILY_REWARD)
     set_last_claim(user_id, now)
 
-    await interaction.response.send_message(
-        f"✅ {DAILY_REWARD} Coins added! You now have **{current + DAILY_REWARD}** 💰.",
-        ephemeral=True
-    )
+    if added > 0:
+        await interaction.response.send_message(
+            f"✅ {added} Coins added! You now have **{get_money(user_id)}** 💰.",
+            ephemeral=True
+        )
+    else:
+        await interaction.response.send_message(
+            "⚠️ Server coin limit reached. No daily coins could be added.",
+            ephemeral=True
+        )
 
 # =====================================================================
 #                     Shop COMMANDS
