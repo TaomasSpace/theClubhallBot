@@ -98,8 +98,8 @@ def init_db():
         ("stealth", 1)
     ]:
         if col not in existing:
-            if col == "last_quest":
-                cursor.execute("ALTER TABLE users ADD COLUMN last_quest TEXT")    
+            if col in ("last_quest", "last_weekly"):
+                cursor.execute(f"ALTER TABLE users ADD COLUMN {col} TEXT")
             else:
                 cursor.execute(f"ALTER TABLE users ADD COLUMN {col} INTEGER DEFAULT {default}")
 
@@ -760,7 +760,7 @@ async def hack(interaction: discord.Interaction):
     int_level = stats["intelligence"]
     success = random() < min(0.20 + 0.05 * (int_level - 3), 0.80)
 
-    hack_cooldowns[uid] = now  # Cooldown wird **nur hier** nach Überprüfung gesetzt!
+    hack_cooldowns[uid] = now  
 
     if not success:
         loss = randint(1, 5) * int_level
