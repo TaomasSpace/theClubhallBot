@@ -729,6 +729,7 @@ async def fish(interaction: discord.Interaction):
             embed = discord.Embed(title=f"{interaction.user.display_name} has fished {earned} stat points", color=discord.Color.red())
             embed.set_image(url=gif_url)
             await interaction.response.send_message(embed=embed)
+            return
         else:
             await interaction.response.send_message("No fishing GIFs found in the database.", ephemeral=False)
             return
@@ -741,6 +742,7 @@ async def fish(interaction: discord.Interaction):
             embed = discord.Embed(title=f"{interaction.user.display_name} has fished {earned} clubhall coins", color=discord.Color.red())
             embed.set_image(url=gif_url)
             await interaction.response.send_message(embed=embed)
+            return
         else:
             await interaction.response.send_message("No fishing GIFs found in the database.", ephemeral=False)
             return
@@ -753,6 +755,7 @@ async def fish(interaction: discord.Interaction):
             embed = discord.Embed(title=f"{interaction.user.display_name} has fished {earned} clubhall coins", color=discord.Color.red())
             embed.set_image(url=gif_url)
             await interaction.response.send_message(embed=embed)
+            return
         else:
             await interaction.response.send_message("No fishing GIFs found in the database.", ephemeral=False)
             return
