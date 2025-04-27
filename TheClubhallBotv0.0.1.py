@@ -100,7 +100,7 @@ def init_db():
         ("stealth", 1)
     ]:
         if col not in existing:
-            if col in ("last_quest", "last_weekly"):
+            if col in ("last_quest", "last_weekly", "last_fishing"):
                 cursor.execute(f"ALTER TABLE users ADD COLUMN {col} TEXT")
             else:
                 cursor.execute(f"ALTER TABLE users ADD COLUMN {col} INTEGER DEFAULT {default}")
