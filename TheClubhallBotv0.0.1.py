@@ -723,7 +723,7 @@ async def fish(interaction: discord.Interaction):
     if reward < 50:
         earned = randint(1,5)
         add_stat_points(uid, earned)
-        set_timestamp(uid, 'last_fish', now)
+        set_timestamp(uid, 'last_fishing', now)
         gif_url = choice(fish_gifs)
         if gif_url:
             embed = discord.Embed(title=f"{interaction.user.display_name} has fished {earned} stat points", color=discord.Color.red())
@@ -735,7 +735,7 @@ async def fish(interaction: discord.Interaction):
     if reward < 85:
         earned= randint(10,30)
         safe_add_coins(uid, earned)
-        set_timestamp(uid, 'last_fish', now)
+        set_timestamp(uid, 'last_fishing', now)
         gif_url = choice(fish_gifs)
         if gif_url:
             embed = discord.Embed(title=f"{interaction.user.display_name} has fished {earned} clubhall coins", color=discord.Color.red())
@@ -747,7 +747,7 @@ async def fish(interaction: discord.Interaction):
     else:
         earned = randint(45, 115)
         safe_add_coins(uid, earned)
-        set_timestamp(uid, 'last_fish', now)
+        set_timestamp(uid, 'last_fishing', now)
         gif_url = choice(fish_gifs)
         if gif_url:
             embed = discord.Embed(title=f"{interaction.user.display_name} has fished {earned} clubhall coins", color=discord.Color.red())
