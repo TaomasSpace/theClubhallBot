@@ -92,7 +92,7 @@ def init_db():
     existing = {col[1] for col in cursor.fetchall()}
     for col, default in [
         ("last_quest", ""), 
-        ("last_fishing", "")        
+        ("last_fishing", ""),        
         ("stat_points", 0),
         ("last_weekly", ""),
         ("intelligence", 1),
