@@ -720,7 +720,7 @@ async def fish(interaction: discord.Interaction):
         await interaction.response.send_message(f"⏳ You can fish again in **{minutes} minutes {seconds} seconds**.", ephemeral=True)
         return
     reward = random()
-    if reward < 50:
+    if reward < 0.50:
         earned = randint(1,5)
         add_stat_points(uid, earned)
         set_timestamp(uid, 'last_fishing', now)
@@ -732,7 +732,7 @@ async def fish(interaction: discord.Interaction):
         else:
             await interaction.response.send_message("No fishing GIFs found in the database.", ephemeral=False)
             return
-    if reward < 85:
+    if reward < 0.85:
         earned= randint(10,30)
         safe_add_coins(uid, earned)
         set_timestamp(uid, 'last_fishing', now)
