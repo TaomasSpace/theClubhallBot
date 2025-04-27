@@ -23,11 +23,12 @@ ADMIN_ROLE_NAME = "Admin"
 SHEHER_ROLE_NAME = "She/Her"
 HEHIM_ROLE_NAME = "He/Him"
 DEFAULT_MAX_COINS = 3000
-DAILY_REWARD = 10
+DAILY_REWARD = 20
 WELCOME_CHANNEL_ID = 1351487186557734942
 LOG_CHANNEL_ID = 1364226902289813514
 STAT_PRICE = 66          
 QUEST_COOLDOWN_HOURS = 3
+FISHING_COOLDOWN_MINUTES = 30
 WEEKLY_REWARD = 50
 STAT_NAMES = ["intelligence", "strength", "stealth"]
 ROLE_THRESHOLDS = {
@@ -90,7 +91,8 @@ def init_db():
     cursor.execute("PRAGMA table_info(users)")
     existing = {col[1] for col in cursor.fetchall()}
     for col, default in [
-        ("last_quest", ""),         
+        ("last_quest", ""), 
+        ("last_fishing", "")        
         ("stat_points", 0),
         ("last_weekly", ""),
         ("intelligence", 1),
@@ -686,6 +688,74 @@ async def allocate(interaction: discord.Interaction, stat: str, points: int):
     increase_stat(uid, stat, points)
     await sync_stat_roles(interaction.user)
     await interaction.response.send_message(f"🔧 {stat.title()} increased by {points}.")
+
+@bot.tree.command(name="fishing", description="Phish for stat-points")
+async def fish(interaction: discord.Interaction):
+    fish_gifs = [
+        "https://media.tenor.com/ceoQ6q8vfbQAAAAM/stark-goes-fishing-looking-sad.gif",
+        "https://media.tenor.com/QnyltZCHI8cAAAAM/kirby-fishing.gif",
+        "https://i.pinimg.com/originals/6b/22/a5/6b22a575b0c783615c2b77e67951758c.gif",
+        "https://media.tenor.com/nUdopBNmWUIAAAAM/pain-kill.gif",
+        "https://i.pinimg.com/originals/6c/0c/aa/6c0caaee431885fbae24e0ac36855af1.gif",
+        "https://media.tenor.com/jMAXdnyH2GAAAAAM/ellenoar-seiran.gif",
+        "https://media.tenor.com/xYR-Agrj9nIAAAAM/bofuri-maple-anime.gif",
+        "https://64.media.tumblr.com/tumblr_ltojtsz13k1qmpg90o1_500.gif",
+        "https://giffiles.alphacoders.com/131/131082.gif",
+        "https://mir-s3-cdn-cf.behance.net/project_modules/source/0ab4b036812305.572a1cada9fdc.gif",
+        "https://64.media.tumblr.com/bdd9da69dc4f84bd90bc65bd6f015b50/tumblr_okihcp5dkZ1rd4ymxo1_500.gif",
+        "https://giffiles.alphacoders.com/176/176112.gif",
+        "https://pa1.aminoapps.com/7516/f85e46bc6e0884f53e5dbb6336852bdf4ed917f9r1-500-245_hq.gif",
+        "https://i.pinimg.com/originals/26/a4/8f/26a48f25f2d58a359afa156b03466baa.gif",
+        "https://i.gifer.com/MtWY.gif",
+        "https://64.media.tumblr.com/b288db5c592bb12deec4761e9549c8bb/tumblr_otnj940KHT1uep5pko2_r1_500.gif",
+        "https://giffiles.alphacoders.com/999/99914.gif",
+    ]
+    uid= str(interaction.user.id)
+    register_user(uid, interaction.user.display_name)
+    last = get_timestamp(uid, 'last_fishing')
+    now = datetime.utcnow()
+    if last and now - last < timedelta(minutes=FISHING_COOLDOWN_MINUTES):
+        remain = timedelta(minutes=FISHING_COOLDOWN_MINUTES) - (now -last)
+        minutes, seconds = divmod(int(remain.total_seconds()), 60)
+        await interaction.response.send_message(f"⏳ You can fish again in **{minutes} minutes {seconds} seconds**.", ephemeral=True)
+        return
+    reward = random()
+    if reward < 50:
+        earned = randint(1,5)
+        add_stat_points(uid, earned)
+        set_timestamp(uid, 'last_fish', now)
+        gif_url = choice(fish_gifs)
+        if gif_url:
+            embed = discord.Embed(title=f"{interaction.user.display_name} has fished {earned} stat points", color=discord.Color.red())
+            embed.set_image(url=gif_url)
+            await interaction.response.send_message(embed=embed)
+        else:
+            await interaction.response.send_message("No fishing GIFs found in the database.", ephemeral=False)
+            return
+    if reward < 85:
+        earned= randint(10,30)
+        safe_add_coins(uid, earned)
+        set_timestamp(uid, 'last_fish', now)
+        gif_url = choice(fish_gifs)
+        if gif_url:
+            embed = discord.Embed(title=f"{interaction.user.display_name} has fished {earned} clubhall coins", color=discord.Color.red())
+            embed.set_image(url=gif_url)
+            await interaction.response.send_message(embed=embed)
+        else:
+            await interaction.response.send_message("No fishing GIFs found in the database.", ephemeral=False)
+            return
+    else:
+        earned = randint(45, 115)
+        safe_add_coins(uid, earned)
+        set_timestamp(uid, 'last_fish', now)
+        gif_url = choice(fish_gifs)
+        if gif_url:
+            embed = discord.Embed(title=f"{interaction.user.display_name} has fished {earned} clubhall coins", color=discord.Color.red())
+            embed.set_image(url=gif_url)
+            await interaction.response.send_message(embed=embed)
+        else:
+            await interaction.response.send_message("No fishing GIFs found in the database.", ephemeral=False)
+            return
 
 # =====================================================================
 #                              STEAL COMMAND
