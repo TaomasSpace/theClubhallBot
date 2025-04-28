@@ -17,7 +17,7 @@ intents.members = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 # === CONSTANTS ===
-DB_PATH = 'users.db'
+DB_PATH = "users.db"
 OWNER_ROLE_NAME = "Owner"
 ADMIN_ROLE_NAME = "Admin"
 SHEHER_ROLE_NAME = "She/Her"
@@ -26,15 +26,15 @@ DEFAULT_MAX_COINS = 3000
 DAILY_REWARD = 20
 WELCOME_CHANNEL_ID = 1351487186557734942
 LOG_CHANNEL_ID = 1364226902289813514
-STAT_PRICE = 66          
+STAT_PRICE = 66
 QUEST_COOLDOWN_HOURS = 3
 FISHING_COOLDOWN_MINUTES = 30
 WEEKLY_REWARD = 50
 STAT_NAMES = ["intelligence", "strength", "stealth"]
 ROLE_THRESHOLDS = {
     "intelligence": ("Neuromancer", 50),
-    "strength":     ("Juggernaut", 50),
-    "stealth":      ("Shadow", 50)
+    "strength": ("Juggernaut", 50),
+    "stealth": ("Shadow", 50),
 }
 hack_cooldowns = {}
 fight_cooldowns = {}
@@ -56,11 +56,13 @@ TRIGGER_RESPONSES = {
 #                              DATABASE
 # =====================================================================
 
+
 def init_db():
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
-    cursor.execute('''
+    cursor.execute(
+        """
         CREATE TABLE IF NOT EXISTS users (
             user_id TEXT PRIMARY KEY,
             username TEXT,
@@ -72,45 +74,57 @@ def init_db():
             strength INTEGER DEFAULT 1,
             stealth INTEGER DEFAULT 1
         )
-    ''')
+    """
+    )
 
-    cursor.execute('''
+    cursor.execute(
+        """
         CREATE TABLE IF NOT EXISTS server (
             id INTEGER PRIMARY KEY CHECK (id = 1),
             max_coins INTEGER
         )
-    ''')
-    cursor.execute('INSERT OR IGNORE INTO server (id, max_coins) VALUES (1, ?)', (DEFAULT_MAX_COINS,))
-    cursor.execute('''
+    """
+    )
+    cursor.execute(
+        "INSERT OR IGNORE INTO server (id, max_coins) VALUES (1, ?)",
+        (DEFAULT_MAX_COINS,),
+    )
+    cursor.execute(
+        """
     CREATE TABLE IF NOT EXISTS shop_roles (
         role_id     TEXT PRIMARY KEY,
         price       INTEGER NOT NULL
     )
-    ''')
+    """
+    )
 
     cursor.execute("PRAGMA table_info(users)")
     existing = {col[1] for col in cursor.fetchall()}
     for col, default in [
-        ("last_quest", ""), 
-        ("last_fishing", ""),        
+        ("last_quest", ""),
+        ("last_fishing", ""),
         ("stat_points", 0),
         ("last_weekly", ""),
         ("intelligence", 1),
         ("strength", 1),
-        ("stealth", 1)
+        ("stealth", 1),
     ]:
         if col not in existing:
             if col in ("last_quest", "last_weekly", "last_fishing"):
                 cursor.execute(f"ALTER TABLE users ADD COLUMN {col} TEXT")
             else:
-                cursor.execute(f"ALTER TABLE users ADD COLUMN {col} INTEGER DEFAULT {default}")
+                cursor.execute(
+                    f"ALTER TABLE users ADD COLUMN {col} INTEGER DEFAULT {default}"
+                )
 
     conn.commit()
     conn.close()
 
+
 # ---------------------------------------------------------------------
 #                        GENERIC DB HELPERS
 # ---------------------------------------------------------------------
+
 
 def _fetchone(query: str, params=()):
     conn = sqlite3.connect(DB_PATH)
@@ -120,6 +134,7 @@ def _fetchone(query: str, params=()):
     conn.close()
     return row
 
+
 def _execute(query: str, params=()):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
@@ -127,21 +142,29 @@ def _execute(query: str, params=()):
     conn.commit()
     conn.close()
 
+
 # ---------- user registration ----------
 
+
 def register_user(user_id: str, username: str):
-    if not _fetchone('SELECT 1 FROM users WHERE user_id = ?', (user_id,)):
-        _execute('INSERT INTO users (user_id, username, money) VALUES (?,?,?)',
-                 (user_id, username, 5))
+    if not _fetchone("SELECT 1 FROM users WHERE user_id = ?", (user_id,)):
+        _execute(
+            "INSERT INTO users (user_id, username, money) VALUES (?,?,?)",
+            (user_id, username, 5),
+        )
+
 
 # ---------- coins ----------
 
+
 def get_money(user_id: str) -> int:
-    row = _fetchone('SELECT money FROM users WHERE user_id = ?', (user_id,))
+    row = _fetchone("SELECT money FROM users WHERE user_id = ?", (user_id,))
     return row[0] if row else 0
 
+
 def set_money(user_id: str, amount: int):
-    _execute('UPDATE users SET money = ? WHERE user_id = ?', (amount, user_id))
+    _execute("UPDATE users SET money = ? WHERE user_id = ?", (amount, user_id))
+
 
 def safe_add_coins(user_id: str, amount: int) -> int:
     if amount <= 0:
@@ -159,96 +182,130 @@ def safe_add_coins(user_id: str, amount: int) -> int:
     set_money(user_id, old_balance + addable)
     return addable
 
+
 def get_total_money():
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    cursor.execute('SELECT SUM(money) FROM users')
+    cursor.execute("SELECT SUM(money) FROM users")
     result = cursor.fetchone()
     conn.close()
     return result[0] if result[0] else 0
+
 
 def get_top_users(limit: int = 10):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute(
-        'SELECT username, money FROM users ORDER BY money DESC LIMIT ?',
-        (limit,)
+        "SELECT username, money FROM users ORDER BY money DESC LIMIT ?", (limit,)
     )
     rows = cursor.fetchall()
     conn.close()
     return rows
 
+
 def get_last_claim(user_id: str):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    cursor.execute('SELECT last_claim FROM users WHERE user_id = ?', (user_id,))
+    cursor.execute("SELECT last_claim FROM users WHERE user_id = ?", (user_id,))
     row = cursor.fetchone()
     conn.close()
     return datetime.fromisoformat(row[0]) if row and row[0] else None
+
 
 def set_last_claim(user_id: str, ts: datetime):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    cursor.execute('UPDATE users SET last_claim = ? WHERE user_id = ?', (ts.isoformat(), user_id))
+    cursor.execute(
+        "UPDATE users SET last_claim = ? WHERE user_id = ?", (ts.isoformat(), user_id)
+    )
     conn.commit()
     conn.close()
 
+
 # ---------- stats & stat‑points ----------
 
+
 def get_stats(user_id: str):
-    row = _fetchone('SELECT intelligence, strength, stealth, stat_points FROM users WHERE user_id = ?', (user_id,))
+    row = _fetchone(
+        "SELECT intelligence, strength, stealth, stat_points FROM users WHERE user_id = ?",
+        (user_id,),
+    )
     if not row:
         return {s: 1 for s in STAT_NAMES} | {"stat_points": 0}
     return dict(zip(STAT_NAMES + ["stat_points"], row))
 
+
 def add_stat_points(user_id: str, delta: int):
-    _execute('UPDATE users SET stat_points = stat_points + ? WHERE user_id = ?', (delta, user_id))
+    _execute(
+        "UPDATE users SET stat_points = stat_points + ? WHERE user_id = ?",
+        (delta, user_id),
+    )
+
 
 def increase_stat(user_id: str, stat: str, amount: int):
     if stat not in STAT_NAMES:
         raise ValueError("invalid stat")
-    _execute(f'UPDATE users SET {stat} = {stat} + ?, stat_points = stat_points - ? WHERE user_id = ?', (amount, amount, user_id))
+    _execute(
+        f"UPDATE users SET {stat} = {stat} + ?, stat_points = stat_points - ? WHERE user_id = ?",
+        (amount, amount, user_id),
+    )
+
 
 # ---------- timing helpers ----------
 
+
 def get_timestamp(user_id: str, column: str):
-    row = _fetchone(f'SELECT {column} FROM users WHERE user_id = ?', (user_id,))
+    row = _fetchone(f"SELECT {column} FROM users WHERE user_id = ?", (user_id,))
     return datetime.fromisoformat(row[0]) if row and row[0] else None
 
+
 def set_timestamp(user_id: str, column: str, ts: datetime):
-    _execute(f'UPDATE users SET {column} = ? WHERE user_id = ?', (ts.isoformat(), user_id))
+    _execute(
+        f"UPDATE users SET {column} = ? WHERE user_id = ?", (ts.isoformat(), user_id)
+    )
+
 
 def get_last_weekly(user_id: str):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    cursor.execute('SELECT last_weekly FROM users WHERE user_id = ?', (user_id,))
+    cursor.execute("SELECT last_weekly FROM users WHERE user_id = ?", (user_id,))
     row = cursor.fetchone()
     conn.close()
     return datetime.fromisoformat(row[0]) if row and row[0] else None
 
+
 def set_last_weekly(user_id: str, ts: datetime):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    cursor.execute('UPDATE users SET last_weekly = ? WHERE user_id = ?', (ts.isoformat(), user_id))
+    cursor.execute(
+        "UPDATE users SET last_weekly = ? WHERE user_id = ?", (ts.isoformat(), user_id)
+    )
     conn.commit()
     conn.close()
 
 
 # ---------- server helpers ----------
 
+
 def get_max_coins():
-    return _fetchone('SELECT max_coins FROM server WHERE id = 1')[0]
+    return _fetchone("SELECT max_coins FROM server WHERE id = 1")[0]
+
 
 def set_max_coins(limit: int):
-    _execute('UPDATE server SET max_coins = ? WHERE id = 1', (limit,))
+    _execute("UPDATE server SET max_coins = ? WHERE id = 1", (limit,))
+
 
 # ---------- shop helpers ----------
 def add_shop_role(role_id: int, price: int):
-    _execute('INSERT OR REPLACE INTO shop_roles (role_id, price) VALUES (?,?)',
-             (role_id, price))
+    _execute(
+        "INSERT OR REPLACE INTO shop_roles (role_id, price) VALUES (?,?)",
+        (role_id, price),
+    )
+
 
 def remove_shop_role(role_id: int):
-    _execute('DELETE FROM shop_roles WHERE role_id = ?', (role_id,))
+    _execute("DELETE FROM shop_roles WHERE role_id = ?", (role_id,))
+
 
 def get_shop_roles():
     rows = _fetchone("SELECT role_id, price FROM shop_roles")  # liefert 1 Row
@@ -257,25 +314,33 @@ def get_shop_roles():
     cursor.execute("SELECT role_id, price FROM shop_roles")
     rows = cursor.fetchall()
     conn.close()
-    return rows 
+    return rows
+
 
 # =====================================================================
 #                              UTILITIES
 # =====================================================================
 
+
 def has_role(member: discord.Member, role_name: str):
     return any(role.name == role_name for role in member.roles)
 
+
 # ---------- webhook cache (unchanged) ----------
 webhook_cache: dict[int, discord.Webhook] = {}
+
+
 async def get_channel_webhook(channel: discord.TextChannel) -> discord.Webhook:
     wh = webhook_cache.get(channel.id)
     if wh:
         return wh
     webhooks = await channel.webhooks()
-    wh = discord.utils.get(webhooks, name="LowercaseRelay") or await channel.create_webhook(name="LowercaseRelay")
+    wh = discord.utils.get(
+        webhooks, name="LowercaseRelay"
+    ) or await channel.create_webhook(name="LowercaseRelay")
     webhook_cache[channel.id] = wh
     return wh
+
 
 # === REQUEST BUTTON VIEW ===
 class RequestView(ui.View):
@@ -288,27 +353,40 @@ class RequestView(ui.View):
     @ui.button(label="Accept", style=discord.ButtonStyle.success)
     async def accept(self, interaction: discord.Interaction, button: ui.Button):
         if interaction.user.id != self.receiver_id:
-            await interaction.response.send_message("This request isn't for you.", ephemeral=True)
+            await interaction.response.send_message(
+                "This request isn't for you.", ephemeral=True
+            )
             return
 
         sender_balance = get_money(str(self.sender_id))
         receiver_balance = get_money(str(self.receiver_id))
 
         if receiver_balance < self.amount:
-            await interaction.response.send_message("You don't have enough clubhall coins to accept this request.", ephemeral=True)
+            await interaction.response.send_message(
+                "You don't have enough clubhall coins to accept this request.",
+                ephemeral=True,
+            )
             return
 
         set_money(str(self.receiver_id), receiver_balance - self.amount)
         set_money(str(self.sender_id), sender_balance + self.amount)
-        await interaction.response.edit_message(content=f"✅ Request accepted. {self.amount} clubhall coins sent!", view=None)
+        await interaction.response.edit_message(
+            content=f"✅ Request accepted. {self.amount} clubhall coins sent!",
+            view=None,
+        )
 
     @ui.button(label="Decline", style=discord.ButtonStyle.danger)
     async def decline(self, interaction: discord.Interaction, button: ui.Button):
         if interaction.user.id != self.receiver_id:
-            await interaction.response.send_message("This request isn't for you.", ephemeral=True)
+            await interaction.response.send_message(
+                "This request isn't for you.", ephemeral=True
+            )
             return
 
-        await interaction.response.edit_message(content="❌ Request declined.", view=None)
+        await interaction.response.edit_message(
+            content="❌ Request declined.", view=None
+        )
+
 
 async def sync_stat_roles(member: discord.Member):
     stats = get_stats(str(member.id))
@@ -317,13 +395,16 @@ async def sync_stat_roles(member: discord.Member):
         if role is None:
             continue
 
-        has_role   = role in member.roles
-        meets_req  = stats[stat] >= threshold
+        has_role = role in member.roles
+        meets_req = stats[stat] >= threshold
 
         if meets_req and not has_role:
             await member.add_roles(role, reason=f"{stat} {stats[stat]} ≥ {threshold}")
         elif not meets_req and has_role:
-            await member.remove_roles(role, reason=f"{stat} {stats[stat]} < {threshold}")
+            await member.remove_roles(
+                role, reason=f"{stat} {stats[stat]} < {threshold}"
+            )
+
 
 # =====================================================================
 #                              EVENTS
@@ -333,6 +414,7 @@ async def on_ready():
     init_db()
     await bot.tree.sync()
     print(f"Bot is online as {bot.user}")
+
 
 @bot.event
 async def on_message(message: discord.Message):
@@ -350,7 +432,7 @@ async def on_message(message: discord.Message):
             content=message.content.lower(),
             username=message.author.display_name,
             avatar_url=message.author.display_avatar.url,
-            allowed_mentions=discord.AllowedMentions.all()
+            allowed_mentions=discord.AllowedMentions.all(),
         )
 
     # Trigger‑responses
@@ -361,6 +443,7 @@ async def on_message(message: discord.Message):
             break
 
     await bot.process_commands(message)
+
 
 @bot.event
 async def on_member_join(member):
@@ -380,6 +463,7 @@ async def on_member_join(member):
         )
         await channel.send(message)
 
+
 @bot.event
 async def on_member_remove(member):
     channel = bot.get_channel(1361778101176107311)
@@ -396,64 +480,107 @@ async def on_member_remove(member):
 async def money(interaction: discord.Interaction):
     user_id = str(interaction.user.id)
     register_user(user_id, interaction.user.display_name)
-    await interaction.response.send_message(f"You have {get_money(user_id)} clubhall coins.", ephemeral=True)
+    await interaction.response.send_message(
+        f"You have {get_money(user_id)} clubhall coins.", ephemeral=True
+    )
 
-@bot.tree.command(name="balance", description="Check someone else's clubhall coin balance")
+
+@bot.tree.command(
+    name="balance", description="Check someone else's clubhall coin balance"
+)
 async def balance(interaction: discord.Interaction, user: discord.Member):
     register_user(str(user.id), user.display_name)
     money = get_money(str(user.id))
-    await interaction.response.send_message(f"{user.display_name} has {money} clubhall coins.")
+    await interaction.response.send_message(
+        f"{user.display_name} has {money} clubhall coins."
+    )
+
 
 @bot.tree.command(name="give", description="Give coins to a user (Admin/Owner only)")
 async def give(interaction: discord.Interaction, user: discord.Member, amount: int):
-    if not has_role(interaction.user, ADMIN_ROLE_NAME) and not has_role(interaction.user, OWNER_ROLE_NAME):
-        await interaction.response.send_message("You don't have permission to give clubhall coins.", ephemeral=True)
+    if not has_role(interaction.user, ADMIN_ROLE_NAME) and not has_role(
+        interaction.user, OWNER_ROLE_NAME
+    ):
+        await interaction.response.send_message(
+            "You don't have permission to give clubhall coins.", ephemeral=True
+        )
         return
 
     register_user(str(user.id), user.display_name)
     added = safe_add_coins(str(user.id), amount)
     if added == 0:
-        await interaction.response.send_message(f"Clubhall coin limit reached. No coins added.", ephemeral=True)
+        await interaction.response.send_message(
+            f"Clubhall coin limit reached. No coins added.", ephemeral=True
+        )
     elif added < amount:
-        await interaction.response.send_message(f"Partial success: Only {added} coins added due to server limit.", ephemeral=True)
+        await interaction.response.send_message(
+            f"Partial success: Only {added} coins added due to server limit.",
+            ephemeral=True,
+        )
     else:
-        await interaction.response.send_message(f"{added} clubhall coins added to {user.display_name}.")
+        await interaction.response.send_message(
+            f"{added} clubhall coins added to {user.display_name}."
+        )
 
-@bot.tree.command(name="remove", description="Remove clubhall coins from a user (Admin/Owner only)")
+
+@bot.tree.command(
+    name="remove", description="Remove clubhall coins from a user (Admin/Owner only)"
+)
 async def remove(interaction: discord.Interaction, user: discord.Member, amount: int):
-    if not has_role(interaction.user, ADMIN_ROLE_NAME) and not has_role(interaction.user, OWNER_ROLE_NAME):
-        await interaction.response.send_message("You don't have permission to remove clubhall coins.", ephemeral=True)
+    if not has_role(interaction.user, ADMIN_ROLE_NAME) and not has_role(
+        interaction.user, OWNER_ROLE_NAME
+    ):
+        await interaction.response.send_message(
+            "You don't have permission to remove clubhall coins.", ephemeral=True
+        )
         return
 
     current = get_money(str(user.id))
     set_money(str(user.id), max(0, current - amount))
-    await interaction.response.send_message(f"{amount} clubhall coins removed from {user.display_name}.")
+    await interaction.response.send_message(
+        f"{amount} clubhall coins removed from {user.display_name}."
+    )
+
 
 @bot.tree.command(name="spend", description="Spend your own clubhall coins")
 async def spend(interaction: discord.Interaction, amount: int):
     user_id = str(interaction.user.id)
     current = get_money(user_id)
     if amount > current:
-        await interaction.response.send_message("You don't have enough clubhall coins.", ephemeral=True)
+        await interaction.response.send_message(
+            "You don't have enough clubhall coins.", ephemeral=True
+        )
         return
     set_money(user_id, current - amount)
     await interaction.response.send_message(f"You spent {amount} clubhall coins.")
 
-@bot.tree.command(name="setlimit", description="Set the maximum clubhall coins limit (Owner only)")
+
+@bot.tree.command(
+    name="setlimit", description="Set the maximum clubhall coins limit (Owner only)"
+)
 async def setlimit(interaction: discord.Interaction, new_limit: int):
     if not has_role(interaction.user, OWNER_ROLE_NAME):
-        await interaction.response.send_message("Only the owner can change the limit.", ephemeral=True)
+        await interaction.response.send_message(
+            "Only the owner can change the limit.", ephemeral=True
+        )
         return
     set_max_coins(new_limit)
     await interaction.response.send_message(f"New coin limit set to {new_limit}.")
 
-@bot.tree.command(name="request", description="Request clubhall coins from another user")
-async def request(interaction: discord.Interaction, user: discord.Member, amount: int, reason: str):
+
+@bot.tree.command(
+    name="request", description="Request clubhall coins from another user"
+)
+async def request(
+    interaction: discord.Interaction, user: discord.Member, amount: int, reason: str
+):
     sender_id = interaction.user.id
     receiver_id = user.id
 
     if sender_id == receiver_id:
-        await interaction.response.send_message("You can't request clubhall coins from yourself.", ephemeral=True)
+        await interaction.response.send_message(
+            "You can't request clubhall coins from yourself.", ephemeral=True
+        )
         return
 
     register_user(str(sender_id), interaction.user.display_name)
@@ -462,10 +589,12 @@ async def request(interaction: discord.Interaction, user: discord.Member, amount
     view = RequestView(sender_id, receiver_id, amount)
     await interaction.response.send_message(
         f"{user.mention}, {interaction.user.display_name} requests **{amount}** clubhall coins for: _{reason}_",
-        view=view
+        view=view,
     )
 
+
 cooldown_cache = {}
+
 
 @bot.tree.command(name="punch", description="Punch someone with anime style")
 async def punch(interaction: discord.Interaction, user: discord.Member):
@@ -510,11 +639,13 @@ async def punch(interaction: discord.Interaction, user: discord.Member):
         "https://upgifs.com//img/gifs/2C12FgA3jVbby.gif",
         "https://gifdb.com/images/high/anime-punch-damian-desmond-gun4qnn5009sa1ne.gif",
         "https://giffiles.alphacoders.com/200/200628.gif",
-        "https://i.imgflip.com/1zx1tj.gif"
+        "https://i.imgflip.com/1zx1tj.gif",
     ]
 
     if user.id == interaction.user.id:
-        await interaction.response.send_message("You can't punch yourself ... or maybe you can?", ephemeral=True)
+        await interaction.response.send_message(
+            "You can't punch yourself ... or maybe you can?", ephemeral=True
+        )
         return
 
     if not punch_gifs:
@@ -524,11 +655,12 @@ async def punch(interaction: discord.Interaction, user: discord.Member):
     selected_gif = choice(punch_gifs)
     embed = discord.Embed(
         title=f"{interaction.user.display_name} punches {user.display_name}!",
-        color=discord.Colour.red()
+        color=discord.Colour.red(),
     )
     embed.set_image(url=selected_gif)
 
     await interaction.response.send_message(embed=embed)
+
 
 @bot.tree.command(name="stab", description="Stab someone with anime style")
 async def stab(interaction: discord.Interaction, user: discord.Member):
@@ -537,7 +669,7 @@ async def stab(interaction: discord.Interaction, user: discord.Member):
         "https://i.pinimg.com/originals/15/dd/94/15dd945571c75b2a0f5141c313fb7dc6.gif",
         "https://i.gifer.com/E65z.gif",
         "https://i.makeagif.com/media/12-15-2017/I2zZ0u.gif",
-        "https://media.tenor.com/2pCPJqG46awAAAAM/yes-adventure-time.gif"
+        "https://media.tenor.com/2pCPJqG46awAAAAM/yes-adventure-time.gif",
     ]
 
     stab_gifs = [
@@ -568,26 +700,28 @@ async def stab(interaction: discord.Interaction, user: discord.Member):
         "https://images.squarespace-cdn.com/content/v1/5b23e822f79392038cbd486c/1561132763571-XTIOP1FRN1OJRWSGZ9F1/tumblr_o5lpjy37HN1v7kio1o1_500.gif",
         "https://i.makeagif.com/media/11-18-2022/Ezac_n.gif",
         "https://c.tenor.com/uc9Qh0p1mOIAAAAC/yuno-gasai-mirai-nikki.gif",
-            ]
+    ]
 
     sender_id = interaction.user.id
     try:
         if user.id == sender_id:
-            chance = 0.20  
+            chance = 0.20
             if has_role(interaction.user, OWNER_ROLE_NAME):
-                chance = 0.75 
+                chance = 0.75
 
             if random() < chance:
                 selected_gif = choice(special_gifs)
                 embed = discord.Embed(
                     title=f"{interaction.user.display_name} tried to stab themselves... and succeeded?!",
-                    color=discord.Color.red()
+                    color=discord.Color.red(),
                 )
                 embed.set_image(url=selected_gif)
                 await interaction.response.send_message(embed=embed)
                 return
             else:
-                await interaction.response.send_message("You can't stab yourself... or can you?", ephemeral=True)
+                await interaction.response.send_message(
+                    "You can't stab yourself... or can you?", ephemeral=True
+                )
                 return
 
         chance = 0.50
@@ -596,12 +730,17 @@ async def stab(interaction: discord.Interaction, user: discord.Member):
         if random() < chance:
             gif_url = choice(stab_gifs)
             if gif_url:
-                embed = discord.Embed(title=f"{interaction.user.display_name} stabs {user.display_name}!", color=discord.Color.red())
+                embed = discord.Embed(
+                    title=f"{interaction.user.display_name} stabs {user.display_name}!",
+                    color=discord.Color.red(),
+                )
                 embed.set_image(url=gif_url)
                 print(gif_url)
                 await interaction.response.send_message(embed=embed)
             else:
-                await interaction.response.send_message("No stab GIFs found in the database.", ephemeral=True)
+                await interaction.response.send_message(
+                    "No stab GIFs found in the database.", ephemeral=True
+                )
         else:
             fail_messages = [
                 "Isn't that illegal?",
@@ -609,50 +748,71 @@ async def stab(interaction: discord.Interaction, user: discord.Member):
                 "You missed completely!",
                 "They dodged like a ninja!",
                 "You changed your mind last second.",
-                "Your knife broke!"
+                "Your knife broke!",
             ]
             await interaction.response.send_message(choice(fail_messages))
     except:
-        await interaction.response.send_message("You can't stab someone with higher permission than me. (No owners and no CEO's)", ephemeral=True)
+        await interaction.response.send_message(
+            "You can't stab someone with higher permission than me. (No owners and no CEO's)",
+            ephemeral=True,
+        )
 
 
 # =====================================================================
 #                              SLASH COMMANDS – STATS
 # =====================================================================
 
+
 @bot.tree.command(name="stats", description="Show your stats & unspent points")
-async def stats_cmd(interaction: discord.Interaction, user: discord.Member | None = None):
+async def stats_cmd(
+    interaction: discord.Interaction, user: discord.Member | None = None
+):
     target = user or interaction.user
     register_user(str(target.id), target.display_name)
     stats = get_stats(str(target.id))
     description = "\n".join(f"**{s.title()}**: {stats[s]}" for s in STAT_NAMES)
-    embed = discord.Embed(title=f"{target.display_name}'s Stats", description=description, colour=discord.Colour.green())
+    embed = discord.Embed(
+        title=f"{target.display_name}'s Stats",
+        description=description,
+        colour=discord.Colour.green(),
+    )
     embed.set_footer(text=f"Unspent points: {stats['stat_points']}")
     await interaction.response.send_message(embed=embed, ephemeral=(user is None))
 
-@bot.tree.command(name="quest", description="Complete a short quest to earn stat‑points (3 h CD)")
+
+@bot.tree.command(
+    name="quest", description="Complete a short quest to earn stat‑points (3 h CD)"
+)
 async def quest(interaction: discord.Interaction):
     uid = str(interaction.user.id)
     register_user(uid, interaction.user.display_name)
 
-    last = get_timestamp(uid, 'last_quest')
+    last = get_timestamp(uid, "last_quest")
     now = datetime.utcnow()
     if last and now - last < timedelta(hours=QUEST_COOLDOWN_HOURS):
         remain = timedelta(hours=QUEST_COOLDOWN_HOURS) - (now - last)
         hrs, sec = divmod(int(remain.total_seconds()), 3600)
         mins = sec // 60
-        await interaction.response.send_message(f"🕒 Next quest in {hrs} h {mins} min.", ephemeral=True)
+        await interaction.response.send_message(
+            f"🕒 Next quest in {hrs} h {mins} min.", ephemeral=True
+        )
         return
 
     earned = randint(1, 3)
     add_stat_points(uid, earned)
-    set_timestamp(uid, 'last_quest', now)
-    await interaction.response.send_message(f"🏅 You completed the quest and earned **{earned}** stat‑point(s)!", ephemeral=True)
+    set_timestamp(uid, "last_quest", now)
+    await interaction.response.send_message(
+        f"🏅 You completed the quest and earned **{earned}** stat‑point(s)!",
+        ephemeral=True,
+    )
+
 
 @bot.tree.command(name="buypoints", description="Buy stat‑points with coins")
 async def buypoints(interaction: discord.Interaction, amount: int = 1):
     if amount < 1:
-        await interaction.response.send_message("Specify a positive amount.", ephemeral=True)
+        await interaction.response.send_message(
+            "Specify a positive amount.", ephemeral=True
+        )
         return
     uid = str(interaction.user.id)
     register_user(uid, interaction.user.display_name)
@@ -661,14 +821,22 @@ async def buypoints(interaction: discord.Interaction, amount: int = 1):
     cost = price_per_point * amount
     balance = get_money(uid)
     if balance < cost:
-        await interaction.response.send_message(f"❌ You need {cost} coins but only have {balance}.", ephemeral=True)
+        await interaction.response.send_message(
+            f"❌ You need {cost} coins but only have {balance}.", ephemeral=True
+        )
         return
     set_money(uid, balance - cost)
     add_stat_points(uid, amount)
-    await interaction.response.send_message(f"✅ Purchased {amount} point(s) for {cost} coins.")
+    await interaction.response.send_message(
+        f"✅ Purchased {amount} point(s) for {cost} coins."
+    )
+
 
 @bot.tree.command(name="allocate", description="Spend stat‑points to increase a stat")
-@app_commands.describe(stat="Which stat? (intelligence/strength/stealth)", points="How many points to allocate")
+@app_commands.describe(
+    stat="Which stat? (intelligence/strength/stealth)",
+    points="How many points to allocate",
+)
 async def allocate(interaction: discord.Interaction, stat: str, points: int):
     stat = stat.lower()
     if stat not in STAT_NAMES:
@@ -681,13 +849,16 @@ async def allocate(interaction: discord.Interaction, stat: str, points: int):
     uid = str(interaction.user.id)
     register_user(uid, interaction.user.display_name)
     user_stats = get_stats(uid)
-    if user_stats['stat_points'] < points:
-        await interaction.response.send_message("Not enough unspent points.", ephemeral=True)
+    if user_stats["stat_points"] < points:
+        await interaction.response.send_message(
+            "Not enough unspent points.", ephemeral=True
+        )
         return
 
     increase_stat(uid, stat, points)
     await sync_stat_roles(interaction.user)
     await interaction.response.send_message(f"🔧 {stat.title()} increased by {points}.")
+
 
 @bot.tree.command(name="fishing", description="Phish for stat-points")
 async def fish(interaction: discord.Interaction):
@@ -710,63 +881,87 @@ async def fish(interaction: discord.Interaction):
         "https://64.media.tumblr.com/b288db5c592bb12deec4761e9549c8bb/tumblr_otnj940KHT1uep5pko2_r1_500.gif",
         "https://giffiles.alphacoders.com/999/99914.gif",
     ]
-    uid= str(interaction.user.id)
+    uid = str(interaction.user.id)
     register_user(uid, interaction.user.display_name)
-    last = get_timestamp(uid, 'last_fishing')
+    last = get_timestamp(uid, "last_fishing")
     now = datetime.utcnow()
     if last and now - last < timedelta(minutes=FISHING_COOLDOWN_MINUTES):
-        remain = timedelta(minutes=FISHING_COOLDOWN_MINUTES) - (now -last)
+        remain = timedelta(minutes=FISHING_COOLDOWN_MINUTES) - (now - last)
         minutes, seconds = divmod(int(remain.total_seconds()), 60)
-        await interaction.response.send_message(f"⏳ You can fish again in **{minutes} minutes {seconds} seconds**.", ephemeral=True)
+        await interaction.response.send_message(
+            f"⏳ You can fish again in **{minutes} minutes {seconds} seconds**.",
+            ephemeral=True,
+        )
         return
     reward = random()
     if reward < 0.50:
-        earned = randint(1,5)
+        earned = randint(1, 5)
         add_stat_points(uid, earned)
-        set_timestamp(uid, 'last_fishing', now)
+        set_timestamp(uid, "last_fishing", now)
         gif_url = choice(fish_gifs)
         if gif_url:
-            embed = discord.Embed(title=f"{interaction.user.display_name} has fished {earned} stat points", color=discord.Color.red())
+            embed = discord.Embed(
+                title=f"{interaction.user.display_name} has fished {earned} stat points",
+                color=discord.Color.red(),
+            )
             embed.set_image(url=gif_url)
             await interaction.response.send_message(embed=embed)
             return
         else:
-            await interaction.response.send_message("No fishing GIFs found in the database.", ephemeral=False)
+            await interaction.response.send_message(
+                "No fishing GIFs found in the database.", ephemeral=False
+            )
             return
     if reward < 0.85:
-        earned= randint(10,30)
+        earned = randint(10, 30)
         safe_add_coins(uid, earned)
-        set_timestamp(uid, 'last_fishing', now)
+        set_timestamp(uid, "last_fishing", now)
         gif_url = choice(fish_gifs)
         if gif_url:
-            embed = discord.Embed(title=f"{interaction.user.display_name} has fished {earned} clubhall coins", color=discord.Color.red())
+            embed = discord.Embed(
+                title=f"{interaction.user.display_name} has fished {earned} clubhall coins",
+                color=discord.Color.red(),
+            )
             embed.set_image(url=gif_url)
             await interaction.response.send_message(embed=embed)
             return
         else:
-            await interaction.response.send_message("No fishing GIFs found in the database.", ephemeral=False)
+            await interaction.response.send_message(
+                "No fishing GIFs found in the database.", ephemeral=False
+            )
             return
     else:
         earned = randint(45, 115)
         safe_add_coins(uid, earned)
-        set_timestamp(uid, 'last_fishing', now)
+        set_timestamp(uid, "last_fishing", now)
         gif_url = choice(fish_gifs)
         if gif_url:
-            embed = discord.Embed(title=f"{interaction.user.display_name} has fished {earned} clubhall coins", color=discord.Color.red())
+            embed = discord.Embed(
+                title=f"{interaction.user.display_name} has fished {earned} clubhall coins",
+                color=discord.Color.red(),
+            )
             embed.set_image(url=gif_url)
             await interaction.response.send_message(embed=embed)
             return
         else:
-            await interaction.response.send_message("No fishing GIFs found in the database.", ephemeral=False)
+            await interaction.response.send_message(
+                "No fishing GIFs found in the database.", ephemeral=False
+            )
             return
+
 
 # =====================================================================
 #                              STEAL COMMAND
 # =====================================================================
-@bot.tree.command(name="steal", description="Attempt to steal coins from another user (needs stealth ≥ 3)")
+@bot.tree.command(
+    name="steal",
+    description="Attempt to steal coins from another user (needs stealth ≥ 3)",
+)
 async def steal(interaction: discord.Interaction, target: discord.Member):
     if target.id == interaction.user.id:
-        await interaction.response.send_message("You can't steal from yourself!", ephemeral=True)
+        await interaction.response.send_message(
+            "You can't steal from yourself!", ephemeral=True
+        )
         return
     uid, tid = str(interaction.user.id), str(target.id)
     now = datetime.utcnow()
@@ -775,24 +970,31 @@ async def steal(interaction: discord.Interaction, target: discord.Member):
         remaining = timedelta(minutes=45) - (now - cooldown)
         minutes, seconds = divmod(int(remaining.total_seconds()), 60)
         await interaction.response.send_message(
-            f"⏳ You can steal again in **{minutes} minutes {seconds} seconds**.", ephemeral=True
+            f"⏳ You can steal again in **{minutes} minutes {seconds} seconds**.",
+            ephemeral=True,
         )
         return
     register_user(uid, interaction.user.display_name)
     register_user(tid, target.display_name)
     actor_stats = get_stats(uid)
     target_stats = get_stats(tid)
-    if actor_stats['stealth'] < 3:
-        await interaction.response.send_message("You need at least **3** Stealth to attempt a steal.", ephemeral=True)
+    if actor_stats["stealth"] < 3:
+        await interaction.response.send_message(
+            "You need at least **3** Stealth to attempt a steal.", ephemeral=True
+        )
         return
-    actor_stealth, target_stealth = actor_stats['stealth'], target_stats['stealth']
+    actor_stealth, target_stealth = actor_stats["stealth"], target_stats["stealth"]
     success_chance = actor_stealth / (actor_stealth + target_stealth)
     if random() > success_chance:
-        await interaction.response.send_message("👀 You were caught and failed to steal any coins!", ephemeral=True)
+        await interaction.response.send_message(
+            "👀 You were caught and failed to steal any coins!", ephemeral=True
+        )
         return
     target_balance = get_money(tid)
     if target_balance < 5:
-        await interaction.response.send_message("Target is too poor to bother...", ephemeral=True)
+        await interaction.response.send_message(
+            "Target is too poor to bother...", ephemeral=True
+        )
         return
     max_pct = min(0.05 + 0.02 * max(actor_stealth - target_stealth, 0), 0.25)
     stolen_pct = random() * max_pct
@@ -800,14 +1002,21 @@ async def steal(interaction: discord.Interaction, target: discord.Member):
     set_money(tid, target_balance - stolen_amt)
     safe_add_coins(uid, stolen_amt)
     steal_cooldowns[uid] = datetime.utcnow()
-    await interaction.response.send_message(f"🕶️ Success! You stole **{stolen_amt}** coins from {target.display_name}.", ephemeral=True)
+    await interaction.response.send_message(
+        f"🕶️ Success! You stole **{stolen_amt}** coins from {target.display_name}.",
+        ephemeral=True,
+    )
+
 
 # ==============================================================
 #                          HACK COMMAND
 #   – nutzt Intelligence vs. Intelligence
 # ==============================================================
 
-@bot.tree.command(name="hack", description="Hack the bank to win coins (needs intelligence ≥ 3)")
+
+@bot.tree.command(
+    name="hack", description="Hack the bank to win coins (needs intelligence ≥ 3)"
+)
 async def hack(interaction: discord.Interaction):
     uid = str(interaction.user.id)
     register_user(uid, interaction.user.display_name)
@@ -818,22 +1027,22 @@ async def hack(interaction: discord.Interaction):
         remaining = timedelta(minutes=45) - (now - cooldown)
         minutes, seconds = divmod(int(remaining.total_seconds()), 60)
         await interaction.response.send_message(
-            f"⏳ You can hack again in **{minutes} minutes {seconds} seconds**.", ephemeral=True
+            f"⏳ You can hack again in **{minutes} minutes {seconds} seconds**.",
+            ephemeral=True,
         )
         return
 
     stats = get_stats(uid)
     if stats["intelligence"] < 3:
         await interaction.response.send_message(
-            "❌ You need at least **3** Intelligence to attempt a hack.",
-            ephemeral=True
+            "❌ You need at least **3** Intelligence to attempt a hack.", ephemeral=True
         )
         return
 
     int_level = stats["intelligence"]
     success = random() < min(0.20 + 0.05 * (int_level - 3), 0.80)
 
-    hack_cooldowns[uid] = now  
+    hack_cooldowns[uid] = now
 
     if not success:
         loss = randint(1, 5) * int_level
@@ -841,7 +1050,7 @@ async def hack(interaction: discord.Interaction):
         set_money(uid, new_bal)
         await interaction.response.send_message(
             f"💻 Hack failed! Security traced you and you lost **{loss}** coins.",
-            ephemeral=True
+            ephemeral=True,
         )
         return
 
@@ -851,23 +1060,29 @@ async def hack(interaction: discord.Interaction):
     if added > 0:
         await interaction.response.send_message(
             f"🔋 Hack successful! You siphoned **{added}** coins from the bank.",
-            ephemeral=True
+            ephemeral=True,
         )
     else:
         await interaction.response.send_message(
             "⚠️ Hack succeeded but server coin limit reached. No coins added.",
-            ephemeral=True
+            ephemeral=True,
         )
+
 
 # ==============================================================
 #                        FIGHT / MUG COMMAND
 #   – nutzt Strength vs. Strength (Ziel-User)
 # ==============================================================
 
-@bot.tree.command(name="fight", description="Fight someone for coins (needs strength ≥ 3)")
+
+@bot.tree.command(
+    name="fight", description="Fight someone for coins (needs strength ≥ 3)"
+)
 async def fight(interaction: discord.Interaction, target: discord.Member):
     if target.id == interaction.user.id:
-        await interaction.response.send_message("You can't fight yourself!", ephemeral=True)
+        await interaction.response.send_message(
+            "You can't fight yourself!", ephemeral=True
+        )
         return
     uid, tid = str(interaction.user.id), str(target.id)
     now = datetime.utcnow()
@@ -876,7 +1091,8 @@ async def fight(interaction: discord.Interaction, target: discord.Member):
         remaining = timedelta(minutes=45) - (now - cooldown)
         minutes, seconds = divmod(int(remaining.total_seconds()), 60)
         await interaction.response.send_message(
-            f"⏳ You can fight again in **{minutes} minutes {seconds} seconds**.", ephemeral=True
+            f"⏳ You can fight again in **{minutes} minutes {seconds} seconds**.",
+            ephemeral=True,
         )
         return
     register_user(uid, interaction.user.display_name)
@@ -884,7 +1100,9 @@ async def fight(interaction: discord.Interaction, target: discord.Member):
     atk = get_stats(uid)
     defn = get_stats(tid)
     if atk["strength"] < 3:
-        await interaction.response.send_message("You need at least **3** Strength to start a fight.", ephemeral=True)
+        await interaction.response.send_message(
+            "You need at least **3** Strength to start a fight.", ephemeral=True
+        )
         return
     atk_str, def_str = atk["strength"], defn["strength"]
     win_chance = atk_str / (atk_str + def_str)
@@ -892,7 +1110,10 @@ async def fight(interaction: discord.Interaction, target: discord.Member):
         penalty = max(1, int(get_money(uid) * 0.10))
         set_money(uid, get_money(uid) - penalty)
         safe_add_coins(tid, penalty)
-        await interaction.response.send_message(f"🏋️ You lost the fight and paid **{penalty}** coins in damages to {target.display_name}.", ephemeral=True)
+        await interaction.response.send_message(
+            f"🏋️ You lost the fight and paid **{penalty}** coins in damages to {target.display_name}.",
+            ephemeral=True,
+        )
         return
     target_coins = get_money(tid)
     steal_pct = random() * min(0.05 + 0.03 * max(atk_str - def_str, 0), 0.20)
@@ -900,13 +1121,20 @@ async def fight(interaction: discord.Interaction, target: discord.Member):
     set_money(tid, target_coins - stolen)
     safe_add_coins(uid, stolen)
     fight_cooldowns[uid] = datetime.utcnow()
-    await interaction.response.send_message(f"💪 Victory! You took **{stolen}** coins from {target.display_name}.", ephemeral=True)
+    await interaction.response.send_message(
+        f"💪 Victory! You took **{stolen}** coins from {target.display_name}.",
+        ephemeral=True,
+    )
+
 
 # =====================================================================
 #                     DAILY & OTHER ORIGINAL COMMANDS
 # =====================================================================
 
-@bot.tree.command(name="weekly", description="Claim your weekly clubhall coins (7d cooldown)")
+
+@bot.tree.command(
+    name="weekly", description="Claim your weekly clubhall coins (7d cooldown)"
+)
 async def weekly(interaction: discord.Interaction):
     user_id = str(interaction.user.id)
     register_user(user_id, interaction.user.display_name)
@@ -921,7 +1149,7 @@ async def weekly(interaction: discord.Interaction):
         minutes = seconds // 60
         await interaction.response.send_message(
             f"⏳ You can claim again in **{days} days {hours} hours {minutes} minutes**.",
-            ephemeral=True
+            ephemeral=True,
         )
         return
 
@@ -931,46 +1159,54 @@ async def weekly(interaction: discord.Interaction):
     if added > 0:
         await interaction.response.send_message(
             f"✅ {added} Coins added! You now have **{get_money(user_id)}** 💰.",
-            ephemeral=True
+            ephemeral=True,
         )
     else:
         await interaction.response.send_message(
             "⚠️ Server coin limit reached. No weekly coins could be added.",
-            ephemeral=True
+            ephemeral=True,
         )
 
-@bot.tree.command(name="forcelowercase",
-                  description="Force a member's messages to lowercase (toggle)")
+
+@bot.tree.command(
+    name="forcelowercase", description="Force a member's messages to lowercase (toggle)"
+)
 @app_commands.describe(member="Member to lock/unlock")
 @app_commands.checks.has_permissions(manage_messages=True)
-async def forcelowercase(interaction: discord.Interaction,
-                         member: discord.Member):
+async def forcelowercase(interaction: discord.Interaction, member: discord.Member):
 
     if member.id in lowercase_locked:
         lowercase_locked.remove(member.id)
         await interaction.response.send_message(
             f"🔓 {member.display_name} unlocked – messages stay unchanged.",
-            ephemeral=True
+            ephemeral=True,
         )
     else:
         lowercase_locked.add(member.id)
         await interaction.response.send_message(
             f"🔒 {member.display_name} locked – messages will be lower‑cased.",
-            ephemeral=True
+            ephemeral=True,
         )
 
-@bot.tree.command(name="gamble", description="Gamble your coins for a chance to win more!")
+
+@bot.tree.command(
+    name="gamble", description="Gamble your coins for a chance to win more!"
+)
 async def gamble(interaction: discord.Interaction, amount: int):
     user_id = str(interaction.user.id)
     register_user(user_id, interaction.user.display_name)
 
     if amount < 2:
-        await interaction.response.send_message("🎲 Minimum bet is 2 clubhall coins.", ephemeral=True)
+        await interaction.response.send_message(
+            "🎲 Minimum bet is 2 clubhall coins.", ephemeral=True
+        )
         return
 
     balance = get_money(user_id)
     if amount > balance:
-        await interaction.response.send_message("❌ You don't have enough clubhall coins!", ephemeral=True)
+        await interaction.response.send_message(
+            "❌ You don't have enough clubhall coins!", ephemeral=True
+        )
         return
 
     await interaction.response.send_message("🎲 Rolling the dice...", ephemeral=False)
@@ -993,12 +1229,7 @@ async def gamble(interaction: discord.Interaction, amount: int):
     new_amount = amount * multiplier
     set_money(user_id, balance - amount + new_amount)
 
-    emoji_result = {
-        3: "💎",
-        2: "🔥",
-        1: "😐",
-        0: "💀"
-    }
+    emoji_result = {3: "💎", 2: "🔥", 1: "😐", 0: "💀"}
 
     await interaction.edit_original_response(
         content=(
@@ -1008,16 +1239,26 @@ async def gamble(interaction: discord.Interaction, amount: int):
         )
     )
 
+
 logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s | %(levelname)s | %(name)s: %(message)s"
+    level=logging.INFO, format="%(asctime)s | %(levelname)s | %(name)s: %(message)s"
 )
 
-@bot.tree.command(name="imitate", description="Imitate a user's message (Admin/Owner only)")
+
+@bot.tree.command(
+    name="imitate", description="Imitate a user's message (Admin/Owner only)"
+)
 @app_commands.describe(user="User to imitate", msg="The message to send")
 async def imitate(interaction: discord.Interaction, user: discord.Member, msg: str):
-    if not has_role(interaction.user, ADMIN_ROLE_NAME) and not has_role(interaction.user, OWNER_ROLE_NAME) and not has_role(interaction.user, "Rae‘s boyfriend") and not has_role(interaction.user, "Marmalades Boyfriend"):
-        await interaction.response.send_message("You don't have permission to use this command.", ephemeral=True)
+    if (
+        not has_role(interaction.user, ADMIN_ROLE_NAME)
+        and not has_role(interaction.user, OWNER_ROLE_NAME)
+        and not has_role(interaction.user, "Rae‘s boyfriend")
+        and not has_role(interaction.user, "Marmalades Boyfriend")
+    ):
+        await interaction.response.send_message(
+            "You don't have permission to use this command.", ephemeral=True
+        )
         return
 
     channel = interaction.channel
@@ -1028,37 +1269,37 @@ async def imitate(interaction: discord.Interaction, user: discord.Member, msg: s
             content=msg,
             username=user.display_name,
             avatar_url=user.display_avatar.url,
-            allowed_mentions=discord.AllowedMentions.none()
+            allowed_mentions=discord.AllowedMentions.none(),
         )
         await interaction.response.send_message("✅ Message sent.", ephemeral=True)
     except Exception as e:
-        await interaction.response.send_message(f"❌ Failed to imitate: {e}", ephemeral=True)
+        await interaction.response.send_message(
+            f"❌ Failed to imitate: {e}", ephemeral=True
+        )
+
 
 @bot.tree.command(name="giveaway", description="Start a giveaway (only Admin/Owner)")
 @app_commands.describe(duration="duration in minutes", prize="Prize")
-async def giveaway(interaction: discord.Interaction,
-                   duration: int,
-                   prize: str):
+async def giveaway(interaction: discord.Interaction, duration: int, prize: str):
 
-    if (not has_role(interaction.user, ADMIN_ROLE_NAME) and
-        not has_role(interaction.user, OWNER_ROLE_NAME)):
+    if not has_role(interaction.user, ADMIN_ROLE_NAME) and not has_role(
+        interaction.user, OWNER_ROLE_NAME
+    ):
         await interaction.response.send_message(
-            "Only admins and owners can use this command",
-            ephemeral=True
+            "Only admins and owners can use this command", ephemeral=True
         )
         return
 
     embed = discord.Embed(
         title="🎉 GIVEAWAY 🎉",
         description=(
-            f"React with 🎉 to win **{prize}**!\n"
-            f"🔔 Duration: **{duration} min**."
+            f"React with 🎉 to win **{prize}**!\n" f"🔔 Duration: **{duration} min**."
         ),
-        color=discord.Color.gold()
+        color=discord.Color.gold(),
     )
     embed.set_footer(
         text=f"Created by: {interaction.user.display_name}",
-        icon_url=interaction.user.display_avatar.url
+        icon_url=interaction.user.display_avatar.url,
     )
 
     await interaction.response.send_message(embed=embed)
@@ -1081,9 +1322,9 @@ async def giveaway(interaction: discord.Interaction,
 
     winner = choice(users)
     await refreshed.reply(
-        f"🎊 Congratulation! {winner.mention}! "
-        f"You have won **{prize}** 🎉"
+        f"🎊 Congratulation! {winner.mention}! " f"You have won **{prize}** 🎉"
     )
+
 
 @bot.tree.command(name="goon", description="goon to someone on the server")
 async def goon(interaction: discord.Interaction, user: discord.Member):
@@ -1099,29 +1340,44 @@ async def goon(interaction: discord.Interaction, user: discord.Member):
     sender_id = interaction.user.id
     try:
         if user.id == sender_id:
-                await interaction.response.send_message("You cant goon to yourself", ephemeral=True)
+            await interaction.response.send_message(
+                "You cant goon to yourself", ephemeral=True
+            )
 
         chance = 0.95
         if random() < chance:
             gif_url = choice(goon_gifs)
             if gif_url:
-                embed = discord.Embed(title=f"{interaction.user.display_name} goons to {user.display_name}!", color=discord.Color.red())
+                embed = discord.Embed(
+                    title=f"{interaction.user.display_name} goons to {user.display_name}!",
+                    color=discord.Color.red(),
+                )
                 embed.set_image(url=gif_url)
                 print(gif_url)
                 await interaction.response.send_message(embed=embed)
             else:
-                await interaction.response.send_message("No goon GIFs found in the database.", ephemeral=False)
+                await interaction.response.send_message(
+                    "No goon GIFs found in the database.", ephemeral=False
+                )
         else:
-                gif_url = choice(die_gifs)
-                if gif_url:
-                    embed = discord.Embed(title=f"{interaction.user.display_name} dies because of gooning!", color=discord.Color.red())
-                    embed.set_image(url=gif_url)
-                    print(gif_url)
-                    await interaction.response.send_message(embed=embed)
-                else:
-                    await interaction.response.send_message("No die GIFs found in the database.", ephemeral=False)
+            gif_url = choice(die_gifs)
+            if gif_url:
+                embed = discord.Embed(
+                    title=f"{interaction.user.display_name} dies because of gooning!",
+                    color=discord.Color.red(),
+                )
+                embed.set_image(url=gif_url)
+                print(gif_url)
+                await interaction.response.send_message(embed=embed)
+            else:
+                await interaction.response.send_message(
+                    "No die GIFs found in the database.", ephemeral=False
+                )
     except:
-        await interaction.response.send_message("Command didnt work, sry :(", ephemeral=True)
+        await interaction.response.send_message(
+            "Command didnt work, sry :(", ephemeral=True
+        )
+
 
 @bot.tree.command(name="dance", description="hit a cool dance")
 async def dance(interaction: discord.Interaction):
@@ -1151,14 +1407,22 @@ async def dance(interaction: discord.Interaction):
     try:
         gif_url = choice(dance_gifs)
         if gif_url:
-            embed = discord.Embed(title=f"{interaction.user.display_name} Dances", color=discord.Color.red())
+            embed = discord.Embed(
+                title=f"{interaction.user.display_name} Dances",
+                color=discord.Color.red(),
+            )
             embed.set_image(url=gif_url)
             print(gif_url)
             await interaction.response.send_message(embed=embed)
         else:
-            await interaction.response.send_message("No Dance GIFs found in the database.", ephemeral=False)
+            await interaction.response.send_message(
+                "No Dance GIFs found in the database.", ephemeral=False
+            )
     except:
-        await interaction.response.send_message("Command didnt work, sry :(", ephemeral=True)
+        await interaction.response.send_message(
+            "Command didnt work, sry :(", ephemeral=True
+        )
+
 
 @bot.tree.command(name="good", description="Tell someone he/she is a good boy/girl")
 async def good(interaction: discord.Interaction, user: discord.Member):
@@ -1186,33 +1450,51 @@ async def good(interaction: discord.Interaction, user: discord.Member):
         if has_role(user, SHEHER_ROLE_NAME):
             gif_url = choice(sheher_gifs)
             if gif_url:
-                embed = discord.Embed(title=f"{interaction.user.display_name} calls {user.display_name} a good girl", color=discord.Color.red())
+                embed = discord.Embed(
+                    title=f"{interaction.user.display_name} calls {user.display_name} a good girl",
+                    color=discord.Color.red(),
+                )
                 embed.set_image(url=gif_url)
                 print(gif_url)
                 await interaction.response.send_message(embed=embed)
             else:
-                await interaction.response.send_message("No good girl GIFs found in the database.", ephemeral=False)
+                await interaction.response.send_message(
+                    "No good girl GIFs found in the database.", ephemeral=False
+                )
         elif has_role(user, HEHIM_ROLE_NAME):
             gif_url = choice(hehim_gifs)
             if gif_url:
-                embed = discord.Embed(title=f"{interaction.user.display_name} calls {user.display_name} a good boy", color=discord.Color.red())
+                embed = discord.Embed(
+                    title=f"{interaction.user.display_name} calls {user.display_name} a good boy",
+                    color=discord.Color.red(),
+                )
                 embed.set_image(url=gif_url)
                 print(gif_url)
                 await interaction.response.send_message(embed=embed)
             else:
-                await interaction.response.send_message("No good boy GIFs found in the database.", ephemeral=False)
+                await interaction.response.send_message(
+                    "No good boy GIFs found in the database.", ephemeral=False
+                )
         else:
             gif_url = choice(undefined_gifs)
             if gif_url:
-                embed = discord.Embed(title=f"{interaction.user.display_name} calls {user.display_name} a good child", color=discord.Color.red())
+                embed = discord.Embed(
+                    title=f"{interaction.user.display_name} calls {user.display_name} a good child",
+                    color=discord.Color.red(),
+                )
                 embed.set_image(url=gif_url)
                 print(gif_url)
                 await interaction.response.send_message(embed=embed)
             else:
-                await interaction.response.send_message("No good person GIFs found in the database.", ephemeral=False)
+                await interaction.response.send_message(
+                    "No good person GIFs found in the database.", ephemeral=False
+                )
 
     except:
-        await interaction.response.send_message("Command didnt work, sry :(", ephemeral=True)
+        await interaction.response.send_message(
+            "Command didnt work, sry :(", ephemeral=True
+        )
+
 
 # === LEADERBOARD ===
 @bot.tree.command(name="topcoins", description="Show the richest players")
@@ -1225,13 +1507,17 @@ async def topcoins(interaction: discord.Interaction, count: int = 10):
         await interaction.response.send_message("No data yet 🤷‍♂️")
         return
 
-    lines = [f"**#{i + 1:02d}**  {name} – **{coins}** 💰" for i, (name, coins) in enumerate(top)]
+    lines = [
+        f"**#{i + 1:02d}**  {name} – **{coins}** 💰"
+        for i, (name, coins) in enumerate(top)
+    ]
     embed = discord.Embed(
         title=f"🏆 Top {count} Coin Holders",
         description="\n".join(lines),
-        colour=discord.Colour.gold()
+        colour=discord.Colour.gold(),
     )
     await interaction.response.send_message(embed=embed)
+
 
 # === DAILY REWARD ===
 @bot.tree.command(name="daily", description="Claim your daily coins (24 h cooldown)")
@@ -1257,28 +1543,29 @@ async def daily(interaction: discord.Interaction):
     if added > 0:
         await interaction.response.send_message(
             f"✅ {added} Coins added! You now have **{get_money(user_id)}** 💰.",
-            ephemeral=True
+            ephemeral=True,
         )
     else:
         await interaction.response.send_message(
             "⚠️ Server coin limit reached. No daily coins could be added.",
-            ephemeral=True
+            ephemeral=True,
         )
+
 
 # =====================================================================
 #                     Shop COMMANDS
 # =====================================================================
 
+
 @bot.tree.command(
-    name="addshoprole",
-    description="Create/register a purchasable role (Owner/Admin)"
+    name="addshoprole", description="Create/register a purchasable role (Owner/Admin)"
 )
 @app_commands.describe(
     name="Role name",
     price="Cost in coins",
     color="#RRGGBB (hex)",
     reference="Put the new role relative to this role (optional)",
-    above="If True, place *above* the reference; else below"
+    above="If True, place *above* the reference; else below",
 )
 async def addshoprole(
     inter: discord.Interaction,
@@ -1286,9 +1573,11 @@ async def addshoprole(
     price: int,
     color: str,
     reference: discord.Role | None = None,
-    above: bool = True
+    above: bool = True,
 ):
-    if not (has_role(inter.user, OWNER_ROLE_NAME) or has_role(inter.user, ADMIN_ROLE_NAME)):
+    if not (
+        has_role(inter.user, OWNER_ROLE_NAME) or has_role(inter.user, ADMIN_ROLE_NAME)
+    ):
         await inter.response.send_message("No permission.", ephemeral=True)
         return
 
@@ -1311,17 +1600,17 @@ async def addshoprole(
             await inter.response.send_message(
                 "❌ Bot kann die Rolle nicht verschieben. "
                 "Achte darauf, dass seine höchste Rolle über dem Ziel steht.",
-                ephemeral=True
+                ephemeral=True,
             )
             return
 
-    add_shop_role(role.id, price) 
+    add_shop_role(role.id, price)
 
     await inter.response.send_message(
-        f"✅ Rolle **{role.name}** registriert (Preis {price} Coins).",
-        ephemeral=True
+        f"✅ Rolle **{role.name}** registriert (Preis {price} Coins).", ephemeral=True
     )
-    
+
+
 @bot.tree.command(name="shop", description="Show all purchasable roles")
 async def shop(inter: discord.Interaction):
     entries = get_shop_roles()
@@ -1337,11 +1626,14 @@ async def shop(inter: discord.Interaction):
     embed = discord.Embed(title="🛒 Role Shop", description="\n".join(lines))
     await inter.response.send_message(embed=embed)
 
+
 @bot.tree.command(name="buyrole", description="Buy a role from the shop")
 async def buyrole(inter: discord.Interaction, role: discord.Role):
     row = _fetchone("SELECT price FROM shop_roles WHERE role_id = ?", (role.id,))
     if not row:
-        await inter.response.send_message("This role does not exist in the shop.", ephemeral=True)
+        await inter.response.send_message(
+            "This role does not exist in the shop.", ephemeral=True
+        )
         return
     price = row[0]
 
@@ -1355,11 +1647,15 @@ async def buyrole(inter: discord.Interaction, role: discord.Role):
     set_money(uid, balance - price)
     await inter.user.add_roles(role, reason="Shop purchase")
     await inter.response.send_message(
-        f"🎉 Congratulation! You bought **{role.name}** for {price} clubhall coins.")
+        f"🎉 Congratulation! You bought **{role.name}** for {price} clubhall coins."
+    )
 
 
 # === GLOBAL ERROR HANDLER ===
-logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(name)s: %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s | %(levelname)s | %(name)s: %(message)s"
+)
+
 
 @bot.tree.error
 async def on_app_error(inter: discord.Interaction, error: Exception):
@@ -1369,16 +1665,17 @@ async def on_app_error(inter: discord.Interaction, error: Exception):
             title="Command error",
             colour=discord.Colour.red(),
             timestamp=datetime.utcnow(),
-            description=f"```py\n{error}\n```"
+            description=f"```py\n{error}\n```",
         )
         embed.add_field(name="Command", value=inter.command.qualified_name)
-        embed.add_field(name="User", value=f"{inter.user} (`{inter.user.id}`)", inline=False)
+        embed.add_field(
+            name="User", value=f"{inter.user} (`{inter.user.id}`)", inline=False
+        )
         embed.add_field(name="Channel", value=f"{inter.channel.mention}", inline=False)
         await log_ch.send(embed=embed)
     if isinstance(error, CommandOnCooldown):
         await inter.response.send_message(
-            f"⏱ Cooldown: try again in {error.retry_after:.0f}s.",
-            ephemeral=True
+            f"⏱ Cooldown: try again in {error.retry_after:.0f}s.", ephemeral=True
         )
         return
 
@@ -1387,12 +1684,16 @@ async def on_app_error(inter: discord.Interaction, error: Exception):
     if inter.response.is_done():
         await inter.followup.send("Oops, something went wrong 😵", ephemeral=True)
     else:
-        await inter.response.send_message("Oops, something went wrong 😵", ephemeral=True)
+        await inter.response.send_message(
+            "Oops, something went wrong 😵", ephemeral=True
+        )
+
 
 # === LOG COMMANDS ===
 @bot.event
-async def on_app_command_completion(inter: discord.Interaction,
-                                    command: app_commands.Command):
+async def on_app_command_completion(
+    inter: discord.Interaction, command: app_commands.Command
+):
     log_ch = bot.get_channel(LOG_CHANNEL_ID)
     if not log_ch:
         return
@@ -1402,14 +1703,17 @@ async def on_app_command_completion(inter: discord.Interaction,
     embed = discord.Embed(
         title="Command executed",
         colour=discord.Colour.blue(),
-        timestamp=datetime.utcnow()
+        timestamp=datetime.utcnow(),
     )
     embed.add_field(name="Command", value=f"/{command.qualified_name}")
-    embed.add_field(name="User", value=f"{inter.user} (`{inter.user.id}`)", inline=False)
+    embed.add_field(
+        name="User", value=f"{inter.user} (`{inter.user.id}`)", inline=False
+    )
     embed.add_field(name="Channel", value=inter.channel.mention, inline=False)
     embed.add_field(name="Options", value=opts, inline=False)
 
     await log_ch.send(embed=embed)
+
 
 def format_options(data: dict, interaction: discord.Interaction) -> str:
     result = []
@@ -1419,10 +1723,10 @@ def format_options(data: dict, interaction: discord.Interaction) -> str:
 
     for opt in data.get("options", []):
         if opt.get("type") == 1:  # Subcommand
-            inner = ", ".join(
-                _format_option(o, users_data)
-                for o in opt.get("options", [])
-            ) or "–"
+            inner = (
+                ", ".join(_format_option(o, users_data) for o in opt.get("options", []))
+                or "–"
+            )
             result.append(f"{opt['name']}({inner})")
         else:
             result.append(_format_option(opt, users_data))
@@ -1434,7 +1738,7 @@ def _format_option(opt: dict, users_data: dict) -> str:
     name = opt["name"]
     value = opt.get("value")
 
-    if opt["type"] == 6 and value:  
+    if opt["type"] == 6 and value:
         user = users_data.get(str(value))
         if user and isinstance(user, dict):
             username = user.get("global_name") or user.get("username", "Unknown")
@@ -1443,6 +1747,7 @@ def _format_option(opt: dict, users_data: dict) -> str:
             return f"{name}=(unknown user) ({value})"
 
     return f"{name}={value}"
+
 
 # === TOKEN ===
 with open("code.txt", "r") as file:
