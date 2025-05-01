@@ -1280,6 +1280,38 @@ async def setstatpoints(
     )
 
 
+@bot.tree.command(name="setstat", description="Set a user's stat (Owner only)")
+@app_commands.describe(
+    user="Target user",
+    stat="Which stat to set (intelligence, strength, stealth)",
+    amount="New stat value (≥ 0)",
+)
+async def setstat(
+    interaction: discord.Interaction, user: discord.Member, stat: str, amount: int
+):
+    if not has_role(interaction.user, OWNER_ROLE_NAME):
+        await interaction.response.send_message(
+            "Only the Owner can use this command.", ephemeral=True
+        )
+        return
+
+    stat = stat.lower()
+    if stat not in STAT_NAMES:
+        await interaction.response.send_message("Invalid stat name.", ephemeral=True)
+        return
+
+    if amount < 0:
+        await interaction.response.send_message("Amount must be ≥ 0.", ephemeral=True)
+        return
+
+    uid = str(user.id)
+    register_user(uid, user.display_name)
+    _execute(f"UPDATE users SET {stat} = ? WHERE user_id = ?", (amount, uid))
+    await interaction.response.send_message(
+        f"✅ Set {user.display_name}'s **{stat}** to **{amount}**.", ephemeral=True
+    )
+
+
 @bot.tree.command(
     name="weekly", description="Claim your weekly clubhall coins (7d cooldown)"
 )
