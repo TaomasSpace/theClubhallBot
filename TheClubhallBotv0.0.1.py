@@ -1255,6 +1255,29 @@ async def fight(interaction: discord.Interaction, target: discord.Member):
 # =====================================================================
 #                     DAILY & OTHER ORIGINAL COMMANDS
 # =====================================================================
+@bot.tree.command(
+    name="setstatpoints", description="Set a user's stat points (Owner only)"
+)
+@app_commands.describe(user="Target user", amount="New amount of stat points")
+async def setstatpoints(
+    interaction: discord.Interaction, user: discord.Member, amount: int
+):
+    if not has_role(interaction.user, OWNER_ROLE_NAME):
+        await interaction.response.send_message(
+            "Only the Owner can use this command.", ephemeral=True
+        )
+        return
+
+    if amount < 0:
+        await interaction.response.send_message("Amount must be ≥ 0.", ephemeral=True)
+        return
+
+    uid = str(user.id)
+    register_user(uid, user.display_name)
+    _execute("UPDATE users SET stat_points = ? WHERE user_id = ?", (amount, uid))
+    await interaction.response.send_message(
+        f"✅ Set {user.display_name}'s stat points to {amount}.", ephemeral=True
+    )
 
 
 @bot.tree.command(
