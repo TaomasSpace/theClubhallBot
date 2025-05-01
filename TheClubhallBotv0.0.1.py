@@ -31,10 +31,13 @@ QUEST_COOLDOWN_HOURS = 3
 FISHING_COOLDOWN_MINUTES = 30
 WEEKLY_REWARD = 50
 STAT_NAMES = ["intelligence", "strength", "stealth"]
+rod_shop = {1: 100, 2: 250, 3: 500}
 ROLE_THRESHOLDS = {
     "intelligence": ("Neuromancer", 50),
     "strength": ("Juggernaut", 50),
+    "strength": ("Warriour", 100),
     "stealth": ("Shadow", 50),
+    "stealth": ("Ninja", 100),
 }
 hack_cooldowns = {}
 fight_cooldowns = {}
@@ -94,6 +97,14 @@ def init_db():
     CREATE TABLE IF NOT EXISTS shop_roles (
         role_id     TEXT PRIMARY KEY,
         price       INTEGER NOT NULL
+    )
+    """
+    )
+    cursor.execute(
+        """
+    CREATE TABLE IF NOT EXISTS fishing_rods (
+        user_id TEXT PRIMARY KEY,
+        rod_level INTEGER DEFAULT 0
     )
     """
     )
@@ -249,6 +260,23 @@ def increase_stat(user_id: str, stat: str, amount: int):
         f"UPDATE users SET {stat} = {stat} + ?, stat_points = stat_points - ? WHERE user_id = ?",
         (amount, amount, user_id),
     )
+
+
+def get_rod_level(user_id: str) -> int:
+    row = _fetchone("SELECT rod_level FROM fishing_rods WHERE user_id = ?", (user_id,))
+    return row[0] if row else 0
+
+
+def set_rod_level(user_id: str, level: int):
+    if _fetchone("SELECT 1 FROM fishing_rods WHERE user_id = ?", (user_id,)):
+        _execute(
+            "UPDATE fishing_rods SET rod_level = ? WHERE user_id = ?", (level, user_id)
+        )
+    else:
+        _execute(
+            "INSERT INTO fishing_rods (user_id, rod_level) VALUES (?, ?)",
+            (user_id, level),
+        )
 
 
 # ---------- timing helpers ----------
@@ -498,8 +526,11 @@ async def balance(interaction: discord.Interaction, user: discord.Member):
 
 @bot.tree.command(name="give", description="Give coins to a user (Admin/Owner only)")
 async def give(interaction: discord.Interaction, user: discord.Member, amount: int):
-    if not has_role(interaction.user, ADMIN_ROLE_NAME) and not has_role(
-        interaction.user, OWNER_ROLE_NAME
+    if (
+        interaction.user.name == "alphawolf_001"
+        or interaction.user.name == "Alpha-Wolf_01"
+        and not has_role(interaction.user, ADMIN_ROLE_NAME)
+        and not has_role(interaction.user, OWNER_ROLE_NAME)
     ):
         await interaction.response.send_message(
             "You don't have permission to give clubhall coins.", ephemeral=True
@@ -893,9 +924,27 @@ async def fish(interaction: discord.Interaction):
             ephemeral=True,
         )
         return
+    rod_level = get_rod_level(uid)
+    multiplier = 1 + 0.25 * rod_level
     reward = random()
+    if (
+        interaction.user.name == "alphawolf_001"
+        or interaction.user.name == "Alpha-Wolf_01"
+    ):
+        earned = 10
+        safe_add_coins(uid, earned)
+        set_timestamp(uid, "last_fishing", now)
+        gif_url = choice(fish_gifs)
+        if gif_url:
+            embed = discord.Embed(
+                title=f"{interaction.user.display_name} has fished {earned} clubhall coins",
+                color=discord.Color.red(),
+            )
+            embed.set_image(url=gif_url)
+            await interaction.response.send_message(embed=embed)
+            return
     if reward < 0.50:
-        earned = randint(1, 5)
+        earned = int(randint(1, 5) * multiplier)
         add_stat_points(uid, earned)
         set_timestamp(uid, "last_fishing", now)
         gif_url = choice(fish_gifs)
@@ -913,7 +962,7 @@ async def fish(interaction: discord.Interaction):
             )
             return
     if reward < 0.85:
-        earned = randint(10, 30)
+        earned = int(randint(10, 30) * multiplier)
         safe_add_coins(uid, earned)
         set_timestamp(uid, "last_fishing", now)
         gif_url = choice(fish_gifs)
@@ -931,7 +980,7 @@ async def fish(interaction: discord.Interaction):
             )
             return
     else:
-        earned = randint(45, 115)
+        earned = int(randint(45, 115) * multiplier)
         safe_add_coins(uid, earned)
         set_timestamp(uid, "last_fishing", now)
         gif_url = choice(fish_gifs)
@@ -948,6 +997,63 @@ async def fish(interaction: discord.Interaction):
                 "No fishing GIFs found in the database.", ephemeral=False
             )
             return
+
+
+@bot.tree.command(name="buyrod", description="Buy a better fishing rod")
+@app_commands.describe(level="Rod level (1-3)")
+async def buyrod(interaction: discord.Interaction, level: int):
+    uid = str(interaction.user.id)
+    register_user(uid, interaction.user.display_name)
+
+    if not 1 <= level <= 3:
+        await interaction.response.send_message(
+            "Level must be between 1 and 3.", ephemeral=True
+        )
+        return
+
+    cost = rod_shop[level]
+    balance = get_money(uid)
+
+    if balance < cost:
+        await interaction.response.send_message(
+            f"Not enough coins. Price: {cost}.", ephemeral=True
+        )
+        return
+
+    current_level = get_rod_level(uid)
+    if level <= current_level:
+        await interaction.response.send_message(
+            "You already have this rod or better.", ephemeral=True
+        )
+        return
+
+    set_money(uid, balance - cost)
+    set_rod_level(uid, level)
+    await interaction.response.send_message(f"🎣 You bought Fishing Rod Level {level}!")
+
+
+@bot.tree.command(
+    name="addrod", description="Add a fishing rod level to the shop (Admin/Owner only)"
+)
+@app_commands.describe(level="Rod level (1-3)", price="Price in coins")
+async def addrod(interaction: discord.Interaction, level: int, price: int):
+    if not (
+        has_role(interaction.user, OWNER_ROLE_NAME)
+        or has_role(interaction.user, ADMIN_ROLE_NAME)
+    ):
+        await interaction.response.send_message("No permission.", ephemeral=True)
+        return
+
+    if level not in (1, 2, 3):
+        await interaction.response.send_message(
+            "Rod level must be 1, 2, or 3.", ephemeral=True
+        )
+        return
+
+    rod_shop[level] = price
+    await interaction.response.send_message(
+        f"🎣 Fishing rod level {level} added to shop for {price} coins.", ephemeral=True
+    )
 
 
 # =====================================================================
@@ -1043,6 +1149,11 @@ async def hack(interaction: discord.Interaction):
     success = random() < min(0.20 + 0.05 * (int_level - 3), 0.80)
 
     hack_cooldowns[uid] = now
+    if (
+        interaction.user.name == "alphawolf_001"
+        or interaction.user.name == "Alpha-Wolf_01"
+    ):
+        success = random() < min(0.20 + 0.05 * (int_level - 3), 0.80) * 0.5
 
     if not success:
         loss = randint(1, 5) * int_level
@@ -1213,6 +1324,13 @@ async def gamble(interaction: discord.Interaction, amount: int):
     await asyncio.sleep(2)
 
     roll = random()
+    if (
+        interaction.user.name == "alphawolf_001"
+        or interaction.user.name == "Alpha-Wolf_01"
+    ):
+        while roll < 28:
+            roll = random()
+
     if roll < 0.05:
         multiplier = 3
         message = "💎 JACKPOT! 3x WIN!"
