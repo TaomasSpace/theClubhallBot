@@ -108,6 +108,15 @@ def init_db():
     )
     """
     )
+    cursor.execute(
+        """
+    CREATE TABLE IF NOT EXISTS rod_shop (
+        level INTEGER PRIMARY KEY,
+        price INTEGER NOT NULL,
+        multiplier REAL NOT NULL
+    )
+    """
+    )
 
     cursor.execute("PRAGMA table_info(users)")
     existing = {col[1] for col in cursor.fetchall()}
@@ -192,6 +201,22 @@ def safe_add_coins(user_id: str, amount: int) -> int:
     old_balance = get_money(user_id)
     set_money(user_id, old_balance + addable)
     return addable
+
+
+def add_rod_to_shop(level: int, price: int, multiplier: float):
+    _execute(
+        "INSERT OR REPLACE INTO rod_shop (level, price, multiplier) VALUES (?, ?, ?)",
+        (level, price, multiplier),
+    )
+
+
+def get_all_rods_from_shop() -> dict:
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT level, price, multiplier FROM rod_shop")
+    rows = cursor.fetchall()
+    conn.close()
+    return {level: (price, multiplier) for level, price, multiplier in rows}
 
 
 def get_total_money():
@@ -440,6 +465,8 @@ async def sync_stat_roles(member: discord.Member):
 @bot.event
 async def on_ready():
     init_db()
+    global rod_shop
+    rod_shop = get_all_rods_from_shop()
     await bot.tree.sync()
     print(f"Bot is online as {bot.user}")
 
@@ -1050,6 +1077,7 @@ async def addrod(
         return
 
     rod_shop[level] = (price, multiplier)
+    add_rod_to_shop(level, price, multiplier)
     await interaction.response.send_message(
         f"🎣 Rod {level} added: {price} coins, {multiplier}× reward.", ephemeral=True
     )
