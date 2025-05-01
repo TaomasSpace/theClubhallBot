@@ -31,7 +31,7 @@ QUEST_COOLDOWN_HOURS = 3
 FISHING_COOLDOWN_MINUTES = 30
 WEEKLY_REWARD = 50
 STAT_NAMES = ["intelligence", "strength", "stealth"]
-rod_shop = {1: 100, 2: 250, 3: 500}
+rod_shop = {}
 ROLE_THRESHOLDS = {
     "intelligence": ("Neuromancer", 50),
     "strength": ("Juggernaut", 50),
@@ -999,24 +999,23 @@ async def fish(interaction: discord.Interaction):
             return
 
 
-@bot.tree.command(name="buyrod", description="Buy a better fishing rod")
-@app_commands.describe(level="Rod level (1-3)")
+@bot.tree.command(name="buyrod", description="Buy a fishing rod")
+@app_commands.describe(level="Rod level to buy")
 async def buyrod(interaction: discord.Interaction, level: int):
     uid = str(interaction.user.id)
     register_user(uid, interaction.user.display_name)
 
-    if not 1 <= level <= 3:
+    if level not in rod_shop:
         await interaction.response.send_message(
-            "Level must be between 1 and 3.", ephemeral=True
+            "This rod is not available.", ephemeral=True
         )
         return
 
-    cost = rod_shop[level]
+    price, _ = rod_shop[level]
     balance = get_money(uid)
-
-    if balance < cost:
+    if balance < price:
         await interaction.response.send_message(
-            f"Not enough coins. Price: {cost}.", ephemeral=True
+            f"❌ Not enough coins. ({price} required)", ephemeral=True
         )
         return
 
@@ -1027,16 +1026,22 @@ async def buyrod(interaction: discord.Interaction, level: int):
         )
         return
 
-    set_money(uid, balance - cost)
+    set_money(uid, balance - price)
     set_rod_level(uid, level)
-    await interaction.response.send_message(f"🎣 You bought Fishing Rod Level {level}!")
+    await interaction.response.send_message(f"🎣 You bought Rod {level}!")
 
 
 @bot.tree.command(
-    name="addrod", description="Add a fishing rod level to the shop (Admin/Owner only)"
+    name="addrod", description="Add a fishing rod to the shop (Admin/Owner only)"
 )
-@app_commands.describe(level="Rod level (1-3)", price="Price in coins")
-async def addrod(interaction: discord.Interaction, level: int, price: int):
+@app_commands.describe(
+    level="Rod identifier (must be a unique positive number)",
+    price="Price in coins",
+    multiplier="Reward multiplier (e.g. 1.25)",
+)
+async def addrod(
+    interaction: discord.Interaction, level: int, price: int, multiplier: float
+):
     if not (
         has_role(interaction.user, OWNER_ROLE_NAME)
         or has_role(interaction.user, ADMIN_ROLE_NAME)
@@ -1044,16 +1049,25 @@ async def addrod(interaction: discord.Interaction, level: int, price: int):
         await interaction.response.send_message("No permission.", ephemeral=True)
         return
 
-    if level not in (1, 2, 3):
-        await interaction.response.send_message(
-            "Rod level must be 1, 2, or 3.", ephemeral=True
-        )
-        return
-
-    rod_shop[level] = price
+    rod_shop[level] = (price, multiplier)
     await interaction.response.send_message(
-        f"🎣 Fishing rod level {level} added to shop for {price} coins.", ephemeral=True
+        f"🎣 Rod {level} added: {price} coins, {multiplier}× reward.", ephemeral=True
     )
+
+
+@bot.tree.command(name="rodshop", description="Show available fishing rods")
+async def rodshop(inter: discord.Interaction):
+    if not rod_shop:
+        await inter.response.send_message("🛒 The rod shop is empty.", ephemeral=True)
+        return
+    lines = [
+        f"🎣 Rod {lvl}: **{price}** coins – {mult:.2f}× rewards"
+        for lvl, (price, mult) in sorted(rod_shop.items())
+    ]
+    embed = discord.Embed(
+        title="🎣 Rod Shop", description="\n".join(lines), color=discord.Color.teal()
+    )
+    await inter.response.send_message(embed=embed)
 
 
 # =====================================================================
