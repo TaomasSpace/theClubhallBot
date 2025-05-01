@@ -1397,7 +1397,7 @@ async def gamble(interaction: discord.Interaction, amount: int):
         interaction.user.name == "alphawolf_001"
         or interaction.user.name == "Alpha-Wolf_01"
     ):
-        while roll < 28:
+        while roll < 0.28:
             roll = random()
 
     if roll < 0.05:
