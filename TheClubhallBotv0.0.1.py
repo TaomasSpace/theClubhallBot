@@ -1199,6 +1199,8 @@ async def hack(interaction: discord.Interaction):
     if (
         interaction.user.name == "alphawolf_001"
         or interaction.user.name == "Alpha-Wolf_01"
+        or interaction.user.name == "Trazaaa"
+        or interaction.user.name == "trazaaa"
     ):
         success = random() < min(0.20 + 0.05 * (int_level - 3), 0.80) * 0.5
 
