@@ -481,7 +481,6 @@ async def on_message(message: discord.Message):
     if message.author.bot or message.webhook_id:
         return
 
-    # force lowercase feature (unchanged)
     if message.author.id in lowercase_locked:
         try:
             await message.delete()
@@ -495,7 +494,6 @@ async def on_message(message: discord.Message):
             allowed_mentions=discord.AllowedMentions.all(),
         )
 
-    # Trigger‑responses
     content = message.content.lower()
     for trigger, reply in TRIGGER_RESPONSES.items():
         if trigger.lower() in content:
@@ -1473,7 +1471,6 @@ async def imitate(interaction: discord.Interaction, user: discord.Member, msg: s
     if (
         not has_role(interaction.user, ADMIN_ROLE_NAME)
         and not has_role(interaction.user, OWNER_ROLE_NAME)
-        and not has_role(interaction.user, "Rae‘s boyfriend")
         and not has_role(interaction.user, "Marmalades Boyfriend")
     ):
         await interaction.response.send_message(
