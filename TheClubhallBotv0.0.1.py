@@ -177,6 +177,11 @@ def register_user(user_id: str, username: str):
 # ---------- coins ----------
 
 
+def get_rod_multiplier(level: int) -> float:
+    row = _fetchone("SELECT multiplier FROM rod_shop WHERE level = ?", (level,))
+    return row[0] if row else 1.0
+
+
 def get_money(user_id: str) -> int:
     row = _fetchone("SELECT money FROM users WHERE user_id = ?", (user_id,))
     return row[0] if row else 0
@@ -952,7 +957,7 @@ async def fish(interaction: discord.Interaction):
         )
         return
     rod_level = get_rod_level(uid)
-    multiplier = 1 + 0.25 * rod_level
+    multiplier = get_rod_multiplier(rod_level)
     reward = random()
     if (
         interaction.user.name == "alphawolf_001"
