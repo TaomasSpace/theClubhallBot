@@ -1128,6 +1128,7 @@ async def rodshop(inter: discord.Interaction):
 # =====================================================================
 #                              STEAL COMMAND
 # =====================================================================
+
 @bot.tree.command(
     name="steal",
     description="Attempt to steal coins from another user (needs stealth ≥ 3)",
@@ -1825,7 +1826,7 @@ async def addshoprole(
     try:
         colour_obj = discord.Colour(int(color.lstrip("#"), 16))
     except ValueError:
-        await inter.response.send_message("⚠️  Invalid hex colour.", ephemeral=True)
+        await inter.response.send_message("⚠️ Invalid hex color.", ephemeral=True)
         return
 
     guild = inter.guild
@@ -1891,6 +1892,28 @@ async def buyrole(inter: discord.Interaction, role: discord.Role):
         f"🎉 Congratulation! You bought **{role.name}** for {price} clubhall coins."
     )
 
+# =====================================================================
+#                              CASINO COMMANDS
+# =====================================================================
+
+@bot.tree.command(name="casino", description="pay to win")
+@app_commands.describe(bet="How much you want to bet")
+async def casino(inter: discord.Interaction, bet: int):
+    uid = str(inter.user.id)
+    register_user(uid)
+    balance = get_money(uid)
+    if balance < bet:
+        await inter.response.send_message("❌ Not enough coins.", ephemeral=True)
+        return
+    if random() > 0.5:
+        set_money(uid, balance + bet)
+        await inter.response.send_message(
+        f"🎉 Congratulation! You won {bet} clubhall coins.")
+        return
+    set_money(uid, balance - bet)
+    await inter.response.send_message(
+    f"❌ Congratulation! You lose {bet} clubhall coins.")
+    return
 
 # === GLOBAL ERROR HANDLER ===
 logging.basicConfig(
