@@ -603,14 +603,14 @@ async def remove(interaction: discord.Interaction, user: discord.Member, amount:
     )
 
 
-@bot.tree.command(name="spend", description="Send coins to another user")
-async def spend(interaction: discord.Interaction, user: discord.Member, amount: int):
+@bot.tree.command(name="donate", description="Send coins to another user")
+async def donate(interaction: discord.Interaction, user: discord.Member, amount: int):
     sender_id = str(interaction.user.id)
     receiver_id = str(user.id)
 
     if sender_id == receiver_id:
         await interaction.response.send_message(
-            "You can't spend coins on yourself.", ephemeral=True
+            "You can't donate coins on yourself.", ephemeral=True
         )
         return
 
@@ -635,7 +635,7 @@ async def spend(interaction: discord.Interaction, user: discord.Member, amount: 
     safe_add_coins(receiver_id, amount)
 
     await interaction.response.send_message(
-        f"💸 You spent **{amount}** clubhall coins on {user.display_name}!",
+        f"💸 You donated **{amount}** clubhall coins on {user.display_name}!",
         ephemeral=False,
     )
 
