@@ -603,17 +603,41 @@ async def remove(interaction: discord.Interaction, user: discord.Member, amount:
     )
 
 
-@bot.tree.command(name="spend", description="Spend your own clubhall coins")
-async def spend(interaction: discord.Interaction, amount: int):
-    user_id = str(interaction.user.id)
-    current = get_money(user_id)
-    if amount > current:
+@bot.tree.command(name="spend", description="Send coins to another user")
+async def spend(interaction: discord.Interaction, user: discord.Member, amount: int):
+    sender_id = str(interaction.user.id)
+    receiver_id = str(user.id)
+
+    if sender_id == receiver_id:
+        await interaction.response.send_message(
+            "You can't spend coins on yourself.", ephemeral=True
+        )
+        return
+
+    register_user(sender_id, interaction.user.display_name)
+    register_user(receiver_id, user.display_name)
+
+    sender_balance = get_money(sender_id)
+
+    if amount <= 0:
+        await interaction.response.send_message(
+            "Amount must be greater than 0.", ephemeral=True
+        )
+        return
+
+    if amount > sender_balance:
         await interaction.response.send_message(
             "You don't have enough clubhall coins.", ephemeral=True
         )
         return
-    set_money(user_id, current - amount)
-    await interaction.response.send_message(f"You spent {amount} clubhall coins.")
+
+    set_money(sender_id, sender_balance - amount)
+    safe_add_coins(receiver_id, amount)
+
+    await interaction.response.send_message(
+        f"💸 You spent **{amount}** clubhall coins on {user.display_name}!",
+        ephemeral=False,
+    )
 
 
 @bot.tree.command(
