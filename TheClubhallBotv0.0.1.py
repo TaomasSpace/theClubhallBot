@@ -1900,9 +1900,11 @@ async def buyrole(inter: discord.Interaction, role: discord.Role):
 @app_commands.describe(bet="How much you want to bet")
 async def casino(inter: discord.Interaction, bet: int):
     uid = str(inter.user.id)
-    register_user(uid)
+    register_user(uid, inter.user.display_name)
     balance = get_money(uid)
-    if balance < bet:
+    if (bet <= 0):
+        await inter.response.send_message("❌ Try number more than 0", ephemeral=True)
+    if bet > balance:
         await inter.response.send_message("❌ Not enough coins.", ephemeral=True)
         return
     if random() > 0.5:
