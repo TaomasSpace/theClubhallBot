@@ -2069,10 +2069,6 @@ async def setboostlevel(interaction: discord.Interaction, user: discord.Member, 
         await interaction.response.send_message("Only levels 1, 2, or 3 are allowed.", ephemeral=True)
         return
 
-    if not get_custom_role(str(user.id)):
-        await interaction.response.send_message("User has no custom role yet.", ephemeral=True)
-        return
-
     set_boost_level(str(user.id), level)
     await interaction.response.send_message(f"✅ Boost level for {user.display_name} set to {level}.", ephemeral=True)
 
