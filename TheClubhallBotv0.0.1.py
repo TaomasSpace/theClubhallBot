@@ -118,6 +118,14 @@ def init_db():
     """
     )
 
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS custom_roles (
+        user_id TEXT PRIMARY KEY,
+        role_id TEXT NOT NULL,
+        boost_level INTEGER DEFAULT 1
+    )
+    """)
+
     cursor.execute("PRAGMA table_info(users)")
     existing = {col[1] for col in cursor.fetchall()}
     for col, default in [
@@ -374,6 +382,26 @@ def get_shop_roles():
     conn.close()
     return rows
 
+def get_custom_role(user_id: str):
+    row = _fetchone("SELECT role_id FROM custom_roles WHERE user_id = ?", (user_id,))
+    return int(row[0]) if row else None
+
+def set_custom_role(user_id: str, role_id: int):
+    _execute("""
+    INSERT OR REPLACE INTO custom_roles (user_id, role_id)
+    VALUES (?, ?)
+    """, (user_id, role_id))
+
+def delete_custom_role(user_id: str):
+    _execute("DELETE FROM custom_roles WHERE user_id = ?", (user_id,))
+    
+def get_boost_level(user_id: str) -> int:
+    row = _fetchone("SELECT boost_level FROM custom_roles WHERE user_id = ?", (user_id,))
+    return row[0] if row else 1
+
+def set_boost_level(user_id: str, level: int):
+    _execute("UPDATE custom_roles SET boost_level = ? WHERE user_id = ?", (level, user_id))
+
 
 # =====================================================================
 #                              UTILITIES
@@ -475,6 +503,18 @@ async def on_ready():
     await bot.tree.sync()
     print(f"Bot is online as {bot.user}")
 
+@bot.event
+async def on_member_update(before: discord.Member, after: discord.Member):
+    if before.premium_since and not after.premium_since:
+        role_id = get_custom_role(str(after.id))
+        if role_id:
+            role = after.guild.get_role(role_id)
+            if role:
+                try:
+                    await role.delete(reason="User stopped boosting")
+                except:
+                    pass
+            delete_custom_role(str(after.id))
 
 @bot.event
 async def on_message(message: discord.Message):
@@ -2014,6 +2054,94 @@ def _format_option(opt: dict, users_data: dict) -> str:
 
     return f"{name}={value}"
 
+
+# =====================================================================
+#                              Booster only COMMANDS
+# =====================================================================
+@bot.tree.command(name="setboostlevel", description="Set custom boost level manually (Admin only)")
+@app_commands.describe(user="User", level="Boost level (1, 2, or 4)")
+async def setboostlevel(interaction: discord.Interaction, user: discord.Member, level: int):
+    if not has_role(interaction.user, ADMIN_ROLE_NAME):
+        await interaction.response.send_message("No permission.", ephemeral=True)
+        return
+
+    if level not in (1, 2, 4):
+        await interaction.response.send_message("Only levels 1, 2, or 4 are allowed.", ephemeral=True)
+        return
+
+    if not get_custom_role(str(user.id)):
+        await interaction.response.send_message("User has no custom role yet.", ephemeral=True)
+        return
+
+    set_boost_level(str(user.id), level)
+    await interaction.response.send_message(f"✅ Boost level for {user.display_name} set to {level}.", ephemeral=True)
+
+@bot.tree.command(name="customrole", description="Create or update your booster role")
+@app_commands.describe(name="Name of your role", color="Hex color like #FFAA00")
+async def customrole(interaction: discord.Interaction, name: str, color: str):
+    member = interaction.user
+    guild = interaction.guild
+
+    if not member.premium_since:
+        await interaction.response.send_message("❌ This command is only for server boosters!", ephemeral=True)
+        return
+
+
+    try:
+        colour_obj = discord.Colour(int(color.lstrip("#"), 16))
+    except ValueError:
+        await interaction.response.send_message("⚠️ Invalid color. Use hex like #FFAA00", ephemeral=True)
+        return
+
+    role_id = get_custom_role(str(member.id))
+
+    if role_id:
+        role = guild.get_role(role_id)
+        if role:
+            await role.edit(name=name, colour=colour_obj)
+            await interaction.response.send_message(f"🔄 Your role has been updated to **{name}**.", ephemeral=True)
+            return
+    
+    try:
+        role = await guild.create_role(name=name, colour=colour_obj, reason="Custom booster role")
+        await member.add_roles(role, reason="Assigned custom booster role")
+        set_custom_role(str(member.id), role.id)
+        await interaction.response.send_message(f"✅ Custom role **{name}** created and assigned!", ephemeral=True)
+    except discord.Forbidden:
+        await interaction.response.send_message("❌ I need permission to manage roles.", ephemeral=True)
+
+@bot.tree.command(name="grantrole", description="Give your custom role to another user (Boost-Level 2 required)")
+@app_commands.describe(target="User to give your custom role to")
+async def grantrole(interaction: discord.Interaction, target: discord.Member):
+    booster_id = str(interaction.user.id)
+    target_id = str(target.id)
+    
+    if booster_id == target_id:
+        await interaction.response.send_message("You can't give your role to yourself.", ephemeral=True)
+        return
+
+    role_id = get_custom_role(booster_id)
+    if not role_id:
+        await interaction.response.send_message("You don't have a custom role.", ephemeral=True)
+        return
+
+    if get_boost_level(booster_id) < 2:
+        await interaction.response.send_message("You need boost level 2 to give your role to others.", ephemeral=True)
+        return
+
+    role = interaction.guild.get_role(role_id)
+    if not role:
+        await interaction.response.send_message("Your custom role was not found.", ephemeral=True)
+        return
+
+    assigned_users = _fetchone("SELECT COUNT(*) FROM custom_roles WHERE role_id = ? AND user_id != ?", (role_id, booster_id))[0]
+    if assigned_users >= 2:
+        await interaction.response.send_message("You can only give your role to 2 other people.", ephemeral=True)
+        return
+
+    await target.add_roles(role, reason="Booster shared custom role")
+    await interaction.response.send_message(f"✅ {target.display_name} got your role **{role.name}**.", ephemeral=False)
+    
 
 # === TOKEN ===
 with open("code.txt", "r") as file:
