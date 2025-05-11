@@ -394,7 +394,7 @@ def set_custom_role(user_id: str, role_id: int):
 
 def delete_custom_role(user_id: str):
     _execute("DELETE FROM custom_roles WHERE user_id = ?", (user_id,))
-    
+
 def get_boost_level(user_id: str) -> int:
     row = _fetchone("SELECT boost_level FROM custom_roles WHERE user_id = ?", (user_id,))
     return row[0] if row else 1
@@ -2065,8 +2065,8 @@ async def setboostlevel(interaction: discord.Interaction, user: discord.Member, 
         await interaction.response.send_message("No permission.", ephemeral=True)
         return
 
-    if level not in (1, 2, 4):
-        await interaction.response.send_message("Only levels 1, 2, or 4 are allowed.", ephemeral=True)
+    if level not in (1, 2, 3):
+        await interaction.response.send_message("Only levels 1, 2, or 3 are allowed.", ephemeral=True)
         return
 
     if not get_custom_role(str(user.id)):
