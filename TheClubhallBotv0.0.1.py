@@ -531,6 +531,15 @@ async def on_member_update(before: discord.Member, after: discord.Member):
                     pass
             delete_custom_role(str(after.id))
 
+    if not before.premium_since and after.premium_since:
+        channel = bot.get_channel(1371395099824750664)
+        if channel:
+            await channel.send(
+                f"🎉 {after.mention} just boosted the server — thank you so much for the support! 💜\n"
+                f"<@!756537363509018736> will update your booster level soon.\n"
+                f"Check <https://discord.com/channels/1351475070312255498/1351528109702119496/1371189412125216869> to see what new features you unlock!"
+            )
+
 
 @bot.event
 async def on_message(message: discord.Message):
