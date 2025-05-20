@@ -622,9 +622,7 @@ async def balance(interaction: discord.Interaction, user: discord.Member):
 @bot.tree.command(name="give", description="Give coins to a user (Admin/Owner only)")
 async def give(interaction: discord.Interaction, user: discord.Member, amount: int):
     if (
-        interaction.user.name == "alphawolf_001"
-        or interaction.user.name == "Alpha-Wolf_01"
-        and not has_role(interaction.user, ADMIN_ROLE_NAME)
+        not has_role(interaction.user, ADMIN_ROLE_NAME)
         and not has_role(interaction.user, OWNER_ROLE_NAME)
     ):
         await interaction.response.send_message(
@@ -1046,22 +1044,7 @@ async def fish(interaction: discord.Interaction):
     rod_level = get_rod_level(uid)
     multiplier = get_rod_multiplier(rod_level)
     reward = random()
-    if (
-        interaction.user.name == "alphawolf_001"
-        or interaction.user.name == "Alpha-Wolf_01"
-    ):
-        earned = 10
-        safe_add_coins(uid, earned)
-        set_timestamp(uid, "last_fishing", now)
-        gif_url = choice(fish_gifs)
-        if gif_url:
-            embed = discord.Embed(
-                title=f"{interaction.user.display_name} has fished {earned} clubhall coins",
-                color=discord.Color.red(),
-            )
-            embed.set_image(url=gif_url)
-            await interaction.response.send_message(embed=embed)
-            return
+   
     if reward < 0.50:
         earned = int(randint(1, 5) * multiplier)
         add_stat_points(uid, earned)
@@ -1285,11 +1268,6 @@ async def hack(interaction: discord.Interaction):
     success = random() < min(0.20 + 0.05 * (int_level - 3), 0.80)
 
     hack_cooldowns[uid] = now
-    if (
-        interaction.user.name == "alphawolf_001"
-        or interaction.user.name == "Alpha-Wolf_01"
-    ):
-        success = random() < min(0.20 + 0.05 * (int_level - 3), 0.80) * 0.5
 
     if not success:
         loss = randint(1, 5) * int_level
@@ -1515,12 +1493,6 @@ async def gamble(interaction: discord.Interaction, amount: int):
     await asyncio.sleep(2)
 
     roll = random()
-    if (
-        interaction.user.name == "alphawolf_001"
-        or interaction.user.name == "Alpha-Wolf_01"
-    ):
-        while roll < 0.10:
-            roll = random()
 
     if roll < 0.05:
         multiplier = 3
