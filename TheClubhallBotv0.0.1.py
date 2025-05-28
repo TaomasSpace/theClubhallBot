@@ -119,8 +119,7 @@ def init_db():
         """
     CREATE TABLE IF NOT EXISTS custom_roles (
         user_id TEXT PRIMARY KEY,
-        role_id TEXT NOT NULL,
-        boost_level INTEGER DEFAULT 1
+        role_id TEXT NOT NULL
     )
     """
     )
@@ -401,19 +400,6 @@ def delete_custom_role(user_id: str):
     _execute("DELETE FROM custom_roles WHERE user_id = ?", (user_id,))
 
 
-def get_boost_level(user_id: str) -> int:
-    row = _fetchone(
-        "SELECT boost_level FROM custom_roles WHERE user_id = ?", (user_id,)
-    )
-    return row[0] if row else 1
-
-
-def set_boost_level(user_id: str, level: int):
-    _execute(
-        "UPDATE custom_roles SET boost_level = ? WHERE user_id = ?", (level, user_id)
-    )
-
-
 # =====================================================================
 #                              UTILITIES
 # =====================================================================
@@ -533,7 +519,6 @@ async def on_member_update(before: discord.Member, after: discord.Member):
         if channel:
             await channel.send(
                 f"🎉 {after.mention} just boosted the server — thank you so much for the support! 💜\n"
-                f"<@!756537363509018736> will update your booster level soon.\n"
                 f"Check <https://discord.com/channels/1351475070312255498/1351528109702119496/1371189412125216869> to see what new features you unlock!"
             )
 
@@ -2058,27 +2043,6 @@ def _format_option(opt: dict, users_data: dict) -> str:
 # =====================================================================
 #                              Booster only COMMANDS
 # =====================================================================
-@bot.tree.command(
-    name="setboostlevel", description="Set custom boost level manually (Admin only)"
-)
-@app_commands.describe(user="User", level="Boost level (1, 2, or 4)")
-async def setboostlevel(
-    interaction: discord.Interaction, user: discord.Member, level: int
-):
-    if not has_role(interaction.user, ADMIN_ROLE_NAME):
-        await interaction.response.send_message("No permission.", ephemeral=True)
-        return
-
-    if level not in (1, 2, 3):
-        await interaction.response.send_message(
-            "Only levels 1, 2, or 3 are allowed.", ephemeral=True
-        )
-        return
-
-    set_boost_level(str(user.id), level)
-    await interaction.response.send_message(
-        f"✅ Boost level for {user.display_name} set to {level}.", ephemeral=True
-    )
 
 
 @bot.tree.command(name="customrole", description="Create or update your booster role")
@@ -2129,7 +2093,7 @@ async def customrole(interaction: discord.Interaction, name: str, color: str):
 
 @bot.tree.command(
     name="grantrole",
-    description="Give your custom role to another user (Boost-Level 2 required)",
+    description="Give your custom role to another user",
 )
 @app_commands.describe(target="User to give your custom role to")
 async def grantrole(interaction: discord.Interaction, target: discord.Member):
@@ -2146,12 +2110,6 @@ async def grantrole(interaction: discord.Interaction, target: discord.Member):
     if not role_id:
         await interaction.response.send_message(
             "You don't have a custom role.", ephemeral=True
-        )
-        return
-
-    if get_boost_level(booster_id) < 2:
-        await interaction.response.send_message(
-            "You need boost level 2 to give your role to others.", ephemeral=True
         )
         return
 
