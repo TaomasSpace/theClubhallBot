@@ -2162,24 +2162,6 @@ async def grantrole(interaction: discord.Interaction, target: discord.Member):
         )
         return
 
-    assigned_users = _fetchone(
-        "SELECT COUNT(*) FROM custom_roles WHERE role_id = ? AND user_id != ?",
-        (role_id, booster_id),
-    )[0]
-    if get_boost_level(booster_id) == 2:
-        if assigned_users >= 2:
-            await interaction.response.send_message(
-                "You can only give your role to 2 other people. (get booster lvl 3 to give your role up to 5 people)",
-                ephemeral=True,
-            )
-            return
-    elif get_boost_level(booster_id) == 3:
-        if assigned_users >= 5:
-            await interaction.response.send_message(
-                "You can only give your role to 5 other people.", ephemeral=True
-            )
-            return
-
     await target.add_roles(role, reason="Booster shared custom role")
     await interaction.response.send_message(
         f"✅ {target.display_name} got your role **{role.name}**.", ephemeral=False
