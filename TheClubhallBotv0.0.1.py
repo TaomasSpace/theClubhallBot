@@ -1531,7 +1531,7 @@ async def imitate(interaction: discord.Interaction, user: discord.Member, msg: s
         not has_role(interaction.user, ADMIN_ROLE_NAME)
         and not has_role(interaction.user, OWNER_ROLE_NAME)
         and not has_role(interaction.user, "Marmalades Boyfriend")
-        and not has_role(interaction.user, "VIP guest of the Clubhall (Server Booster)")
+        and not user.premium_since
     ):
         await interaction.response.send_message(
             "You don't have permission to use this command.", ephemeral=True
