@@ -618,9 +618,8 @@ async def balance(interaction: discord.Interaction, user: discord.Member):
 
 @bot.tree.command(name="give", description="Give coins to a user (Admin/Owner only)")
 async def give(interaction: discord.Interaction, user: discord.Member, amount: int):
-    if (
-        not has_role(interaction.user, ADMIN_ROLE_NAME)
-        and not has_role(interaction.user, OWNER_ROLE_NAME)
+    if not has_role(interaction.user, ADMIN_ROLE_NAME) and not has_role(
+        interaction.user, OWNER_ROLE_NAME
     ):
         await interaction.response.send_message(
             "You don't have permission to give clubhall coins.", ephemeral=True
@@ -1041,7 +1040,7 @@ async def fish(interaction: discord.Interaction):
     rod_level = get_rod_level(uid)
     multiplier = get_rod_multiplier(rod_level)
     reward = random()
-   
+
     if reward < 0.50:
         earned = int(randint(1, 5) * multiplier)
         add_stat_points(uid, earned)
@@ -1532,7 +1531,7 @@ async def imitate(interaction: discord.Interaction, user: discord.Member, msg: s
         not has_role(interaction.user, ADMIN_ROLE_NAME)
         and not has_role(interaction.user, OWNER_ROLE_NAME)
         and not has_role(interaction.user, "Marmalades Boyfriend")
-        and not has_role(interaction.user, "Server Booster")
+        and not has_role(interaction.user, "VIP guest of the Clubhall (Server Booster)")
     ):
         await interaction.response.send_message(
             "You don't have permission to use this command.", ephemeral=True
