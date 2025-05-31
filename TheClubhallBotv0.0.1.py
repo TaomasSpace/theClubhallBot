@@ -19,7 +19,7 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 # === CONSTANTS ===
 DB_PATH = "users.db"
 OWNER_ROLE_NAME = "Owner"
-ADMIN_ROLE_NAME = "Admin"
+ADMIN_ROLE_NAME = "Warden of the Clubhall (Admin)"
 SHEHER_ROLE_NAME = "She/Her"
 HEHIM_ROLE_NAME = "He/Him"
 DEFAULT_MAX_COINS = 3000
@@ -1516,7 +1516,7 @@ async def imitate(interaction: discord.Interaction, user: discord.Member, msg: s
         not has_role(interaction.user, ADMIN_ROLE_NAME)
         and not has_role(interaction.user, OWNER_ROLE_NAME)
         and not has_role(interaction.user, "Marmalades Boyfriend")
-        and not user.premium_since
+        and not interaction.user.premium_since
     ):
         await interaction.response.send_message(
             "You don't have permission to use this command.", ephemeral=True
