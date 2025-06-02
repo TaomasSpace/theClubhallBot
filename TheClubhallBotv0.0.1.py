@@ -2150,8 +2150,8 @@ async def addcolorreactionrole(
         await interaction.response.send_message("No permission.", ephemeral=True)
         return
 
-    target_message_id = 1351821732586979378
-    channel = interaction.guild.get_channel(1351821732586979378)  # oder falls andere ID
+    target_message_id = 1378987195485917215
+    channel = interaction.guild.get_channel(1351821732586979378)
     try:
         message = await channel.fetch_message(target_message_id)
         await message.add_reaction(emoji)
