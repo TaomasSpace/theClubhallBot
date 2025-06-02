@@ -837,7 +837,6 @@ async def stab(interaction: discord.Interaction, user: discord.Member):
         "https://i.makeagif.com/media/11-12-2023/a3YlZs.gif",
         "https://i.redd.it/rq7v0ky0q9wb1.gif",
         "https://i.imgur.com/HifpF82.gif",
-        "https://images.squarespace-cdn.com/content/v1/5b23e822f79392038cbd486c/1561132763571-XTIOP1FRN1OJRWSGZ9F1/tumblr_o5lpjy37HN1v7kio1o1_500.gif",
         "https://i.makeagif.com/media/11-18-2022/Ezac_n.gif",
         "https://c.tenor.com/uc9Qh0p1mOIAAAAC/yuno-gasai-mirai-nikki.gif",
     ]
