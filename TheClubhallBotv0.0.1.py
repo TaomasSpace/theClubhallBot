@@ -2142,16 +2142,16 @@ async def grantrole(interaction: discord.Interaction, target: discord.Member):
 )
 @app_commands.describe(emoji="Emoji to react with", role="Role to assign")
 async def addcolorreactionrole(
-    interaction: discord.Interaction, emoji: str, role: discord.Role
+    interaction: discord.Interaction,
+    target_message_id: int,
+    emoji: str,
+    role: discord.Role,
 ):
-    if not has_role(interaction.user, ADMIN_ROLE_NAME) and not has_role(
-        interaction.user, OWNER_ROLE_NAME
-    ):
+    if not has_role(interaction.user, ADMIN_ROLE_NAME):
         await interaction.response.send_message("No permission.", ephemeral=True)
         return
 
-    target_message_id = 1379031496727203862
-    channel = interaction.guild.get_channel(1351514291215532083)
+    channel = interaction.channel
     try:
         message = await channel.fetch_message(target_message_id)
         await message.add_reaction(emoji)
