@@ -79,6 +79,17 @@ def init_db():
 
     cursor.execute(
         """
+    CREATE TABLE IF NOT EXISTS reaction_roles (
+        message_id TEXT,
+        emoji TEXT,
+        role_id TEXT,
+        PRIMARY KEY (message_id, emoji)
+    )
+    """
+    )
+
+    cursor.execute(
+        """
         CREATE TABLE IF NOT EXISTS server (
             id INTEGER PRIMARY KEY CHECK (id = 1),
             max_coins INTEGER
@@ -2124,6 +2135,73 @@ async def grantrole(interaction: discord.Interaction, target: discord.Member):
     await interaction.response.send_message(
         f"✅ {target.display_name} got your role **{role.name}**.", ephemeral=False
     )
+
+
+@bot.tree.command(
+    name="addcolorreactionrole", description="Add emoji-role to color reaction message"
+)
+@app_commands.describe(emoji="Emoji to react with", role="Role to assign")
+async def addcolorreactionrole(
+    interaction: discord.Interaction, emoji: str, role: discord.Role
+):
+    if not has_role(interaction.user, ADMIN_ROLE_NAME) and not has_role(
+        interaction.user, OWNER_ROLE_NAME
+    ):
+        await interaction.response.send_message("No permission.", ephemeral=True)
+        return
+
+    target_message_id = 1351821732586979378
+    channel = interaction.guild.get_channel(1351821732586979378)  # oder falls andere ID
+    try:
+        message = await channel.fetch_message(target_message_id)
+        await message.add_reaction(emoji)
+
+        _execute(
+            "INSERT OR REPLACE INTO reaction_roles (message_id, emoji, role_id) VALUES (?, ?, ?)",
+            (str(target_message_id), emoji, str(role.id)),
+        )
+
+        await interaction.response.send_message(
+            f"✅ Added emoji {emoji} for role {role.name}.", ephemeral=True
+        )
+    except Exception as e:
+        await interaction.response.send_message(f"❌ Error: {e}", ephemeral=True)
+
+
+@bot.event
+async def on_raw_reaction_add(payload: discord.RawReactionActionEvent):
+    if payload.member is None or payload.member.bot:
+        return
+
+    row = _fetchone(
+        "SELECT role_id FROM reaction_roles WHERE message_id = ? AND emoji = ?",
+        (str(payload.message_id), str(payload.emoji)),
+    )
+    if not row:
+        return
+
+    role = payload.member.guild.get_role(int(row[0]))
+    if role:
+        await payload.member.add_roles(role, reason="Reaction role added")
+
+
+@bot.event
+async def on_raw_reaction_remove(payload: discord.RawReactionActionEvent):
+    guild = bot.get_guild(payload.guild_id)
+    member = guild.get_member(payload.user_id)
+    if member is None or member.bot:
+        return
+
+    row = _fetchone(
+        "SELECT role_id FROM reaction_roles WHERE message_id = ? AND emoji = ?",
+        (str(payload.message_id), str(payload.emoji)),
+    )
+    if not row:
+        return
+
+    role = guild.get_role(int(row[0]))
+    if role:
+        await member.remove_roles(role, reason="Reaction role removed")
 
 
 # === TOKEN ===
