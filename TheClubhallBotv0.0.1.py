@@ -2198,7 +2198,7 @@ async def managePrisonMember(
         task = active_prison_timers.pop(user.id, None)
         if task and not task.done():
             task.cancel()
-        await user.add(role)
+        await user.add_roles(role)
         await interaction.response.send_message(
             f"🔓 {user.mention} has been freed from prison.", ephemeral=False
         )
