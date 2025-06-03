@@ -2194,7 +2194,7 @@ async def managePrisonMember(
         return
 
     # Rolle hinzufügen → freilassen
-    if role in user.roles:
+    if role not in user.roles:
         task = active_prison_timers.pop(user.id, None)
         if task and not task.done():
             task.cancel()
