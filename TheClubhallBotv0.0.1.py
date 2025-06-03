@@ -7,6 +7,8 @@ from discord.app_commands import CommandOnCooldown
 from random import random, choice, randint
 import asyncio
 import logging
+from typing import Optional
+
 
 # === INTENTS & BOT ===
 intents = discord.Intents.default()
@@ -44,6 +46,23 @@ fight_cooldowns = {}
 steal_cooldowns = {}
 
 lowercase_locked: set[int] = set()
+
+active_prison_timers = {}
+
+
+def parse_duration(duration: str) -> Optional[int]:
+    try:
+        if duration.endswith("s"):
+            return int(duration[:-1])
+        elif duration.endswith("m"):
+            return int(duration[:-1]) * 60
+        elif duration.endswith("h"):
+            return int(duration[:-1]) * 3600
+        else:
+            return int(duration)  # fallback auf Sekunden
+    except:
+        return None
+
 
 # === TRIGGERS ===
 TRIGGER_RESPONSES = {
@@ -2139,8 +2158,13 @@ async def grantrole(interaction: discord.Interaction, target: discord.Member):
 @bot.tree.command(
     name="manageprisonmember", description="Send or free someone from prison"
 )
-@app_commands.describe(user="Person you want to lock or free in prison")
-async def managePrisonMember(interaction: discord.Interaction, user: discord.Member):
+@app_commands.describe(
+    user="Person you want to lock or free in prison",
+    time="Duration (e.g. 10m, 2h) or 'cancel'",
+)
+async def managePrisonMember(
+    interaction: discord.Interaction, user: discord.Member, time: Optional[str] = None
+):
     if not has_role(interaction.user, ADMIN_ROLE_NAME):
         await interaction.response.send_message("No permission.", ephemeral=True)
         return
@@ -2154,16 +2178,62 @@ async def managePrisonMember(interaction: discord.Interaction, user: discord.Mem
         )
         return
 
+    # Cancel Timer
+    if time == "cancel":
+        task = active_prison_timers.pop(user.id, None)
+        if task and not task.done():
+            task.cancel()
+            await user.remove_roles(role)
+            await interaction.response.send_message(
+                f"🕊️ Timer cancelled. {user.mention} has been freed.", ephemeral=False
+            )
+        else:
+            await interaction.response.send_message(
+                f"⚠️ No active timer for {user.mention}.", ephemeral=True
+            )
+        return
+
+    # Rolle hinzufügen → freilassen
     if role in user.roles:
-        await user.remove_roles(role)
+        task = active_prison_timers.pop(user.id, None)
+        if task and not task.done():
+            task.cancel()
+        await user.add(role)
         await interaction.response.send_message(
             f"🔓 {user.mention} has been freed from prison.", ephemeral=False
         )
-    else:
-        await user.add_roles(role)
-        await interaction.response.send_message(
-            f"🔒 {user.mention} has been sent to prison.", ephemeral=False
-        )
+        return
+
+    # Rolle entfernen → einsperren
+    await user.remove_roles(role)
+    msg = f"🔒 {user.mention} has been sent to prison."
+
+    # Wenn Zeit angegeben, Timer setzen
+    if time:
+        seconds = parse_duration(time)
+        if seconds is None:
+            await interaction.response.send_message(
+                f"⏳ Invalid time format: `{time}`. Use `10m`, `2h`, etc.",
+                ephemeral=True,
+            )
+            return
+
+        async def release_later():
+            try:
+                await asyncio.sleep(seconds)
+                await user.add_roles(role)
+                await interaction.followup.send(
+                    f"🕊️ {user.mention} has served their time and is now free.",
+                    ephemeral=False,
+                )
+            except asyncio.CancelledError:
+                pass  # Timer wurde abgebrochen
+
+        task = asyncio.create_task(release_later())
+        active_prison_timers[user.id] = task
+        msg += f" They will be freed in {time}."
+
+    await interaction.response.send_message(msg, ephemeral=False)
 
 
 @bot.tree.command(
