@@ -19,13 +19,20 @@ intents.members = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 
-@bot.tree.check
+DEV_MODE = True
+
+
 async def global_blocker(interaction: discord.Interaction) -> bool:
-    await interaction.response.send_message(
-        "The bot is in developement right now. Remember what Taoma did for the server. ❤️",
-        ephemeral=True,
-    )
-    return False  # block the command
+    if DEV_MODE:
+        await interaction.response.send_message(
+            "Bot is currently in development mode. Try again later!",
+            ephemeral=True,
+        )
+        return False
+    return True
+
+
+bot.tree.on_check(global_blocker)
 
 
 # === CONSTANTS ===
