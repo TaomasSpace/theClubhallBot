@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 from discord import app_commands, ui
 import sqlite3
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from discord.app_commands import CommandOnCooldown
 from random import random, choice, randint
 import asyncio
@@ -154,6 +154,13 @@ def init_db():
     """
     )
 
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS dates (
+            user_id TEXT PRIMARY KEY,
+            date TEXT
+        )
+    ''')
+
     cursor.execute("PRAGMA table_info(users)")
     existing = {col[1] for col in cursor.fetchall()}
     for col, default in [
@@ -207,6 +214,11 @@ def register_user(user_id: str, username: str):
         _execute(
             "INSERT INTO users (user_id, username, money) VALUES (?,?,?)",
             (user_id, username, 5),
+        )
+    if not _fetchone("SELECT 1 FROM date WHERE user_id = ?", (user_id,)):
+        _execute(
+            "INSERT INTO date (user_id, date) VALUES (?,?)",
+            (user_id, str(datetime.now(timezone.utc)),)
         )
 
 
@@ -1389,6 +1401,38 @@ async def setstatpoints(
         f"✅ Set {user.display_name}'s stat points to {amount}.", ephemeral=True
     )
 
+def update_date(user_id):
+    if (_fetchone('SELECT * FROM date WHERE user_id = ?', (user_id,))):
+        _execute('UPDATE users SET date = ? WHERE user_id = ?', (str(datetime.now(timezone.utc)), user_id,))
+        
+
+def get_lastdate(user_id):
+    register_user(user_id)
+    return _fetchone('SELECT * FROM users WHERE user_id = ?', (user_id,))[2] if _fetchone('SELECT * FROM users WHERE user_id = ?', (user_id,)) else None
+
+@bot.tree.command(
+    name="lastdate", description="Get a last date of user (Admin/Owner only)"
+)
+@app_commands.describe(user="User")
+async def lastdate(interaction: discord.Interaction, user: discord.Member, msg: str):
+    if (
+        not has_role(interaction.user, ADMIN_ROLE_NAME)
+        and not has_role(interaction.user, OWNER_ROLE_NAME)
+        and not has_role(interaction.user, "Marmalades Boyfriend")
+        and not interaction.user.premium_since
+    ):
+        await interaction.response.send_message(
+            "You don't have permission to use this command.", ephemeral=True
+        )
+        return
+    await interaction.response.send_message(get_lastdate(user.id), ephemeral=True)
+
+@bot.event
+async def on_message(message: discord.Message):
+    if message.author.bot:
+        return
+
+    update_date(message.author.id)
 
 @bot.tree.command(name="setstat", description="Set a user's stat (Owner only)")
 @app_commands.describe(
