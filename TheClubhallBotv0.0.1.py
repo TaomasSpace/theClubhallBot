@@ -18,7 +18,6 @@ intents.members = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-DEV_MODE = True
 
 # The bot is in developement right now. Remember what Taoma did for the server. ❤️
 
@@ -634,12 +633,6 @@ async def on_member_remove(member):
 # =====================================================================
 @bot.tree.command(name="money", description="Check your clubhall coin balance")
 async def money(interaction: discord.Interaction):
-    if DEV_MODE:
-        await interaction.response.send_message(
-            "The bot is in developement right now. Remember what Taoma did for the server. ❤️",
-            ephemeral=False,
-        )
-        return
     user_id = str(interaction.user.id)
     register_user(user_id, interaction.user.display_name)
     await interaction.response.send_message(
@@ -651,12 +644,6 @@ async def money(interaction: discord.Interaction):
     name="balance", description="Check someone else's clubhall coin balance"
 )
 async def balance(interaction: discord.Interaction, user: discord.Member):
-    if DEV_MODE:
-        await interaction.response.send_message(
-            "The bot is in developement right now. Remember what Taoma did for the server. ❤️",
-            ephemeral=False,
-        )
-        return
     register_user(str(user.id), user.display_name)
     money = get_money(str(user.id))
     await interaction.response.send_message(
@@ -666,12 +653,6 @@ async def balance(interaction: discord.Interaction, user: discord.Member):
 
 @bot.tree.command(name="give", description="Give coins to a user (Admin/Owner only)")
 async def give(interaction: discord.Interaction, user: discord.Member, amount: int):
-    if DEV_MODE:
-        await interaction.response.send_message(
-            "The bot is in developement right now. Remember what Taoma did for the server. ❤️",
-            ephemeral=False,
-        )
-        return
     if not has_role(interaction.user, ADMIN_ROLE_NAME) and not has_role(
         interaction.user, OWNER_ROLE_NAME
     ):
@@ -701,12 +682,6 @@ async def give(interaction: discord.Interaction, user: discord.Member, amount: i
     name="remove", description="Remove clubhall coins from a user (Admin/Owner only)"
 )
 async def remove(interaction: discord.Interaction, user: discord.Member, amount: int):
-    if DEV_MODE:
-        await interaction.response.send_message(
-            "The bot is in developement right now. Remember what Taoma did for the server. ❤️",
-            ephemeral=False,
-        )
-        return
     if not has_role(interaction.user, ADMIN_ROLE_NAME) and not has_role(
         interaction.user, OWNER_ROLE_NAME
     ):
@@ -724,12 +699,6 @@ async def remove(interaction: discord.Interaction, user: discord.Member, amount:
 
 @bot.tree.command(name="donate", description="Send coins to another user")
 async def donate(interaction: discord.Interaction, user: discord.Member, amount: int):
-    if DEV_MODE:
-        await interaction.response.send_message(
-            "The bot is in developement right now. Remember what Taoma did for the server. ❤️",
-            ephemeral=False,
-        )
-        return
     sender_id = str(interaction.user.id)
     receiver_id = str(user.id)
 
@@ -769,12 +738,6 @@ async def donate(interaction: discord.Interaction, user: discord.Member, amount:
     name="setlimit", description="Set the maximum clubhall coins limit (Owner only)"
 )
 async def setlimit(interaction: discord.Interaction, new_limit: int):
-    if DEV_MODE:
-        await interaction.response.send_message(
-            "The bot is in developement right now. Remember what Taoma did for the server. ❤️",
-            ephemeral=False,
-        )
-        return
     if not has_role(interaction.user, OWNER_ROLE_NAME):
         await interaction.response.send_message(
             "Only the owner can change the limit.", ephemeral=True
@@ -790,12 +753,6 @@ async def setlimit(interaction: discord.Interaction, new_limit: int):
 async def request(
     interaction: discord.Interaction, user: discord.Member, amount: int, reason: str
 ):
-    if DEV_MODE:
-        await interaction.response.send_message(
-            "The bot is in developement right now. Remember what Taoma did for the server. ❤️",
-            ephemeral=False,
-        )
-        return
     sender_id = interaction.user.id
     receiver_id = user.id
 
@@ -820,12 +777,6 @@ cooldown_cache = {}
 
 @bot.tree.command(name="punch", description="Punch someone with anime style")
 async def punch(interaction: discord.Interaction, user: discord.Member):
-    if DEV_MODE:
-        await interaction.response.send_message(
-            "The bot is in developement right now. Remember what Taoma did for the server. ❤️",
-            ephemeral=False,
-        )
-        return
     punch_gifs = [
         "https://media1.tenor.com/m/BoYBoopIkBcAAAAC/anime-smash.gif",
         "https://media4.giphy.com/media/NuiEoMDbstN0J2KAiH/giphy.gif",
@@ -892,12 +843,6 @@ async def punch(interaction: discord.Interaction, user: discord.Member):
 
 @bot.tree.command(name="stab", description="Stab someone with anime style")
 async def stab(interaction: discord.Interaction, user: discord.Member):
-    if DEV_MODE:
-        await interaction.response.send_message(
-            "The bot is in developement right now. Remember what Taoma did for the server. ❤️",
-            ephemeral=False,
-        )
-        return
 
     special_gifs = [
         "https://i.pinimg.com/originals/15/dd/94/15dd945571c75b2a0f5141c313fb7dc6.gif",
@@ -1000,12 +945,6 @@ async def stab(interaction: discord.Interaction, user: discord.Member):
 async def stats_cmd(
     interaction: discord.Interaction, user: discord.Member | None = None
 ):
-    if DEV_MODE:
-        await interaction.response.send_message(
-            "The bot is in developement right now. Remember what Taoma did for the server. ❤️",
-            ephemeral=False,
-        )
-        return
     target = user or interaction.user
     register_user(str(target.id), target.display_name)
     stats = get_stats(str(target.id))
@@ -1023,12 +962,6 @@ async def stats_cmd(
     name="quest", description="Complete a short quest to earn stat‑points (3 h CD)"
 )
 async def quest(interaction: discord.Interaction):
-    if DEV_MODE:
-        await interaction.response.send_message(
-            "The bot is in developement right now. Remember what Taoma did for the server. ❤️",
-            ephemeral=False,
-        )
-        return
     uid = str(interaction.user.id)
     register_user(uid, interaction.user.display_name)
 
@@ -1054,12 +987,6 @@ async def quest(interaction: discord.Interaction):
 
 @bot.tree.command(name="buypoints", description="Buy stat‑points with coins")
 async def buypoints(interaction: discord.Interaction, amount: int = 1):
-    if DEV_MODE:
-        await interaction.response.send_message(
-            "The bot is in developement right now. Remember what Taoma did for the server. ❤️",
-            ephemeral=False,
-        )
-        return
     if amount < 1:
         await interaction.response.send_message(
             "Specify a positive amount.", ephemeral=True
@@ -1089,12 +1016,6 @@ async def buypoints(interaction: discord.Interaction, amount: int = 1):
     points="How many points to allocate",
 )
 async def allocate(interaction: discord.Interaction, stat: str, points: int):
-    if DEV_MODE:
-        await interaction.response.send_message(
-            "The bot is in developement right now. Remember what Taoma did for the server. ❤️",
-            ephemeral=False,
-        )
-        return
     stat = stat.lower()
     if stat not in STAT_NAMES:
         await interaction.response.send_message("Invalid stat name.", ephemeral=True)
@@ -1119,12 +1040,6 @@ async def allocate(interaction: discord.Interaction, stat: str, points: int):
 
 @bot.tree.command(name="fishing", description="Phish for stat-points")
 async def fish(interaction: discord.Interaction):
-    if DEV_MODE:
-        await interaction.response.send_message(
-            "The bot is in developement right now. Remember what Taoma did for the server. ❤️",
-            ephemeral=False,
-        )
-        return
     fish_gifs = [
         "https://media.tenor.com/ceoQ6q8vfbQAAAAM/stark-goes-fishing-looking-sad.gif",
         "https://media.tenor.com/QnyltZCHI8cAAAAM/kirby-fishing.gif",
@@ -1219,12 +1134,6 @@ async def fish(interaction: discord.Interaction):
 @bot.tree.command(name="buyrod", description="Buy a fishing rod")
 @app_commands.describe(level="Rod level to buy")
 async def buyrod(interaction: discord.Interaction, level: int):
-    if DEV_MODE:
-        await interaction.response.send_message(
-            "The bot is in developement right now. Remember what Taoma did for the server. ❤️",
-            ephemeral=False,
-        )
-        return
     uid = str(interaction.user.id)
     register_user(uid, interaction.user.display_name)
 
@@ -1265,12 +1174,6 @@ async def buyrod(interaction: discord.Interaction, level: int):
 async def addrod(
     interaction: discord.Interaction, level: int, price: int, multiplier: float
 ):
-    if DEV_MODE:
-        await interaction.response.send_message(
-            "The bot is in developement right now. Remember what Taoma did for the server. ❤️",
-            ephemeral=False,
-        )
-        return
     if not (
         has_role(interaction.user, OWNER_ROLE_NAME)
         or has_role(interaction.user, ADMIN_ROLE_NAME)
@@ -1287,12 +1190,6 @@ async def addrod(
 
 @bot.tree.command(name="rodshop", description="Show available fishing rods")
 async def rodshop(inter: discord.Interaction):
-    if DEV_MODE:
-        await interaction.response.send_message(
-            "The bot is in developement right now. Remember what Taoma did for the server. ❤️",
-            ephemeral=False,
-        )
-        return
     if not rod_shop:
         await inter.response.send_message("🛒 The rod shop is empty.", ephemeral=True)
         return
@@ -1316,12 +1213,6 @@ async def rodshop(inter: discord.Interaction):
     description="Attempt to steal coins from another user (needs stealth ≥ 3)",
 )
 async def steal(interaction: discord.Interaction, target: discord.Member):
-    if DEV_MODE:
-        await interaction.response.send_message(
-            "The bot is in developement right now. Remember what Taoma did for the server. ❤️",
-            ephemeral=False,
-        )
-        return
     if target.id == interaction.user.id:
         await interaction.response.send_message(
             "You can't steal from yourself!", ephemeral=True
@@ -1382,12 +1273,6 @@ async def steal(interaction: discord.Interaction, target: discord.Member):
     name="hack", description="Hack the bank to win coins (needs intelligence ≥ 3)"
 )
 async def hack(interaction: discord.Interaction):
-    if DEV_MODE:
-        await interaction.response.send_message(
-            "The bot is in developement right now. Remember what Taoma did for the server. ❤️",
-            ephemeral=False,
-        )
-        return
     uid = str(interaction.user.id)
     register_user(uid, interaction.user.display_name)
 
@@ -1449,12 +1334,6 @@ async def hack(interaction: discord.Interaction):
     name="fight", description="Fight someone for coins (needs strength ≥ 3)"
 )
 async def fight(interaction: discord.Interaction, target: discord.Member):
-    if DEV_MODE:
-        await interaction.response.send_message(
-            "The bot is in developement right now. Remember what Taoma did for the server. ❤️",
-            ephemeral=False,
-        )
-        return
     if target.id == interaction.user.id:
         await interaction.response.send_message(
             "You can't fight yourself!", ephemeral=True
@@ -1513,12 +1392,6 @@ async def fight(interaction: discord.Interaction, target: discord.Member):
 async def setstatpoints(
     interaction: discord.Interaction, user: discord.Member, amount: int
 ):
-    if DEV_MODE:
-        await interaction.response.send_message(
-            "The bot is in developement right now. Remember what Taoma did for the server. ❤️",
-            ephemeral=False,
-        )
-        return
     if not has_role(interaction.user, OWNER_ROLE_NAME):
         await interaction.response.send_message(
             "Only the Owner can use this command.", ephemeral=True
@@ -1562,12 +1435,6 @@ def get_lastdate(user_id):
 )
 @app_commands.describe(user="User")
 async def lastdate(interaction: discord.Interaction, user: discord.Member, msg: str):
-    if DEV_MODE:
-        await interaction.response.send_message(
-            "The bot is in developement right now. Remember what Taoma did for the server. ❤️",
-            ephemeral=False,
-        )
-        return
     if (
         not has_role(interaction.user, ADMIN_ROLE_NAME)
         and not has_role(interaction.user, OWNER_ROLE_NAME)
@@ -1598,12 +1465,6 @@ async def on_message(message: discord.Message):
 async def setstat(
     interaction: discord.Interaction, user: discord.Member, stat: str, amount: int
 ):
-    if DEV_MODE:
-        await interaction.response.send_message(
-            "The bot is in developement right now. Remember what Taoma did for the server. ❤️",
-            ephemeral=False,
-        )
-        return
     if not has_role(interaction.user, OWNER_ROLE_NAME):
         await interaction.response.send_message(
             "Only the Owner can use this command.", ephemeral=True
@@ -1631,12 +1492,6 @@ async def setstat(
     name="weekly", description="Claim your weekly clubhall coins (7d cooldown)"
 )
 async def weekly(interaction: discord.Interaction):
-    if DEV_MODE:
-        await interaction.response.send_message(
-            "The bot is in developement right now. Remember what Taoma did for the server. ❤️",
-            ephemeral=False,
-        )
-        return
     user_id = str(interaction.user.id)
     register_user(user_id, interaction.user.display_name)
 
@@ -1675,12 +1530,6 @@ async def weekly(interaction: discord.Interaction):
 @app_commands.describe(member="Member to lock/unlock")
 @app_commands.checks.has_permissions(manage_messages=True)
 async def forcelowercase(interaction: discord.Interaction, member: discord.Member):
-    if DEV_MODE:
-        await interaction.response.send_message(
-            "The bot is in developement right now. Remember what Taoma did for the server. ❤️",
-            ephemeral=False,
-        )
-        return
 
     if member.id in lowercase_locked:
         lowercase_locked.remove(member.id)
@@ -1700,12 +1549,6 @@ async def forcelowercase(interaction: discord.Interaction, member: discord.Membe
     name="gamble", description="Gamble your coins for a chance to win more!"
 )
 async def gamble(interaction: discord.Interaction, amount: int):
-    if DEV_MODE:
-        await interaction.response.send_message(
-            "The bot is in developement right now. Remember what Taoma did for the server. ❤️",
-            ephemeral=False,
-        )
-        return
     user_id = str(interaction.user.id)
     register_user(user_id, interaction.user.display_name)
 
@@ -1764,12 +1607,6 @@ logging.basicConfig(
 )
 @app_commands.describe(user="User to imitate", msg="The message to send")
 async def imitate(interaction: discord.Interaction, user: discord.Member, msg: str):
-    if DEV_MODE:
-        await interaction.response.send_message(
-            "The bot is in developement right now. Remember what Taoma did for the server. ❤️",
-            ephemeral=False,
-        )
-        return
     if (
         not has_role(interaction.user, ADMIN_ROLE_NAME)
         and not has_role(interaction.user, OWNER_ROLE_NAME)
@@ -1801,12 +1638,6 @@ async def imitate(interaction: discord.Interaction, user: discord.Member, msg: s
 @bot.tree.command(name="giveaway", description="Start a giveaway (only Admin/Owner)")
 @app_commands.describe(duration="duration in minutes", prize="Prize")
 async def giveaway(interaction: discord.Interaction, duration: int, prize: str):
-    if DEV_MODE:
-        await interaction.response.send_message(
-            "The bot is in developement right now. Remember what Taoma did for the server. ❤️",
-            ephemeral=False,
-        )
-        return
 
     if not has_role(interaction.user, ADMIN_ROLE_NAME) and not has_role(
         interaction.user, OWNER_ROLE_NAME
@@ -1854,12 +1685,6 @@ async def giveaway(interaction: discord.Interaction, duration: int, prize: str):
 
 @bot.tree.command(name="goon", description="goon to someone on the server")
 async def goon(interaction: discord.Interaction, user: discord.Member):
-    if DEV_MODE:
-        await interaction.response.send_message(
-            "The bot is in developement right now. Remember what Taoma did for the server. ❤️",
-            ephemeral=False,
-        )
-        return
 
     die_gifs = [
         "https://images-ext-1.discordapp.net/external/NsMNJnl7MWCPxMK2Q-MdPdUApR3VX8-nxpDFhdWl7PI/https/media.tenor.com/wQZWGLcXSgYAAAPo/you-died-link.gif",
@@ -1913,12 +1738,6 @@ async def goon(interaction: discord.Interaction, user: discord.Member):
 
 @bot.tree.command(name="dance", description="hit a cool dance")
 async def dance(interaction: discord.Interaction):
-    if DEV_MODE:
-        await interaction.response.send_message(
-            "The bot is in developement right now. Remember what Taoma did for the server. ❤️",
-            ephemeral=False,
-        )
-        return
 
     dance_gifs = [
         "https://i.pinimg.com/originals/97/2d/aa/972daa47f0ce9cd21f79af88195b4c07.gif",
@@ -1964,12 +1783,6 @@ async def dance(interaction: discord.Interaction):
 
 @bot.tree.command(name="good", description="Tell someone he/she is a good boy/girl")
 async def good(interaction: discord.Interaction, user: discord.Member):
-    if DEV_MODE:
-        await interaction.response.send_message(
-            "The bot is in developement right now. Remember what Taoma did for the server. ❤️",
-            ephemeral=False,
-        )
-        return
     sheher_gifs = [
         "https://c.tenor.com/EXlBWDEJhIQAAAAd/tenor.gif",
         "https://c.tenor.com/ENcB_TMNJAYAAAAd/tenor.gif",
@@ -2044,12 +1857,6 @@ async def good(interaction: discord.Interaction, user: discord.Member):
 @bot.tree.command(name="topcoins", description="Show the richest players")
 @app_commands.describe(count="How many spots to display (1–25)?")
 async def topcoins(interaction: discord.Interaction, count: int = 10):
-    if DEV_MODE:
-        await interaction.response.send_message(
-            "The bot is in developement right now. Remember what Taoma did for the server. ❤️",
-            ephemeral=False,
-        )
-        return
     count = max(1, min(count, 25))
     top = get_top_users(count)
 
@@ -2072,12 +1879,6 @@ async def topcoins(interaction: discord.Interaction, count: int = 10):
 # === DAILY REWARD ===
 @bot.tree.command(name="daily", description="Claim your daily coins (24 h cooldown)")
 async def daily(interaction: discord.Interaction):
-    if DEV_MODE:
-        await interaction.response.send_message(
-            "The bot is in developement right now. Remember what Taoma did for the server. ❤️",
-            ephemeral=False,
-        )
-        return
     user_id = str(interaction.user.id)
     register_user(user_id, interaction.user.display_name)
 
@@ -2131,12 +1932,6 @@ async def addshoprole(
     reference: discord.Role | None = None,
     above: bool = True,
 ):
-    if DEV_MODE:
-        await inter.response.send_message(
-            "The bot is in developement right now. Remember what Taoma did for the server. ❤️",
-            ephemeral=False,
-        )
-        return
     if not (
         has_role(inter.user, OWNER_ROLE_NAME) or has_role(inter.user, ADMIN_ROLE_NAME)
     ):
@@ -2175,12 +1970,6 @@ async def addshoprole(
 
 @bot.tree.command(name="shop", description="Show all purchasable roles")
 async def shop(inter: discord.Interaction):
-    if DEV_MODE:
-        await inter.response.send_message(
-            "The bot is in developement right now. Remember what Taoma did for the server. ❤️",
-            ephemeral=False,
-        )
-        return
     entries = get_shop_roles()
     if not entries:
         await inter.response.send_message("The shop is empty.", ephemeral=True)
@@ -2197,12 +1986,6 @@ async def shop(inter: discord.Interaction):
 
 @bot.tree.command(name="buyrole", description="Buy a role from the shop")
 async def buyrole(inter: discord.Interaction, role: discord.Role):
-    if DEV_MODE:
-        await inter.response.send_message(
-            "The bot is in developement right now. Remember what Taoma did for the server. ❤️",
-            ephemeral=False,
-        )
-        return
     row = _fetchone("SELECT price FROM shop_roles WHERE role_id = ?", (role.id,))
     if not row:
         await inter.response.send_message(
@@ -2233,12 +2016,6 @@ async def buyrole(inter: discord.Interaction, role: discord.Role):
 @bot.tree.command(name="casino", description="pay to win")
 @app_commands.describe(bet="How much you want to bet")
 async def casino(inter: discord.Interaction, bet: int):
-    if DEV_MODE:
-        await inter.response.send_message(
-            "The bot is in developement right now. Remember what Taoma did for the server. ❤️",
-            ephemeral=False,
-        )
-        return
     uid = str(inter.user.id)
     register_user(uid, inter.user.display_name)
     balance = get_money(uid)
@@ -2535,12 +2312,6 @@ async def addcolorreactionrole(
     emoji: str,
     role: discord.Role,
 ):
-    if DEV_MODE:
-        await interaction.response.send_message(
-            "The bot is in developement right now. Remember what Taoma did for the server. ❤️",
-            ephemeral=False,
-        )
-        return
     if not has_role(interaction.user, ADMIN_ROLE_NAME):
         await interaction.response.send_message("No permission.", ephemeral=True)
         return
