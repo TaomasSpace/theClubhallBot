@@ -1408,7 +1408,7 @@ def update_date(user_id):
 
 def get_lastdate(user_id):
     register_user(user_id)
-    return _fetchone('SELECT * FROM users WHERE user_id = ?', (user_id,))[2] if _fetchone('SELECT * FROM users WHERE user_id = ?', (user_id,)) else None
+    return _fetchone('SELECT * FROM users WHERE user_id = ?', (user_id,))[2] if _fetchone('SELECT * FROM users WHERE user_id = ?', (user_id,))[2] else None
 
 @bot.tree.command(
     name="lastdate", description="Get a last date of user (Admin/Owner only)"
