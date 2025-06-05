@@ -18,6 +18,16 @@ intents.members = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
+
+@bot.tree.check
+async def global_blocker(interaction: discord.Interaction) -> bool:
+    await interaction.response.send_message(
+        "The bot is in developement right now. Remember what Taoma did for the server. ❤️",
+        ephemeral=True,
+    )
+    return False  # block the command
+
+
 # === CONSTANTS ===
 DB_PATH = "users.db"
 OWNER_ROLE_NAME = "Owner"
@@ -154,12 +164,14 @@ def init_db():
     """
     )
 
-    cursor.execute('''
+    cursor.execute(
+        """
         CREATE TABLE IF NOT EXISTS dates (
             user_id TEXT PRIMARY KEY,
             date TEXT
         )
-    ''')
+    """
+    )
 
     cursor.execute("PRAGMA table_info(users)")
     existing = {col[1] for col in cursor.fetchall()}
@@ -218,7 +230,10 @@ def register_user(user_id: str, username: str):
     if not _fetchone("SELECT 1 FROM date WHERE user_id = ?", (user_id,)):
         _execute(
             "INSERT INTO date (user_id, date) VALUES (?,?)",
-            (user_id, str(datetime.now(timezone.utc)),)
+            (
+                user_id,
+                str(datetime.now(timezone.utc)),
+            ),
         )
 
 
@@ -1401,14 +1416,26 @@ async def setstatpoints(
         f"✅ Set {user.display_name}'s stat points to {amount}.", ephemeral=True
     )
 
+
 def update_date(user_id):
-    if (_fetchone('SELECT * FROM dates WHERE user_id = ?', (user_id,))):
-        _execute('UPDATE dates SET date = ? WHERE user_id = ?', (str(datetime.now(timezone.utc)), user_id,))
-        
+    if _fetchone("SELECT * FROM dates WHERE user_id = ?", (user_id,)):
+        _execute(
+            "UPDATE dates SET date = ? WHERE user_id = ?",
+            (
+                str(datetime.now(timezone.utc)),
+                user_id,
+            ),
+        )
+
 
 def get_lastdate(user_id):
     register_user(user_id)
-    return _fetchone('SELECT date FROM dates WHERE user_id = ?', (user_id,))[0] if not None else 0
+    return (
+        _fetchone("SELECT date FROM dates WHERE user_id = ?", (user_id,))[0]
+        if not None
+        else 0
+    )
+
 
 @bot.tree.command(
     name="lastdate", description="Get a last date of user (Admin/Owner only)"
@@ -1427,12 +1454,14 @@ async def lastdate(interaction: discord.Interaction, user: discord.Member, msg: 
         return
     await interaction.response.send_message(get_lastdate(user.id), ephemeral=True)
 
+
 @bot.event
 async def on_message(message: discord.Message):
     if message.author.bot:
         return
 
     update_date(message.author.id)
+
 
 @bot.tree.command(name="setstat", description="Set a user's stat (Owner only)")
 @app_commands.describe(
