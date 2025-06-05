@@ -1402,13 +1402,13 @@ async def setstatpoints(
     )
 
 def update_date(user_id):
-    if (_fetchone('SELECT * FROM date WHERE user_id = ?', (user_id,))):
-        _execute('UPDATE users SET date = ? WHERE user_id = ?', (str(datetime.now(timezone.utc)), user_id,))
+    if (_fetchone('SELECT * FROM dates WHERE user_id = ?', (user_id,))):
+        _execute('UPDATE dates SET date = ? WHERE user_id = ?', (str(datetime.now(timezone.utc)), user_id,))
         
 
 def get_lastdate(user_id):
     register_user(user_id)
-    return _execute('SELECT * FROM users WHERE user_id = ?', (user_id,))[2] if _fetchone('SELECT * FROM users WHERE user_id = ?', (user_id,)) else None
+    return _fetchone('SELECT date FROM dates WHERE user_id = ?', (user_id,))[0] if not None else 0
 
 @bot.tree.command(
     name="lastdate", description="Get a last date of user (Admin/Owner only)"
