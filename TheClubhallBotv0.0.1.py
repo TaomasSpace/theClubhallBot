@@ -161,7 +161,7 @@ def init_db():
         """
         CREATE TABLE IF NOT EXISTS dates (
             user_id TEXT PRIMARY KEY,
-            date TEXT
+            "date" TEXT
         )
     """
     )
