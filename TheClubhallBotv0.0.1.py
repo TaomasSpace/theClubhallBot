@@ -220,7 +220,7 @@ def register_user(user_id: str, username: str):
             "INSERT INTO users (user_id, username, money) VALUES (?,?,?)",
             (user_id, username, 5),
         )
-    if not _fetchone("SELECT 1 FROM date WHERE user_id = ?", (user_id,)):
+    if not _fetchone("SELECT 1 FROM dates WHERE user_id = ?", (user_id,)):
         _execute(
             "INSERT INTO date (user_id, date) VALUES (?,?)",
             (
