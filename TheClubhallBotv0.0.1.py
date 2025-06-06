@@ -1423,6 +1423,8 @@ def update_date(user_id):
                 user_id,
             ),
         )
+    else:
+        register_user(user_id)
 
 
 def get_lastdate(user_id):
@@ -1434,7 +1436,7 @@ def get_lastdate(user_id):
     name="lastdate", description="Get a last date of user (Admin/Owner only)"
 )
 @app_commands.describe(user="User")
-async def lastdate(interaction: discord.Interaction, user: discord.Member, msg: str):
+async def lastdate(interaction: discord.Interaction, user: discord.Member):
     if (
         not has_role(interaction.user, ADMIN_ROLE_NAME)
         and not has_role(interaction.user, OWNER_ROLE_NAME)
