@@ -222,7 +222,7 @@ def register_user(user_id: str, username: str):
         )
     if not _fetchone("SELECT 1 FROM dates WHERE user_id = ?", (user_id,)):
         _execute(
-            "INSERT INTO registered_date  (user_id, registered_date) VALUES (?,?)",
+            "INSERT INTO dates (user_id, registered_date) VALUES (?,?)",
             (
                 user_id,
                 str(datetime.now(timezone.utc)),
@@ -1422,12 +1422,8 @@ def update_date(user_id):
 
 
 def get_lastdate(user_id):
-    register_user(user_id)
-    return (
-        _fetchone("SELECT date FROM dates WHERE user_id = ?", (user_id,))[0]
-        if not None
-        else 0
-    )
+    row = _fetchone("SELECT registered_date FROM dates WHERE user_id = ?", (user_id,))
+    return row[0] if row else "No date found"
 
 
 @bot.tree.command(
