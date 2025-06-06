@@ -1413,7 +1413,7 @@ async def setstatpoints(
 def update_date(user_id):
     if _fetchone("SELECT * FROM dates WHERE user_id = ?", (user_id,)):
         _execute(
-            "UPDATE dates SET date = ? WHERE user_id = ?",
+            "UPDATE dates SET registered_date  = ? WHERE user_id = ?",
             (
                 str(datetime.now(timezone.utc)),
                 user_id,
