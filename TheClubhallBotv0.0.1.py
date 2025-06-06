@@ -161,9 +161,9 @@ def init_db():
         """
         CREATE TABLE IF NOT EXISTS dates (
             user_id TEXT PRIMARY KEY,
-            "date" TEXT
+            registered_date TEXT
         )
-    """
+        """
     )
 
     cursor.execute("PRAGMA table_info(users)")
@@ -222,7 +222,7 @@ def register_user(user_id: str, username: str):
         )
     if not _fetchone("SELECT 1 FROM dates WHERE user_id = ?", (user_id,)):
         _execute(
-            "INSERT INTO date (user_id, date) VALUES (?,?)",
+            "INSERT INTO registered_date  (user_id, registered_date) VALUES (?,?)",
             (
                 user_id,
                 str(datetime.now(timezone.utc)),
