@@ -82,6 +82,7 @@ TRIGGER_RESPONSES = {
 def init_db():
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
+    cursor.execute("ALTER TABLE dates ADD COLUMN registered_date TEXT")
 
     cursor.execute(
         """
