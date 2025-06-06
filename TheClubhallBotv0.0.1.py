@@ -24,7 +24,7 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 # === CONSTANTS ===
 DB_PATH = "users.db"
 OWNER_ROLE_NAME = "Owner"
-ADMIN_ROLE_NAME = "Warden of the Clubhall (Admin)"
+ADMIN_ROLE_NAME = "The Gatekeeper(Admin)"
 SHEHER_ROLE_NAME = "She/Her"
 HEHIM_ROLE_NAME = "He/Him"
 DEFAULT_MAX_COINS = 3000
