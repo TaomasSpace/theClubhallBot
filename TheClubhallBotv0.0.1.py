@@ -70,8 +70,8 @@ def parse_duration(duration: str) -> Optional[int]:
 # === TRIGGERS ===
 TRIGGER_RESPONSES = {
     "シャドウストーム": "Our beautiful majestic Emperor シャドウストーム! Long live our beloved King 👑",
-    "goodyb": "Our beautiful majestic Emperor goodyb! Long live our beloved King 👑",
-    "Taoma": "Our beautiful majestic Emperor TAOMA™! Long live our beloved King 👑",
+    "goodyb": "Our beautiful majestic Emperor goodyb! Long live our beloved King 👑 Remember what Taoma did for the server, in his heart he is still here. ❤️",
+    "Taoma": "Our beautiful majestic Emperor TAOMA™! Long live our beloved King 👑  Remember what Taoma did for the server, in his heart he is still here. ❤️",
 }
 
 # =====================================================================
