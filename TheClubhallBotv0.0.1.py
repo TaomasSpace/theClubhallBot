@@ -651,7 +651,7 @@ async def balance(interaction: discord.Interaction, user: discord.Member):
     register_user(str(user.id), user.display_name)
     money = get_money(str(user.id))
     await interaction.response.send_message(
-        f"{user.display_name} has {money} clubhall coins."
+        f"{user.display_name} has {money} clubhall coins. And don’t forget to appreciate that the bot is still running – thanks to the work Taoma put in and continues to do."
     )
 
 
