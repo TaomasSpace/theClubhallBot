@@ -27,7 +27,7 @@ OWNER_ROLE_NAME = "Owner"
 ADMIN_ROLE_NAME = "The Gatekeeper(Admin)"
 SHEHER_ROLE_NAME = "She/Her"
 HEHIM_ROLE_NAME = "He/Him"
-MAX_COINS = 9999999999999999999
+MAX_COINS = 9223372036854775807
 DAILY_REWARD = 20
 WELCOME_CHANNEL_ID = 1351487186557734942
 LOG_CHANNEL_ID = 1364226902289813514
@@ -611,6 +611,11 @@ async def on_message(message: discord.Message):
         if trigger.lower() in content:
             await message.channel.send(reply)
             break
+
+    if message.author.bot:
+        return
+
+    update_date(message.author.id)
 
     await bot.process_commands(message)
 
@@ -1459,14 +1464,6 @@ async def lastdate(interaction: discord.Interaction, user: discord.Member):
         )
         return
     await interaction.response.send_message(get_lastdate(user.id), ephemeral=True)
-
-
-@bot.event
-async def on_message(message: discord.Message):
-    if message.author.bot:
-        return
-
-    update_date(message.author.id)
 
 
 @bot.tree.command(name="setstat", description="Set a user's stat (Owner only)")
