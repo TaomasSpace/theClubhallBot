@@ -27,7 +27,7 @@ OWNER_ROLE_NAME = "Owner"
 ADMIN_ROLE_NAME = "The Gatekeeper(Admin)"
 SHEHER_ROLE_NAME = "She/Her"
 HEHIM_ROLE_NAME = "He/Him"
-DEFAULT_MAX_COINS = 3000
+MAX_COINS = 9999999999999999999
 DAILY_REWARD = 20
 WELCOME_CHANNEL_ID = 1351487186557734942
 LOG_CHANNEL_ID = 1364226902289813514
@@ -124,8 +124,9 @@ def init_db():
     )
     cursor.execute(
         "INSERT OR IGNORE INTO server (id, max_coins) VALUES (1, ?)",
-        (DEFAULT_MAX_COINS,),
+        (MAX_COINS,),
     )
+    cursor.execute("UPDATE server SET max_coins = ? WHERE id = 1", (MAX_COINS,))
     cursor.execute(
         """
     CREATE TABLE IF NOT EXISTS shop_roles (
