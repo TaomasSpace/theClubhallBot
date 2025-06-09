@@ -615,7 +615,7 @@ async def on_message(message: discord.Message):
     if message.author.bot:
         return
 
-    update_date(message.author.id)
+    update_date(message.author.id, message.author.name)
 
     await bot.process_commands(message)
 
@@ -1430,7 +1430,7 @@ async def setstatpoints(
     )
 
 
-def update_date(user_id):
+def update_date(user_id, name):
     if _fetchone("SELECT * FROM dates WHERE user_id = ?", (user_id,)):
         _execute(
             "UPDATE dates SET registered_date  = ? WHERE user_id = ?",
@@ -1440,7 +1440,7 @@ def update_date(user_id):
             ),
         )
     else:
-        register_user(user_id)
+        register_user(user_id, name)
 
 
 def get_lastdate(user_id):
