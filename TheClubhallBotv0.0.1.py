@@ -122,11 +122,21 @@ def init_db():
         )
     """
     )
-    cursor.execute(
-        "INSERT OR IGNORE INTO server (id, max_coins) VALUES (1, ?)",
-        (MAX_COINS,),
-    )
-    cursor.execute("UPDATE server SET max_coins = ? WHERE id = 1", (MAX_COINS,))
+    cursor.execute("SELECT max_coins FROM server WHERE id = 1")
+    row = cursor.fetchone()
+
+    if row is None:
+        # Kein Eintrag vorhanden – also neu erstellen
+        cursor.execute(
+            "INSERT INTO server (id, max_coins) VALUES (?, ?)",
+            (1, MAX_COINS),
+        )
+    elif row[0] < MAX_COINS:
+        # Nur aktualisieren, wenn der alte Wert kleiner ist
+        cursor.execute(
+            "UPDATE server SET max_coins = ? WHERE id = 1",
+            (MAX_COINS,),
+        )
     cursor.execute(
         """
     CREATE TABLE IF NOT EXISTS shop_roles (
