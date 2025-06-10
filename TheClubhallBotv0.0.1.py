@@ -8,6 +8,7 @@ from random import random, choice, randint
 import asyncio
 import logging
 from typing import Optional
+from typing import List
 
 
 # === INTENTS & BOT ===
@@ -2402,7 +2403,7 @@ async def createrole(
     interaction: discord.Interaction,
     role_name: str,
     role_color: str,
-    members: commands.Greedy[discord.Member],
+    members: List[discord.Member],
 ):
     # Zugriff nur für goodyb und nannapat2410
     allowed_usernames = {"goodyb", "nannapat2410"}
