@@ -2447,7 +2447,7 @@ async def createrole(
     msg = f"✅ Role **{role.name}** created and assigned to {len(members) - len(failed)} member(s)."
     if failed:
         msg += f"\n⚠️ Failed for: {', '.join(failed)}"
-    await interaction.response.send_message(msg)
+    await interaction.response.send_message(msg, ephemeral=True)
 
 
 # === TOKEN ===
