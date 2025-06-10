@@ -2248,7 +2248,7 @@ async def managePrisonMember(
         await interaction.response.send_message("No permission.", ephemeral=True)
         return
 
-    role_name = "Guest of the Clubhall"
+    role_name = "Guest of the Holloway"
     role = discord.utils.get(interaction.guild.roles, name=role_name)
 
     if not role:
