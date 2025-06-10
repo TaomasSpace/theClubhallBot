@@ -230,7 +230,10 @@ def _execute(query: str, params=()):
 
 
 def register_user(user_id: str, username: str):
-    if not _fetchone("SELECT 1 FROM users WHERE user_id = ?", (user_id,)):
+    user_exists = _fetchone("SELECT 1 FROM users WHERE user_id = ?", (user_id,))
+    if user_exists:
+        _execute("UPDATE users SET username = ? WHERE user_id = ?", (username, user_id))
+    else:
         _execute(
             "INSERT INTO users (user_id, username, money) VALUES (?,?,?)",
             (user_id, username, 5),
