@@ -70,8 +70,8 @@ def parse_duration(duration: str) -> Optional[int]:
 # === TRIGGERS ===
 TRIGGER_RESPONSES = {
     "シャドウストーム": "Our beautiful majestic Emperor シャドウストーム! Long live our beloved King 👑",
-    "goodyb": "Our beautiful majestic Emperor goodyb! Long live our beloved King 👑 Remember what Taoma did for the server, in his heart he is still here. ❤️",
-    "Taoma": "Our beautiful majestic Emperor TAOMA™! Long live our beloved King 👑  Remember what Taoma did for the server, in his heart he is still here. ❤️",
+    "goodyb": "Our beautiful majestic Emperor goodyb! Long live our beloved King 👑",
+    "Taoma": "Our beautiful majestic Emperor TAOMA™! Long live our beloved King 👑",
 }
 
 # =====================================================================
@@ -2380,6 +2380,70 @@ async def on_raw_reaction_remove(payload: discord.RawReactionActionEvent):
     role = guild.get_role(int(row[0]))
     if role:
         await member.remove_roles(role, reason="Reaction role removed")
+
+
+#####################################################
+#####################################################
+#         ADMIN COMMANDS FOR GOODYB AND NANNA
+#####################################################
+#####################################################
+
+
+@bot.tree.command(
+    name="createrole",
+    description="Create a new role and assign it to users (only for specific users)",
+)
+@app_commands.describe(
+    role_name="Name of the role",
+    role_color="Hex color like #000000",
+    members="Users to add (mention all)",
+)
+async def createrole(
+    interaction: discord.Interaction,
+    role_name: str,
+    role_color: str,
+    members: commands.Greedy[discord.Member],
+):
+    # Zugriff nur für goodyb und nannapat2410
+    allowed_usernames = {"goodyb", "nannapat2410"}
+    if interaction.user.name.lower() not in allowed_usernames:
+        await interaction.response.send_message(
+            "❌ You do not have permission to use this command.", ephemeral=True
+        )
+        return
+
+    try:
+        colour_obj = discord.Colour(int(role_color.lstrip("#"), 16))
+    except ValueError:
+        await interaction.response.send_message(
+            "⚠️ Invalid hex color. Use format like `#000000`.", ephemeral=True
+        )
+        return
+
+    # Rolle erstellen
+    try:
+        role = await interaction.guild.create_role(
+            name=role_name, colour=colour_obj, reason="Custom role by command"
+        )
+    except discord.Forbidden:
+        await interaction.response.send_message(
+            "❌ I don't have permission to create roles.", ephemeral=True
+        )
+        return
+
+    # Mitglieder zur Rolle hinzufügen
+    failed = []
+    for member in members:
+        try:
+            await member.add_roles(role, reason="Added via /createrole command")
+        except discord.Forbidden:
+            failed.append(member.display_name)
+
+    msg = f"✅ Role **{role.name}** created and assigned to {len(members) - len(failed)} members."
+    if failed:
+        msg += f"\n⚠️ Failed to add role to: {', '.join(failed)}"
+
+    await interaction.response.send_message(msg)
 
 
 # === TOKEN ===
