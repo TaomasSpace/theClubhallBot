@@ -1652,8 +1652,8 @@ async def imitate(interaction: discord.Interaction, user: discord.Member, msg: s
 
 
 @bot.tree.command(name="giveaway", description="Start a giveaway (only Admin/Owner)")
-@app_commands.describe(duration="duration in minutes", prize="Prize")
-async def giveaway(interaction: discord.Interaction, duration: int, prize: str):
+@app_commands.describe(duration="Duration in minutes", prize="Prize", winners="Number of winners")
+async def giveaway(interaction: discord.Interaction, duration: int, prize: str, winners: int):
 
     if not has_role(interaction.user, ADMIN_ROLE_NAME) and not has_role(
         interaction.user, OWNER_ROLE_NAME
@@ -1663,10 +1663,16 @@ async def giveaway(interaction: discord.Interaction, duration: int, prize: str):
         )
         return
 
+    if winners < 1:
+        await interaction.response.send_message("You need at least 1 winner.", ephemeral=True)
+        return
+
     embed = discord.Embed(
         title="🎉 GIVEAWAY 🎉",
         description=(
-            f"React with 🎉 to win **{prize}**!\n" f"🔔 Duration: **{duration} min**."
+            f"React with 🎉 to win **{prize}**!\n"
+            f"🔔 Duration: **{duration} min**.\n"
+            f"🏆 Winners: **{winners}**"
         ),
         color=discord.Color.gold(),
     )
@@ -1682,7 +1688,6 @@ async def giveaway(interaction: discord.Interaction, duration: int, prize: str):
     await asyncio.sleep(duration * 60)
 
     refreshed = await giveaway_msg.channel.fetch_message(giveaway_msg.id)
-
     reaction = discord.utils.get(refreshed.reactions, emoji="🎉")
     if reaction is None:
         await refreshed.reply("No one has participated.")
@@ -1693,9 +1698,13 @@ async def giveaway(interaction: discord.Interaction, duration: int, prize: str):
         await refreshed.reply("No one has participated.")
         return
 
-    winner = choice(users)
+    if winners > len(users):
+        winners = len(users)
+
+    selected_winners = ", ".join(u.mention for u in choice(users, k=winners)) if winners > 1 else users[0].mention
     await refreshed.reply(
-        f"🎊 Congratulation! {winner.mention}! " f"You have won **{prize}** 🎉"
+        f"🎊 Congratulations! {selected_winners} "
+        f"won **{prize}** 🎉"
     )
 
 
