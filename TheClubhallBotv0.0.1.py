@@ -1751,9 +1751,7 @@ async def giveaway(
     interaction: discord.Interaction, duration: int, prize: str, winners: int
 ):
 
-    if not has_role(interaction.user, ADMIN_ROLE_ID) and not has_role(
-        interaction.user, ADMIN_ROLE_ID
-    ):
+    if not has_role(interaction.user, ADMIN_ROLE_ID) and not interaction.user.id == "875279455222898698":
         await interaction.response.send_message(
             "Only admins and owners can use this command", ephemeral=True
         )
