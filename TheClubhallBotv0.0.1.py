@@ -52,6 +52,7 @@ steal_cooldowns = {}
 lowercase_locked: set[int] = set()
 
 active_prison_timers = {}
+active_giveaway_tasks = {}
 
 
 def parse_duration(duration: str) -> Optional[int]:
@@ -178,6 +179,19 @@ def init_db():
         CREATE TABLE IF NOT EXISTS dates (
             user_id TEXT PRIMARY KEY,
             registered_date TEXT
+        )
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS giveaways (
+            message_id TEXT PRIMARY KEY,
+            channel_id TEXT NOT NULL,
+            end_time TEXT,
+            prize TEXT,
+            winners INTEGER,
+            finished INTEGER DEFAULT 0
         )
         """
     )
@@ -469,6 +483,33 @@ def delete_custom_role(user_id: str):
     _execute("DELETE FROM custom_roles WHERE user_id = ?", (user_id,))
 
 
+# ---------- giveaway helpers ----------
+
+def create_giveaway(message_id: str, channel_id: str, end_time: datetime, prize: str, winners: int):
+    _execute(
+        """
+    INSERT OR REPLACE INTO giveaways (message_id, channel_id, end_time, prize, winners, finished)
+    VALUES (?, ?, ?, ?, ?, 0)
+    """,
+        (message_id, channel_id, end_time.isoformat(), prize, winners),
+    )
+
+
+def finish_giveaway(message_id: str):
+    _execute("UPDATE giveaways SET finished = 1 WHERE message_id = ?", (message_id,))
+
+
+def get_active_giveaways():
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT message_id, channel_id, end_time, prize, winners FROM giveaways WHERE finished = 0"
+    )
+    rows = cursor.fetchall()
+    conn.close()
+    return rows
+
+
 # =====================================================================
 #                              UTILITIES
 # =====================================================================
@@ -565,6 +606,63 @@ async def sync_stat_roles(member: discord.Member):
             )
 
 
+async def end_giveaway(channel_id: int, message_id: int, prize: str, winners: int):
+    channel = bot.get_channel(channel_id)
+    if channel is None:
+        finish_giveaway(str(message_id))
+        return
+    try:
+        refreshed = await channel.fetch_message(message_id)
+    except Exception:
+        finish_giveaway(str(message_id))
+        return
+
+    reaction = discord.utils.get(refreshed.reactions, emoji="🎉")
+    if reaction is None:
+        await refreshed.reply("No one has participated.")
+        finish_giveaway(str(message_id))
+        active_giveaway_tasks.pop(message_id, None)
+        return
+
+    users = [u async for u in reaction.users() if not u.bot]
+    if not users:
+        await refreshed.reply("No one has participated.")
+        finish_giveaway(str(message_id))
+        active_giveaway_tasks.pop(message_id, None)
+        return
+
+    if winners > len(users):
+        winners = len(users)
+
+    selected_winners = (
+        ", ".join(u.mention for u in choice(users, k=winners))
+        if winners > 1
+        else users[0].mention
+    )
+    await refreshed.reply(
+        f"🎊 Congratulations! {selected_winners} " f"won **{prize}** 🎉"
+    )
+    finish_giveaway(str(message_id))
+    active_giveaway_tasks.pop(message_id, None)
+
+
+async def load_giveaways():
+    for mid, cid, end, prize, winners in get_active_giveaways():
+        end_dt = datetime.fromisoformat(end)
+        delay = (end_dt - datetime.now(timezone.utc)).total_seconds()
+
+        async def runner(m=int(mid), c=int(cid), p=prize, w=winners, d=delay):
+            try:
+                if d > 0:
+                    await asyncio.sleep(d)
+                await end_giveaway(c, m, p, w)
+            except asyncio.CancelledError:
+                pass
+
+        task = asyncio.create_task(runner())
+        active_giveaway_tasks[int(mid)] = task
+
+
 # =====================================================================
 #                              EVENTS
 # =====================================================================
@@ -574,6 +672,7 @@ async def on_ready():
     global rod_shop
     rod_shop = get_all_rods_from_shop()
     await bot.tree.sync()
+    await load_giveaways()
     print(f"Bot is online as {bot.user}")
 
 
@@ -1684,30 +1783,24 @@ async def giveaway(
     giveaway_msg = await interaction.original_response()
     await giveaway_msg.add_reaction("🎉")
 
-    await asyncio.sleep(duration * 60)
-
-    refreshed = await giveaway_msg.channel.fetch_message(giveaway_msg.id)
-    reaction = discord.utils.get(refreshed.reactions, emoji="🎉")
-    if reaction is None:
-        await refreshed.reply("No one has participated.")
-        return
-
-    users = [u async for u in reaction.users() if not u.bot]
-    if not users:
-        await refreshed.reply("No one has participated.")
-        return
-
-    if winners > len(users):
-        winners = len(users)
-
-    selected_winners = (
-        ", ".join(u.mention for u in choice(users, k=winners))
-        if winners > 1
-        else users[0].mention
+    end_time = datetime.now(timezone.utc) + timedelta(minutes=duration)
+    create_giveaway(
+        str(giveaway_msg.id),
+        str(giveaway_msg.channel.id),
+        end_time,
+        prize,
+        winners,
     )
-    await refreshed.reply(
-        f"🎊 Congratulations! {selected_winners} " f"won **{prize}** 🎉"
-    )
+
+    async def end_later():
+        try:
+            await asyncio.sleep(duration * 60)
+            await end_giveaway(giveaway_msg.channel.id, giveaway_msg.id, prize, winners)
+        except asyncio.CancelledError:
+            pass
+
+    task = asyncio.create_task(end_later())
+    active_giveaway_tasks[giveaway_msg.id] = task
 
 
 @bot.tree.command(name="goon", description="goon to someone on the server")
