@@ -25,11 +25,9 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 # === CONSTANTS ===
 DB_PATH = "users.db"
 # Role IDs (replace 0 with the actual IDs from your server)
-OWNER_ROLE_ID = 0
-ADMIN_ROLE_ID = 0
-SHEHER_ROLE_ID = 0
-HEHIM_ROLE_ID = 0
-MARMALADES_BF_ROLE_ID = 0
+ADMIN_ROLE_ID = 1351479405699928108
+SHEHER_ROLE_ID = 1351546875492302859
+HEHIM_ROLE_ID = 1351546766855634984
 MAX_COINS = 9223372036854775807
 DAILY_REWARD = 20
 WELCOME_CHANNEL_ID = 1351487186557734942
@@ -686,8 +684,7 @@ async def balance(interaction: discord.Interaction, user: discord.Member):
 
 @bot.tree.command(name="give", description="Give coins to a user (Admin/Owner only)")
 async def give(interaction: discord.Interaction, user: discord.Member, amount: int):
-    if not has_role(interaction.user, ADMIN_ROLE_ID) and not has_role(
-        interaction.user, OWNER_ROLE_ID
+    if not has_role(interaction.user, ADMIN_ROLE_ID
     ):
         await interaction.response.send_message(
             "You don't have permission to give clubhall coins.", ephemeral=True
@@ -715,9 +712,7 @@ async def give(interaction: discord.Interaction, user: discord.Member, amount: i
     name="remove", description="Remove clubhall coins from a user (Admin/Owner only)"
 )
 async def remove(interaction: discord.Interaction, user: discord.Member, amount: int):
-    if not has_role(interaction.user, ADMIN_ROLE_ID) and not has_role(
-        interaction.user, OWNER_ROLE_ID
-    ):
+    if not has_role(interaction.user, ADMIN_ROLE_ID):
         await interaction.response.send_message(
             "You don't have permission to remove clubhall coins.", ephemeral=True
         )
@@ -771,7 +766,7 @@ async def donate(interaction: discord.Interaction, user: discord.Member, amount:
     name="setlimit", description="Set the maximum clubhall coins limit (Owner only)"
 )
 async def setlimit(interaction: discord.Interaction, new_limit: int):
-    if not has_role(interaction.user, OWNER_ROLE_ID):
+    if not has_role(interaction.user, ADMIN_ROLE_ID):
         await interaction.response.send_message(
             "Only the owner can change the limit.", ephemeral=True
         )
@@ -917,8 +912,6 @@ async def stab(interaction: discord.Interaction, user: discord.Member):
     try:
         if user.id == sender_id:
             chance = 0.20
-            if has_role(interaction.user, OWNER_ROLE_ID):
-                chance = 0.75
 
             if random() < chance:
                 selected_gif = choice(special_gifs)
@@ -936,8 +929,6 @@ async def stab(interaction: discord.Interaction, user: discord.Member):
                 return
 
         chance = 0.50
-        if has_role(interaction.user, OWNER_ROLE_ID):
-            chance = 0.90
         if random() < chance:
             gif_url = choice(stab_gifs)
             if gif_url:
@@ -1208,8 +1199,7 @@ async def addrod(
     interaction: discord.Interaction, level: int, price: int, multiplier: float
 ):
     if not (
-        has_role(interaction.user, OWNER_ROLE_ID)
-        or has_role(interaction.user, ADMIN_ROLE_ID)
+        has_role(interaction.user, ADMIN_ROLE_ID)
     ):
         await interaction.response.send_message("No permission.", ephemeral=True)
         return
@@ -1419,13 +1409,13 @@ async def fight(interaction: discord.Interaction, target: discord.Member):
 #                     DAILY & OTHER ORIGINAL COMMANDS
 # =====================================================================
 @bot.tree.command(
-    name="setstatpoints", description="Set a user's stat points (Owner only)"
+    name="setstatpoints", description="Set a user's stat points (Admin only)"
 )
 @app_commands.describe(user="Target user", amount="New amount of stat points")
 async def setstatpoints(
     interaction: discord.Interaction, user: discord.Member, amount: int
 ):
-    if not has_role(interaction.user, OWNER_ROLE_ID):
+    if not has_role(interaction.user, ADMIN_ROLE_ID):
         await interaction.response.send_message(
             "Only the Owner can use this command.", ephemeral=True
         )
@@ -1468,8 +1458,6 @@ def get_lastdate(user_id):
 async def lastdate(interaction: discord.Interaction, user: discord.Member):
     if (
         not has_role(interaction.user, ADMIN_ROLE_ID)
-        and not has_role(interaction.user, OWNER_ROLE_ID)
-        and not has_role(interaction.user, MARMALADES_BF_ROLE_ID)
         and not interaction.user.premium_since
     ):
         await interaction.response.send_message(
@@ -1488,7 +1476,7 @@ async def lastdate(interaction: discord.Interaction, user: discord.Member):
 async def setstat(
     interaction: discord.Interaction, user: discord.Member, stat: str, amount: int
 ):
-    if not has_role(interaction.user, OWNER_ROLE_ID):
+    if not has_role(interaction.user, ADMIN_ROLE_ID):
         await interaction.response.send_message(
             "Only the Owner can use this command.", ephemeral=True
         )
@@ -1632,8 +1620,6 @@ logging.basicConfig(
 async def imitate(interaction: discord.Interaction, user: discord.Member, msg: str):
     if (
         not has_role(interaction.user, ADMIN_ROLE_ID)
-        and not has_role(interaction.user, OWNER_ROLE_ID)
-        and not has_role(interaction.user, MARMALADES_BF_ROLE_ID)
         and not interaction.user.premium_since
     ):
         await interaction.response.send_message(
@@ -1667,7 +1653,7 @@ async def giveaway(
 ):
 
     if not has_role(interaction.user, ADMIN_ROLE_ID) and not has_role(
-        interaction.user, OWNER_ROLE_ID
+        interaction.user, ADMIN_ROLE_ID
     ):
         await interaction.response.send_message(
             "Only admins and owners can use this command", ephemeral=True
@@ -1973,7 +1959,7 @@ async def addshoprole(
     reference: discord.Role | None = None,
     above: bool = True,
 ):
-    if not (has_role(inter.user, OWNER_ROLE_ID) or has_role(inter.user, ADMIN_ROLE_ID)):
+    if not has_role(inter.user, ADMIN_ROLE_ID):
         await inter.response.send_message("No permission.", ephemeral=True)
         return
 
@@ -2274,6 +2260,10 @@ async def managePrisonMember(
         await interaction.response.send_message("No permission.", ephemeral=True)
         return
 
+    gooyb = False
+    if (user.name == "goodyb"):
+        gooyb = True
+
     role_name = "Guest of the Holloway"
     role = discord.utils.get(interaction.guild.roles, name=role_name)
 
@@ -2290,7 +2280,7 @@ async def managePrisonMember(
             task.cancel()
             await user.remove_roles(role)
             await interaction.response.send_message(
-                f"🕊️ Timer cancelled. {user.mention} has been freed.", ephemeral=False
+                f"🕊️ Timer cancelled. {user.mention} has been freed.", ephemeral=gooyb
             )
         else:
             await interaction.response.send_message(
@@ -2305,7 +2295,7 @@ async def managePrisonMember(
             task.cancel()
         await user.add_roles(role)
         await interaction.response.send_message(
-            f"🔓 {user.mention} has been freed from prison.", ephemeral=False
+            f"🔓 {user.mention} has been freed from prison.", ephemeral=gooyb
         )
         return
 
