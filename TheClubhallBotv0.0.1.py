@@ -2354,7 +2354,7 @@ async def managePrisonMember(
         return
 
     gooyb = False
-    if (user.name == "goodyb"):
+    if (interaction.user.name == "goodyb"):
         gooyb = True
 
     role_name = "Guest of the Holloway"
