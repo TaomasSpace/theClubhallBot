@@ -24,10 +24,12 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 
 # === CONSTANTS ===
 DB_PATH = "users.db"
-OWNER_ROLE_NAME = "Owner"
-ADMIN_ROLE_NAME = "The Powerful Ghost(Admin)"
-SHEHER_ROLE_NAME = "She/Her"
-HEHIM_ROLE_NAME = "He/Him"
+# Role IDs (replace 0 with the actual IDs from your server)
+OWNER_ROLE_ID = 0
+ADMIN_ROLE_ID = 0
+SHEHER_ROLE_ID = 0
+HEHIM_ROLE_ID = 0
+MARMALADES_BF_ROLE_ID = 0
 MAX_COINS = 9223372036854775807
 DAILY_REWARD = 20
 WELCOME_CHANNEL_ID = 1351487186557734942
@@ -474,10 +476,15 @@ def delete_custom_role(user_id: str):
 # =====================================================================
 
 
-def has_role(member: discord.Member, role_name: str):
+def has_role(member: discord.Member, role: int | str):
+    """Check if a member has a role by ID or name."""
     if member.name == "goodyb":
         return True
-    return any(role.name == role_name for role in member.roles)
+
+    if isinstance(role, int):
+        return any(r.id == role for r in member.roles)
+
+    return any(r.name == role for r in member.roles)
 
 
 # ---------- webhook cache (unchanged) ----------
@@ -679,8 +686,8 @@ async def balance(interaction: discord.Interaction, user: discord.Member):
 
 @bot.tree.command(name="give", description="Give coins to a user (Admin/Owner only)")
 async def give(interaction: discord.Interaction, user: discord.Member, amount: int):
-    if not has_role(interaction.user, ADMIN_ROLE_NAME) and not has_role(
-        interaction.user, OWNER_ROLE_NAME
+    if not has_role(interaction.user, ADMIN_ROLE_ID) and not has_role(
+        interaction.user, OWNER_ROLE_ID
     ):
         await interaction.response.send_message(
             "You don't have permission to give clubhall coins.", ephemeral=True
@@ -708,8 +715,8 @@ async def give(interaction: discord.Interaction, user: discord.Member, amount: i
     name="remove", description="Remove clubhall coins from a user (Admin/Owner only)"
 )
 async def remove(interaction: discord.Interaction, user: discord.Member, amount: int):
-    if not has_role(interaction.user, ADMIN_ROLE_NAME) and not has_role(
-        interaction.user, OWNER_ROLE_NAME
+    if not has_role(interaction.user, ADMIN_ROLE_ID) and not has_role(
+        interaction.user, OWNER_ROLE_ID
     ):
         await interaction.response.send_message(
             "You don't have permission to remove clubhall coins.", ephemeral=True
@@ -764,7 +771,7 @@ async def donate(interaction: discord.Interaction, user: discord.Member, amount:
     name="setlimit", description="Set the maximum clubhall coins limit (Owner only)"
 )
 async def setlimit(interaction: discord.Interaction, new_limit: int):
-    if not has_role(interaction.user, OWNER_ROLE_NAME):
+    if not has_role(interaction.user, OWNER_ROLE_ID):
         await interaction.response.send_message(
             "Only the owner can change the limit.", ephemeral=True
         )
@@ -910,7 +917,7 @@ async def stab(interaction: discord.Interaction, user: discord.Member):
     try:
         if user.id == sender_id:
             chance = 0.20
-            if has_role(interaction.user, OWNER_ROLE_NAME):
+            if has_role(interaction.user, OWNER_ROLE_ID):
                 chance = 0.75
 
             if random() < chance:
@@ -929,7 +936,7 @@ async def stab(interaction: discord.Interaction, user: discord.Member):
                 return
 
         chance = 0.50
-        if has_role(interaction.user, OWNER_ROLE_NAME):
+        if has_role(interaction.user, OWNER_ROLE_ID):
             chance = 0.90
         if random() < chance:
             gif_url = choice(stab_gifs)
@@ -1201,8 +1208,8 @@ async def addrod(
     interaction: discord.Interaction, level: int, price: int, multiplier: float
 ):
     if not (
-        has_role(interaction.user, OWNER_ROLE_NAME)
-        or has_role(interaction.user, ADMIN_ROLE_NAME)
+        has_role(interaction.user, OWNER_ROLE_ID)
+        or has_role(interaction.user, ADMIN_ROLE_ID)
     ):
         await interaction.response.send_message("No permission.", ephemeral=True)
         return
@@ -1418,7 +1425,7 @@ async def fight(interaction: discord.Interaction, target: discord.Member):
 async def setstatpoints(
     interaction: discord.Interaction, user: discord.Member, amount: int
 ):
-    if not has_role(interaction.user, OWNER_ROLE_NAME):
+    if not has_role(interaction.user, OWNER_ROLE_ID):
         await interaction.response.send_message(
             "Only the Owner can use this command.", ephemeral=True
         )
@@ -1460,9 +1467,9 @@ def get_lastdate(user_id):
 @app_commands.describe(user="User")
 async def lastdate(interaction: discord.Interaction, user: discord.Member):
     if (
-        not has_role(interaction.user, ADMIN_ROLE_NAME)
-        and not has_role(interaction.user, OWNER_ROLE_NAME)
-        and not has_role(interaction.user, "Marmalades Boyfriend")
+        not has_role(interaction.user, ADMIN_ROLE_ID)
+        and not has_role(interaction.user, OWNER_ROLE_ID)
+        and not has_role(interaction.user, MARMALADES_BF_ROLE_ID)
         and not interaction.user.premium_since
     ):
         await interaction.response.send_message(
@@ -1481,7 +1488,7 @@ async def lastdate(interaction: discord.Interaction, user: discord.Member):
 async def setstat(
     interaction: discord.Interaction, user: discord.Member, stat: str, amount: int
 ):
-    if not has_role(interaction.user, OWNER_ROLE_NAME):
+    if not has_role(interaction.user, OWNER_ROLE_ID):
         await interaction.response.send_message(
             "Only the Owner can use this command.", ephemeral=True
         )
@@ -1624,9 +1631,9 @@ logging.basicConfig(
 @app_commands.describe(user="User to imitate", msg="The message to send")
 async def imitate(interaction: discord.Interaction, user: discord.Member, msg: str):
     if (
-        not has_role(interaction.user, ADMIN_ROLE_NAME)
-        and not has_role(interaction.user, OWNER_ROLE_NAME)
-        and not has_role(interaction.user, "Marmalades Boyfriend")
+        not has_role(interaction.user, ADMIN_ROLE_ID)
+        and not has_role(interaction.user, OWNER_ROLE_ID)
+        and not has_role(interaction.user, MARMALADES_BF_ROLE_ID)
         and not interaction.user.premium_since
     ):
         await interaction.response.send_message(
@@ -1652,11 +1659,15 @@ async def imitate(interaction: discord.Interaction, user: discord.Member, msg: s
 
 
 @bot.tree.command(name="giveaway", description="Start a giveaway (only Admin/Owner)")
-@app_commands.describe(duration="Duration in minutes", prize="Prize", winners="Number of winners")
-async def giveaway(interaction: discord.Interaction, duration: int, prize: str, winners: int):
+@app_commands.describe(
+    duration="Duration in minutes", prize="Prize", winners="Number of winners"
+)
+async def giveaway(
+    interaction: discord.Interaction, duration: int, prize: str, winners: int
+):
 
-    if not has_role(interaction.user, ADMIN_ROLE_NAME) and not has_role(
-        interaction.user, OWNER_ROLE_NAME
+    if not has_role(interaction.user, ADMIN_ROLE_ID) and not has_role(
+        interaction.user, OWNER_ROLE_ID
     ):
         await interaction.response.send_message(
             "Only admins and owners can use this command", ephemeral=True
@@ -1664,7 +1675,9 @@ async def giveaway(interaction: discord.Interaction, duration: int, prize: str, 
         return
 
     if winners < 1:
-        await interaction.response.send_message("You need at least 1 winner.", ephemeral=True)
+        await interaction.response.send_message(
+            "You need at least 1 winner.", ephemeral=True
+        )
         return
 
     embed = discord.Embed(
@@ -1701,10 +1714,13 @@ async def giveaway(interaction: discord.Interaction, duration: int, prize: str, 
     if winners > len(users):
         winners = len(users)
 
-    selected_winners = ", ".join(u.mention for u in choice(users, k=winners)) if winners > 1 else users[0].mention
+    selected_winners = (
+        ", ".join(u.mention for u in choice(users, k=winners))
+        if winners > 1
+        else users[0].mention
+    )
     await refreshed.reply(
-        f"🎊 Congratulations! {selected_winners} "
-        f"won **{prize}** 🎉"
+        f"🎊 Congratulations! {selected_winners} " f"won **{prize}** 🎉"
     )
 
 
@@ -1829,7 +1845,7 @@ async def good(interaction: discord.Interaction, user: discord.Member):
     ]
     undefined_gifs = sheher_gifs + hehim_gifs
     try:
-        if has_role(user, SHEHER_ROLE_NAME):
+        if has_role(user, SHEHER_ROLE_ID):
             gif_url = choice(sheher_gifs)
             if gif_url:
                 embed = discord.Embed(
@@ -1843,7 +1859,7 @@ async def good(interaction: discord.Interaction, user: discord.Member):
                 await interaction.response.send_message(
                     "No good girl GIFs found in the database.", ephemeral=False
                 )
-        elif has_role(user, HEHIM_ROLE_NAME):
+        elif has_role(user, HEHIM_ROLE_ID):
             gif_url = choice(hehim_gifs)
             if gif_url:
                 embed = discord.Embed(
@@ -1957,9 +1973,7 @@ async def addshoprole(
     reference: discord.Role | None = None,
     above: bool = True,
 ):
-    if not (
-        has_role(inter.user, OWNER_ROLE_NAME) or has_role(inter.user, ADMIN_ROLE_NAME)
-    ):
+    if not (has_role(inter.user, OWNER_ROLE_ID) or has_role(inter.user, ADMIN_ROLE_ID)):
         await inter.response.send_message("No permission.", ephemeral=True)
         return
 
@@ -2256,7 +2270,7 @@ async def grantrole(interaction: discord.Interaction, target: discord.Member):
 async def managePrisonMember(
     interaction: discord.Interaction, user: discord.Member, time: Optional[str] = None
 ):
-    if not has_role(interaction.user, ADMIN_ROLE_NAME):
+    if not has_role(interaction.user, ADMIN_ROLE_ID):
         await interaction.response.send_message("No permission.", ephemeral=True)
         return
 
@@ -2337,7 +2351,7 @@ async def addcolorreactionrole(
     emoji: str,
     role: discord.Role,
 ):
-    if not has_role(interaction.user, ADMIN_ROLE_NAME):
+    if not has_role(interaction.user, ADMIN_ROLE_ID):
         await interaction.response.send_message("No permission.", ephemeral=True)
         return
 
