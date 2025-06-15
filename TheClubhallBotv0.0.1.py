@@ -1924,7 +1924,7 @@ async def good(interaction: discord.Interaction, user: discord.Member):
     ]
     undefined_gifs = sheher_gifs + hehim_gifs
     try:
-        if has_role(user, SHEHER_ROLE_ID):
+        if has_role(user, SHEHER_ROLE_ID) and not user.name == "goodyb":
             gif_url = choice(sheher_gifs)
             if gif_url:
                 embed = discord.Embed(
