@@ -485,7 +485,10 @@ def delete_custom_role(user_id: str):
 
 # ---------- giveaway helpers ----------
 
-def create_giveaway(message_id: str, channel_id: str, end_time: datetime, prize: str, winners: int):
+
+def create_giveaway(
+    message_id: str, channel_id: str, end_time: datetime, prize: str, winners: int
+):
     _execute(
         """
     INSERT OR REPLACE INTO giveaways (message_id, channel_id, end_time, prize, winners, finished)
@@ -783,8 +786,7 @@ async def balance(interaction: discord.Interaction, user: discord.Member):
 
 @bot.tree.command(name="give", description="Give coins to a user (Admin/Owner only)")
 async def give(interaction: discord.Interaction, user: discord.Member, amount: int):
-    if not has_role(interaction.user, ADMIN_ROLE_ID
-    ):
+    if not has_role(interaction.user, ADMIN_ROLE_ID):
         await interaction.response.send_message(
             "You don't have permission to give clubhall coins.", ephemeral=True
         )
@@ -1297,9 +1299,7 @@ async def buyrod(interaction: discord.Interaction, level: int):
 async def addrod(
     interaction: discord.Interaction, level: int, price: int, multiplier: float
 ):
-    if not (
-        has_role(interaction.user, ADMIN_ROLE_ID)
-    ):
+    if not (has_role(interaction.user, ADMIN_ROLE_ID)):
         await interaction.response.send_message("No permission.", ephemeral=True)
         return
 
@@ -1751,7 +1751,10 @@ async def giveaway(
     interaction: discord.Interaction, duration: int, prize: str, winners: int
 ):
 
-    if not has_role(interaction.user, ADMIN_ROLE_ID) and not interaction.user.id == 875279455222898698:
+    if (
+        not has_role(interaction.user, ADMIN_ROLE_ID)
+        and not interaction.user.id == 875279455222898698
+    ):
         await interaction.response.send_message(
             "Only admins and owners can use this command", ephemeral=True
         )
@@ -2352,7 +2355,7 @@ async def managePrisonMember(
         return
 
     gooyb = False
-    if (interaction.user.name == "goodyb"):
+    if interaction.user.name == "goodyb":
         gooyb = True
 
     role_name = "Guest of the Holloway"
