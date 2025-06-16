@@ -238,6 +238,6 @@ def setup(bot: commands.Bot, lowercase_locked: set[int]):
     bot.add_listener(message_wrapper, name="on_message")
     bot.add_listener(member_join_wrapper, name="on_member_join")
     bot.add_listener(member_remove_wrapper, name="on_member_remove")
-    bot.tree.error(cog=None)(app_error_wrapper)
+    bot.tree.error(app_error_wrapper)
     bot.add_listener(command_completion_wrapper, name="on_app_command_completion")
 
