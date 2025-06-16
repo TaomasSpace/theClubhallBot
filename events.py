@@ -110,7 +110,9 @@ async def on_message(bot: commands.Bot, message: discord.Message, lowercase_lock
             allowed_mentions=discord.AllowedMentions.all(),
         )
     content = message.content.lower()
-    from bot import TRIGGER_RESPONSES, update_date
+    from config import TRIGGER_RESPONSES
+    from db.DBHelper import update_date
+
     for trigger, reply in TRIGGER_RESPONSES.items():
         if trigger.lower() in content:
             await message.channel.send(reply)
@@ -142,6 +144,36 @@ async def on_member_remove(bot: commands.Bot, member: discord.Member):
         member_count = member.guild.member_count
         message = f"It seems {member.name} has left us... We are now **{member_count}** members."
         await channel.send(message)
+
+
+async def on_raw_reaction_add(bot: commands.Bot, payload: discord.RawReactionActionEvent):
+    if payload.member is None or payload.member.bot:
+        return
+    row = _fetchone(
+        "SELECT role_id FROM reaction_roles WHERE message_id = ? AND emoji = ?",
+        (str(payload.message_id), str(payload.emoji)),
+    )
+    if not row:
+        return
+    role = payload.member.guild.get_role(int(row[0]))
+    if role:
+        await payload.member.add_roles(role, reason="Reaction role added")
+
+
+async def on_raw_reaction_remove(bot: commands.Bot, payload: discord.RawReactionActionEvent):
+    guild = bot.get_guild(payload.guild_id)
+    member = guild.get_member(payload.user_id)
+    if member is None or member.bot:
+        return
+    row = _fetchone(
+        "SELECT role_id FROM reaction_roles WHERE message_id = ? AND emoji = ?",
+        (str(payload.message_id), str(payload.emoji)),
+    )
+    if not row:
+        return
+    role = guild.get_role(int(row[0]))
+    if role:
+        await member.remove_roles(role, reason="Reaction role removed")
 
 
 async def on_app_error(bot: commands.Bot, inter: discord.Interaction, error: Exception):
@@ -230,6 +262,12 @@ def setup(bot: commands.Bot, lowercase_locked: set[int]):
     async def command_completion_wrapper(inter: discord.Interaction, command: app_commands.Command):
         await on_app_command_completion(bot, inter, command)
 
+    async def reaction_add_wrapper(payload: discord.RawReactionActionEvent):
+        await on_raw_reaction_add(bot, payload)
+
+    async def reaction_remove_wrapper(payload: discord.RawReactionActionEvent):
+        await on_raw_reaction_remove(bot, payload)
+
     async def app_error_wrapper(inter: discord.Interaction, error: Exception):
         await on_app_error(bot, inter, error)
 
@@ -238,6 +276,8 @@ def setup(bot: commands.Bot, lowercase_locked: set[int]):
     bot.add_listener(message_wrapper, name="on_message")
     bot.add_listener(member_join_wrapper, name="on_member_join")
     bot.add_listener(member_remove_wrapper, name="on_member_remove")
+    bot.add_listener(reaction_add_wrapper, name="on_raw_reaction_add")
+    bot.add_listener(reaction_remove_wrapper, name="on_raw_reaction_remove")
     bot.tree.error(app_error_wrapper)
     bot.add_listener(command_completion_wrapper, name="on_app_command_completion")
 

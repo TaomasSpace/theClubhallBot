@@ -275,3 +275,20 @@ def get_active_giveaways():
     rows = cursor.fetchall()
     conn.close()
     return rows
+
+def update_date(user_id: str, name: str):
+    if _fetchone("SELECT * FROM dates WHERE user_id = ?", (user_id,)):
+        _execute(
+            "UPDATE dates SET registered_date  = ? WHERE user_id = ?",
+            (
+                str(datetime.now(timezone.utc)),
+                user_id,
+            ),
+        )
+    else:
+        register_user(user_id, name)
+
+
+def get_lastdate(user_id: str):
+    row = _fetchone("SELECT registered_date FROM dates WHERE user_id = ?", (user_id,))
+    return row[0] if row else "No date found"

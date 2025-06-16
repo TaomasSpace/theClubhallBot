@@ -32,7 +32,8 @@ rod_shop: dict[int, tuple[int, float]] = {}
 
 async def sync_stat_roles(member: discord.Member):
     stats = get_stats(str(member.id))
-    from bot import ROLE_THRESHOLDS
+    from config import ROLE_THRESHOLDS
+
     for stat, (role_name, threshold) in ROLE_THRESHOLDS.items():
         role = discord.utils.get(member.guild.roles, name=role_name)
         if role is None:
