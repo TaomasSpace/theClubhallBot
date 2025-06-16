@@ -22,4 +22,4 @@ ROLE_THRESHOLDS = {
     "intelligence": ("Neuromancer", 50),
     "strength": ("Warriour", 100),
     "stealth": ("Ninja", 100),
-}
+

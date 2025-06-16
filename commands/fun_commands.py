@@ -3,9 +3,9 @@ from discord import app_commands
 from discord.ext import commands
 from random import choice, random
 from typing import Optional
-
 from config import SHEHER_ROLE_ID, HEHIM_ROLE_ID
 from utils import has_role
+
 
 lowercase_locked: set[int] = set()
 

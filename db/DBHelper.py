@@ -276,7 +276,6 @@ def get_active_giveaways():
     conn.close()
     return rows
 
-
 def update_date(user_id: str, name: str):
     if _fetchone("SELECT * FROM dates WHERE user_id = ?", (user_id,)):
         _execute(
