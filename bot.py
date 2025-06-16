@@ -8,6 +8,7 @@ from commands.economy_commands import setup as setup_economy
 from commands.stats_commands import setup as setup_stats
 from commands.action_commands import setup as setup_action
 from commands.admin_commands import setup as setup_admin
+import events
 
 
 intents = discord.Intents.default()
@@ -23,7 +24,7 @@ setup_economy(bot)
 setup_stats(bot, events.rod_shop)
 setup_action(bot)
 setup_admin(bot)
-
+events.setup(bot, lowercase_locked)
 
 with open("code.txt", "r") as file:
     TOKEN = file.read().strip()

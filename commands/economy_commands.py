@@ -5,6 +5,7 @@ from discord import app_commands, ui
 from discord.ext import commands
 from datetime import datetime, timedelta
 from random import random
+
 from config import ADMIN_ROLE_ID, WEEKLY_REWARD, DAILY_REWARD
 from db.DBHelper import (
     register_user,
@@ -274,7 +275,6 @@ def setup(bot: commands.Bot):
             f"❌ Congratulation! You lose {bet} clubhall coins."
         )
         return
-
 
     return (
         money,

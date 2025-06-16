@@ -6,7 +6,6 @@ from typing import Optional
 from config import SHEHER_ROLE_ID, HEHIM_ROLE_ID
 from utils import has_role
 
-
 lowercase_locked: set[int] = set()
 
 
@@ -133,3 +132,4 @@ def setup(bot: commands.Bot):
         dance,
         good,
     )
+
