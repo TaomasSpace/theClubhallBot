@@ -112,6 +112,7 @@ async def on_message(bot: commands.Bot, message: discord.Message, lowercase_lock
     content = message.content.lower()
     from config import TRIGGER_RESPONSES
     from db.DBHelper import update_date
+
     for trigger, reply in TRIGGER_RESPONSES.items():
         if trigger.lower() in content:
             await message.channel.send(reply)

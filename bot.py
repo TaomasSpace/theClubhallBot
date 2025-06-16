@@ -10,6 +10,7 @@ from commands.action_commands import setup as setup_action
 from commands.admin_commands import setup as setup_admin
 import events
 
+
 intents = discord.Intents.default()
 intents.message_content = True
 intents.guilds = True

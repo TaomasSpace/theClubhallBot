@@ -32,3 +32,4 @@ ROLE_THRESHOLDS = {
     "strength": ("Warriour", 100),
     "stealth": ("Ninja", 100),
 }
+
