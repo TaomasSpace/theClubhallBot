@@ -212,11 +212,32 @@ async def on_app_command_completion(bot: commands.Bot, inter: discord.Interactio
 
 
 def setup(bot: commands.Bot, lowercase_locked: set[int]):
-    bot.add_listener(lambda: on_ready(bot), name="on_ready")
-    bot.add_listener(lambda before, after: on_member_update(bot, before, after), name="on_member_update")
-    bot.add_listener(lambda message: on_message(bot, message, lowercase_locked), name="on_message")
-    bot.add_listener(lambda member: on_member_join(bot, member), name="on_member_join")
-    bot.add_listener(lambda member: on_member_remove(bot, member), name="on_member_remove")
-    bot.tree.error(cog=None)(lambda inter, error: asyncio.create_task(on_app_error(bot, inter, error)))
-    bot.add_listener(lambda inter, command: on_app_command_completion(bot, inter, command), name="on_app_command_completion")
+    async def ready_wrapper():
+        await on_ready(bot)
+
+    async def member_update_wrapper(before: discord.Member, after: discord.Member):
+        await on_member_update(bot, before, after)
+
+    async def message_wrapper(message: discord.Message):
+        await on_message(bot, message, lowercase_locked)
+
+    async def member_join_wrapper(member: discord.Member):
+        await on_member_join(bot, member)
+
+    async def member_remove_wrapper(member: discord.Member):
+        await on_member_remove(bot, member)
+
+    async def command_completion_wrapper(inter: discord.Interaction, command: app_commands.Command):
+        await on_app_command_completion(bot, inter, command)
+
+    async def app_error_wrapper(inter: discord.Interaction, error: Exception):
+        await on_app_error(bot, inter, error)
+
+    bot.add_listener(ready_wrapper, name="on_ready")
+    bot.add_listener(member_update_wrapper, name="on_member_update")
+    bot.add_listener(message_wrapper, name="on_message")
+    bot.add_listener(member_join_wrapper, name="on_member_join")
+    bot.add_listener(member_remove_wrapper, name="on_member_remove")
+    bot.tree.error(cog=None)(app_error_wrapper)
+    bot.add_listener(command_completion_wrapper, name="on_app_command_completion")
 
