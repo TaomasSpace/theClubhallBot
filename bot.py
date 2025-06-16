@@ -1,7 +1,6 @@
 import discord
 from discord.ext import commands
 from discord import app_commands, ui
-import sqlite3
 from datetime import datetime, timedelta, timezone
 from discord.app_commands import CommandOnCooldown
 from random import random, choice, randint
@@ -9,6 +8,10 @@ import asyncio
 import logging
 from typing import Optional
 from typing import List
+from db.initializeDB import init_db
+from db.DBHelper import *
+from commands.fun_commands import setup as setup_fun, lowercase_locked
+from commands.booster_commands import setup as setup_booster
 
 
 # === INTENTS & BOT ===
@@ -23,20 +26,7 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 # The bot is in developement right now. Remember what Taoma did for the server. ❤️
 
 # === CONSTANTS ===
-DB_PATH = "users.db"
-# Role IDs (replace 0 with the actual IDs from your server)
-ADMIN_ROLE_ID = 1351479405699928108
-SHEHER_ROLE_ID = 1351546875492302859
-HEHIM_ROLE_ID = 1351546766855634984
-MAX_COINS = 9223372036854775807
-DAILY_REWARD = 20
-WELCOME_CHANNEL_ID = 1351487186557734942
-LOG_CHANNEL_ID = 1364226902289813514
-STAT_PRICE = 66
-QUEST_COOLDOWN_HOURS = 3
-FISHING_COOLDOWN_MINUTES = 30
-WEEKLY_REWARD = 50
-STAT_NAMES = ["intelligence", "strength", "stealth"]
+from config import *
 rod_shop = {}
 ROLE_THRESHOLDS = {
     "intelligence": ("Neuromancer", 50),
@@ -48,8 +38,6 @@ ROLE_THRESHOLDS = {
 hack_cooldowns = {}
 fight_cooldowns = {}
 steal_cooldowns = {}
-
-lowercase_locked: set[int] = set()
 
 active_prison_timers = {}
 active_giveaway_tasks = {}
@@ -81,436 +69,6 @@ TRIGGER_RESPONSES = {
 # =====================================================================
 
 
-def init_db():
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute("PRAGMA table_info(dates)")
-    columns = {col[1] for col in cursor.fetchall()}
-    if "registered_date" not in columns:
-        cursor.execute("ALTER TABLE dates ADD COLUMN registered_date TEXT")
-
-    cursor.execute(
-        """
-        CREATE TABLE IF NOT EXISTS users (
-            user_id TEXT PRIMARY KEY,
-            username TEXT,
-            money INTEGER DEFAULT 0,
-            last_claim TEXT,
-            last_quest TEXT,
-            stat_points INTEGER DEFAULT 0,
-            intelligence INTEGER DEFAULT 1,
-            strength INTEGER DEFAULT 1,
-            stealth INTEGER DEFAULT 1
-        )
-    """
-    )
-
-    cursor.execute(
-        """
-    CREATE TABLE IF NOT EXISTS reaction_roles (
-        message_id TEXT,
-        emoji TEXT,
-        role_id TEXT,
-        PRIMARY KEY (message_id, emoji)
-    )
-    """
-    )
-
-    cursor.execute(
-        """
-        CREATE TABLE IF NOT EXISTS server (
-            id INTEGER PRIMARY KEY CHECK (id = 1),
-            max_coins INTEGER
-        )
-    """
-    )
-    cursor.execute("SELECT max_coins FROM server WHERE id = 1")
-    row = cursor.fetchone()
-
-    if row is None:
-        # Kein Eintrag vorhanden – also neu erstellen
-        cursor.execute(
-            "INSERT INTO server (id, max_coins) VALUES (?, ?)",
-            (1, MAX_COINS),
-        )
-    elif row[0] < MAX_COINS:
-        # Nur aktualisieren, wenn der alte Wert kleiner ist
-        cursor.execute(
-            "UPDATE server SET max_coins = ? WHERE id = 1",
-            (MAX_COINS,),
-        )
-    cursor.execute(
-        """
-    CREATE TABLE IF NOT EXISTS shop_roles (
-        role_id     TEXT PRIMARY KEY,
-        price       INTEGER NOT NULL
-    )
-    """
-    )
-    cursor.execute(
-        """
-    CREATE TABLE IF NOT EXISTS fishing_rods (
-        user_id TEXT PRIMARY KEY,
-        rod_level INTEGER DEFAULT 0
-    )
-    """
-    )
-    cursor.execute(
-        """
-    CREATE TABLE IF NOT EXISTS rod_shop (
-        level INTEGER PRIMARY KEY,
-        price INTEGER NOT NULL,
-        multiplier REAL NOT NULL
-    )
-    """
-    )
-
-    cursor.execute(
-        """
-    CREATE TABLE IF NOT EXISTS custom_roles (
-        user_id TEXT PRIMARY KEY,
-        role_id TEXT NOT NULL
-    )
-    """
-    )
-
-    cursor.execute(
-        """
-        CREATE TABLE IF NOT EXISTS dates (
-            user_id TEXT PRIMARY KEY,
-            registered_date TEXT
-        )
-        """
-    )
-
-    cursor.execute(
-        """
-        CREATE TABLE IF NOT EXISTS giveaways (
-            message_id TEXT PRIMARY KEY,
-            channel_id TEXT NOT NULL,
-            end_time TEXT,
-            prize TEXT,
-            winners INTEGER,
-            finished INTEGER DEFAULT 0
-        )
-        """
-    )
-
-    cursor.execute("PRAGMA table_info(users)")
-    existing = {col[1] for col in cursor.fetchall()}
-    for col, default in [
-        ("last_quest", ""),
-        ("last_fishing", ""),
-        ("stat_points", 0),
-        ("last_weekly", ""),
-        ("intelligence", 1),
-        ("strength", 1),
-        ("stealth", 1),
-    ]:
-        if col not in existing:
-            if col in ("last_quest", "last_weekly", "last_fishing"):
-                cursor.execute(f"ALTER TABLE users ADD COLUMN {col} TEXT")
-            else:
-                cursor.execute(
-                    f"ALTER TABLE users ADD COLUMN {col} INTEGER DEFAULT {default}"
-                )
-
-    conn.commit()
-    conn.close()
-
-
-# ---------------------------------------------------------------------
-#                        GENERIC DB HELPERS
-# ---------------------------------------------------------------------
-
-
-def _fetchone(query: str, params=()):
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute(query, params)
-    row = cursor.fetchone()
-    conn.close()
-    return row
-
-
-def _execute(query: str, params=()):
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute(query, params)
-    conn.commit()
-    conn.close()
-
-
-# ---------- user registration ----------
-
-
-def register_user(user_id: str, username: str):
-    user_exists = _fetchone("SELECT 1 FROM users WHERE user_id = ?", (user_id,))
-    if user_exists:
-        _execute("UPDATE users SET username = ? WHERE user_id = ?", (username, user_id))
-    else:
-        _execute(
-            "INSERT INTO users (user_id, username, money) VALUES (?,?,?)",
-            (user_id, username, 5),
-        )
-    if not _fetchone("SELECT 1 FROM dates WHERE user_id = ?", (user_id,)):
-        _execute(
-            "INSERT INTO dates (user_id, registered_date) VALUES (?,?)",
-            (
-                user_id,
-                str(datetime.now(timezone.utc)),
-            ),
-        )
-
-
-# ---------- coins ----------
-
-
-def get_rod_multiplier(level: int) -> float:
-    row = _fetchone("SELECT multiplier FROM rod_shop WHERE level = ?", (level,))
-    return row[0] if row else 1.0
-
-
-def get_money(user_id: str) -> int:
-    row = _fetchone("SELECT money FROM users WHERE user_id = ?", (user_id,))
-    return row[0] if row else 0
-
-
-def set_money(user_id: str, amount: int):
-    _execute("UPDATE users SET money = ? WHERE user_id = ?", (amount, user_id))
-
-
-def safe_add_coins(user_id: str, amount: int) -> int:
-    if amount <= 0:
-        return 0
-
-    current_total = get_total_money()
-    max_total = get_max_coins()
-    free_space = max_total - current_total
-
-    if free_space <= 0:
-        return 0
-
-    addable = min(amount, free_space)
-    old_balance = get_money(user_id)
-    set_money(user_id, old_balance + addable)
-    return addable
-
-
-def add_rod_to_shop(level: int, price: int, multiplier: float):
-    _execute(
-        "INSERT OR REPLACE INTO rod_shop (level, price, multiplier) VALUES (?, ?, ?)",
-        (level, price, multiplier),
-    )
-
-
-def get_all_rods_from_shop() -> dict:
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute("SELECT level, price, multiplier FROM rod_shop")
-    rows = cursor.fetchall()
-    conn.close()
-    return {level: (price, multiplier) for level, price, multiplier in rows}
-
-
-def get_total_money():
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute("SELECT SUM(money) FROM users")
-    result = cursor.fetchone()
-    conn.close()
-    return result[0] if result[0] else 0
-
-
-def get_top_users(limit: int = 10):
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute(
-        "SELECT username, money FROM users ORDER BY money DESC LIMIT ?", (limit,)
-    )
-    rows = cursor.fetchall()
-    conn.close()
-    return rows
-
-
-def get_last_claim(user_id: str):
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute("SELECT last_claim FROM users WHERE user_id = ?", (user_id,))
-    row = cursor.fetchone()
-    conn.close()
-    return datetime.fromisoformat(row[0]) if row and row[0] else None
-
-
-def set_last_claim(user_id: str, ts: datetime):
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute(
-        "UPDATE users SET last_claim = ? WHERE user_id = ?", (ts.isoformat(), user_id)
-    )
-    conn.commit()
-    conn.close()
-
-
-# ---------- stats & stat‑points ----------
-
-
-def get_stats(user_id: str):
-    row = _fetchone(
-        "SELECT intelligence, strength, stealth, stat_points FROM users WHERE user_id = ?",
-        (user_id,),
-    )
-    if not row:
-        return {s: 1 for s in STAT_NAMES} | {"stat_points": 0}
-    return dict(zip(STAT_NAMES + ["stat_points"], row))
-
-
-def add_stat_points(user_id: str, delta: int):
-    _execute(
-        "UPDATE users SET stat_points = stat_points + ? WHERE user_id = ?",
-        (delta, user_id),
-    )
-
-
-def increase_stat(user_id: str, stat: str, amount: int):
-    if stat not in STAT_NAMES:
-        raise ValueError("invalid stat")
-    _execute(
-        f"UPDATE users SET {stat} = {stat} + ?, stat_points = stat_points - ? WHERE user_id = ?",
-        (amount, amount, user_id),
-    )
-
-
-def get_rod_level(user_id: str) -> int:
-    row = _fetchone("SELECT rod_level FROM fishing_rods WHERE user_id = ?", (user_id,))
-    return row[0] if row else 0
-
-
-def set_rod_level(user_id: str, level: int):
-    if _fetchone("SELECT 1 FROM fishing_rods WHERE user_id = ?", (user_id,)):
-        _execute(
-            "UPDATE fishing_rods SET rod_level = ? WHERE user_id = ?", (level, user_id)
-        )
-    else:
-        _execute(
-            "INSERT INTO fishing_rods (user_id, rod_level) VALUES (?, ?)",
-            (user_id, level),
-        )
-
-
-# ---------- timing helpers ----------
-
-
-def get_timestamp(user_id: str, column: str):
-    row = _fetchone(f"SELECT {column} FROM users WHERE user_id = ?", (user_id,))
-    return datetime.fromisoformat(row[0]) if row and row[0] else None
-
-
-def set_timestamp(user_id: str, column: str, ts: datetime):
-    _execute(
-        f"UPDATE users SET {column} = ? WHERE user_id = ?", (ts.isoformat(), user_id)
-    )
-
-
-def get_last_weekly(user_id: str):
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute("SELECT last_weekly FROM users WHERE user_id = ?", (user_id,))
-    row = cursor.fetchone()
-    conn.close()
-    return datetime.fromisoformat(row[0]) if row and row[0] else None
-
-
-def set_last_weekly(user_id: str, ts: datetime):
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute(
-        "UPDATE users SET last_weekly = ? WHERE user_id = ?", (ts.isoformat(), user_id)
-    )
-    conn.commit()
-    conn.close()
-
-
-# ---------- server helpers ----------
-
-
-def get_max_coins():
-    return _fetchone("SELECT max_coins FROM server WHERE id = 1")[0]
-
-
-def set_max_coins(limit: int):
-    _execute("UPDATE server SET max_coins = ? WHERE id = 1", (limit,))
-
-
-# ---------- shop helpers ----------
-def add_shop_role(role_id: int, price: int):
-    _execute(
-        "INSERT OR REPLACE INTO shop_roles (role_id, price) VALUES (?,?)",
-        (role_id, price),
-    )
-
-
-def remove_shop_role(role_id: int):
-    _execute("DELETE FROM shop_roles WHERE role_id = ?", (role_id,))
-
-
-def get_shop_roles():
-    rows = _fetchone("SELECT role_id, price FROM shop_roles")  # liefert 1 Row
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute("SELECT role_id, price FROM shop_roles")
-    rows = cursor.fetchall()
-    conn.close()
-    return rows
-
-
-def get_custom_role(user_id: str):
-    row = _fetchone("SELECT role_id FROM custom_roles WHERE user_id = ?", (user_id,))
-    return int(row[0]) if row else None
-
-
-def set_custom_role(user_id: str, role_id: int):
-    _execute(
-        """
-    INSERT OR REPLACE INTO custom_roles (user_id, role_id)
-    VALUES (?, ?)
-    """,
-        (user_id, role_id),
-    )
-
-
-def delete_custom_role(user_id: str):
-    _execute("DELETE FROM custom_roles WHERE user_id = ?", (user_id,))
-
-
-# ---------- giveaway helpers ----------
-
-
-def create_giveaway(
-    message_id: str, channel_id: str, end_time: datetime, prize: str, winners: int
-):
-    _execute(
-        """
-    INSERT OR REPLACE INTO giveaways (message_id, channel_id, end_time, prize, winners, finished)
-    VALUES (?, ?, ?, ?, ?, 0)
-    """,
-        (message_id, channel_id, end_time.isoformat(), prize, winners),
-    )
-
-
-def finish_giveaway(message_id: str):
-    _execute("UPDATE giveaways SET finished = 1 WHERE message_id = ?", (message_id,))
-
-
-def get_active_giveaways():
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute(
-        "SELECT message_id, channel_id, end_time, prize, winners FROM giveaways WHERE finished = 0"
-    )
-    rows = cursor.fetchall()
-    conn.close()
-    return rows
 
 
 # =====================================================================
@@ -1634,26 +1192,6 @@ async def weekly(interaction: discord.Interaction):
         )
 
 
-@bot.tree.command(
-    name="forcelowercase", description="Force a member's messages to lowercase (toggle)"
-)
-@app_commands.describe(member="Member to lock/unlock")
-@app_commands.checks.has_permissions(manage_messages=True)
-async def forcelowercase(interaction: discord.Interaction, member: discord.Member):
-
-    if member.id in lowercase_locked:
-        lowercase_locked.remove(member.id)
-        await interaction.response.send_message(
-            f"🔓 {member.display_name} unlocked – messages stay unchanged.",
-            ephemeral=True,
-        )
-    else:
-        lowercase_locked.add(member.id)
-        await interaction.response.send_message(
-            f"🔒 {member.display_name} locked – messages will be lower‑cased.",
-            ephemeral=True,
-        )
-
 
 @bot.tree.command(
     name="gamble", description="Gamble your coins for a chance to win more!"
@@ -2258,88 +1796,6 @@ def _format_option(opt: dict, users_data: dict) -> str:
 #                              Booster only COMMANDS
 # =====================================================================
 
-
-@bot.tree.command(name="customrole", description="Create or update your booster role")
-@app_commands.describe(name="Name of your role", color="Hex color like #FFAA00")
-async def customrole(interaction: discord.Interaction, name: str, color: str):
-    member = interaction.user
-    guild = interaction.guild
-
-    if not member.premium_since:
-        await interaction.response.send_message(
-            "❌ This command is only for server boosters!", ephemeral=True
-        )
-        return
-
-    try:
-        colour_obj = discord.Colour(int(color.lstrip("#"), 16))
-    except ValueError:
-        await interaction.response.send_message(
-            "⚠️ Invalid color. Use hex like #FFAA00", ephemeral=True
-        )
-        return
-
-    role_id = get_custom_role(str(member.id))
-
-    if role_id:
-        role = guild.get_role(role_id)
-        if role:
-            await role.edit(name=name, colour=colour_obj)
-            await interaction.response.send_message(
-                f"🔄 Your role has been updated to **{name}**.", ephemeral=True
-            )
-            return
-
-    try:
-        role = await guild.create_role(
-            name=name, colour=colour_obj, reason="Custom booster role"
-        )
-        await member.add_roles(role, reason="Assigned custom booster role")
-        set_custom_role(str(member.id), role.id)
-        await interaction.response.send_message(
-            f"✅ Custom role **{name}** created and assigned!", ephemeral=True
-        )
-    except discord.Forbidden:
-        await interaction.response.send_message(
-            "❌ I need permission to manage roles.", ephemeral=True
-        )
-
-
-@bot.tree.command(
-    name="grantrole",
-    description="Give your custom role to another user",
-)
-@app_commands.describe(target="User to give your custom role to")
-async def grantrole(interaction: discord.Interaction, target: discord.Member):
-    booster_id = str(interaction.user.id)
-    target_id = str(target.id)
-
-    if booster_id == target_id:
-        await interaction.response.send_message(
-            "You can't give your role to yourself.", ephemeral=True
-        )
-        return
-
-    role_id = get_custom_role(booster_id)
-    if not role_id:
-        await interaction.response.send_message(
-            "You don't have a custom role.", ephemeral=True
-        )
-        return
-
-    role = interaction.guild.get_role(role_id)
-    if not role:
-        await interaction.response.send_message(
-            "Your custom role was not found.", ephemeral=True
-        )
-        return
-
-    await target.add_roles(role, reason="Booster shared custom role")
-    await interaction.response.send_message(
-        f"✅ {target.display_name} got your role **{role.name}**.", ephemeral=False
-    )
-
-
 @bot.tree.command(
     name="manageprisonmember", description="Send or free someone from prison"
 )
@@ -2559,6 +2015,8 @@ async def createrole(
     await interaction.response.send_message(msg, ephemeral=True)
 
 
+setup_fun(bot)
+setup_booster(bot)
 # === TOKEN ===
 with open("code.txt", "r") as file:
     TOKEN = file.read().strip()
