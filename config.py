@@ -13,9 +13,18 @@ WEEKLY_REWARD = 50
 STAT_NAMES = ["intelligence", "strength", "stealth"]
 
 TRIGGER_RESPONSES = {
-    "シャドウストーム": "Our beautiful majestic Emperor シャドウストーム! Long live our beloved King 👑",
-    "goodyb": "Our beautiful majestic Emperor goodyb! Long live our beloved King 👑",
-    "Taoma": "Our beautiful majestic Emperor TAOMA™! Long live our beloved King 👑",
+    "シャドウストーム": (
+        "Our beautiful majestic Emperor シャドウストーム! "
+        "Long live our beloved King 👑"
+    ),
+    "goodyb": (
+        "Our beautiful majestic Emperor goodyb! "
+        "Long live our beloved King 👑"
+    ),
+    "Taoma": (
+        "Our beautiful majestic Emperor TAOMA™! "
+        "Long live our beloved King 👑"
+    ),
 }
 
 ROLE_THRESHOLDS = {
