@@ -30,6 +30,7 @@ from utils import has_role
 
 rod_shop: dict[int, tuple[int, float]] = {}
 
+
 async def sync_stat_roles(member: discord.Member):
     stats = get_stats(str(member.id))
     from config import ROLE_THRESHOLDS
@@ -43,7 +44,9 @@ async def sync_stat_roles(member: discord.Member):
         if meets and not has_r:
             await member.add_roles(role, reason=f"{stat} {stats[stat]} ≥ {threshold}")
         elif not meets and has_r:
-            await member.remove_roles(role, reason=f"{stat} {stats[stat]} < {threshold}")
+            await member.remove_roles(
+                role, reason=f"{stat} {stats[stat]} < {threshold}"
+            )
 
 
 def setup(bot: commands.Bot, shop: dict[int, tuple[int, float]]):
@@ -51,7 +54,9 @@ def setup(bot: commands.Bot, shop: dict[int, tuple[int, float]]):
     rod_shop = shop
 
     @bot.tree.command(name="stats", description="Show your stats & unspent points")
-    async def stats_cmd(interaction: discord.Interaction, user: discord.Member | None = None):
+    async def stats_cmd(
+        interaction: discord.Interaction, user: discord.Member | None = None
+    ):
         target = user or interaction.user
         register_user(str(target.id), target.display_name)
         stats = get_stats(str(target.id))
@@ -64,7 +69,9 @@ def setup(bot: commands.Bot, shop: dict[int, tuple[int, float]]):
         embed.set_footer(text=f"Unspent points: {stats['stat_points']}")
         await interaction.response.send_message(embed=embed, ephemeral=(user is None))
 
-    @bot.tree.command(name="quest", description="Complete a short quest to earn stat‑points (3 h CD)")
+    @bot.tree.command(
+        name="quest", description="Complete a short quest to earn stat‑points (3 h CD)"
+    )
     async def quest(interaction: discord.Interaction):
         uid = str(interaction.user.id)
         register_user(uid, interaction.user.display_name)
@@ -89,7 +96,9 @@ def setup(bot: commands.Bot, shop: dict[int, tuple[int, float]]):
     @bot.tree.command(name="buypoints", description="Buy stat‑points with coins")
     async def buypoints(interaction: discord.Interaction, amount: int = 1):
         if amount < 1:
-            await interaction.response.send_message("Specify a positive amount.", ephemeral=True)
+            await interaction.response.send_message(
+                "Specify a positive amount.", ephemeral=True
+            )
             return
         uid = str(interaction.user.id)
         register_user(uid, interaction.user.display_name)
@@ -107,25 +116,38 @@ def setup(bot: commands.Bot, shop: dict[int, tuple[int, float]]):
             f"✅ Purchased {amount} point(s) for {cost} coins."
         )
 
-    @bot.tree.command(name="allocate", description="Spend stat‑points to increase a stat")
-    @app_commands.describe(stat="Which stat? (intelligence/strength/stealth)", points="How many points to allocate")
+    @bot.tree.command(
+        name="allocate", description="Spend stat‑points to increase a stat"
+    )
+    @app_commands.describe(
+        stat="Which stat? (intelligence/strength/stealth)",
+        points="How many points to allocate",
+    )
     async def allocate(interaction: discord.Interaction, stat: str, points: int):
         stat = stat.lower()
         if stat not in STAT_NAMES:
-            await interaction.response.send_message("Invalid stat name.", ephemeral=True)
+            await interaction.response.send_message(
+                "Invalid stat name.", ephemeral=True
+            )
             return
         if points < 1:
-            await interaction.response.send_message("Points must be > 0.", ephemeral=True)
+            await interaction.response.send_message(
+                "Points must be > 0.", ephemeral=True
+            )
             return
         uid = str(interaction.user.id)
         register_user(uid, interaction.user.display_name)
         user_stats = get_stats(uid)
         if user_stats["stat_points"] < points:
-            await interaction.response.send_message("Not enough unspent points.", ephemeral=True)
+            await interaction.response.send_message(
+                "Not enough unspent points.", ephemeral=True
+            )
             return
         increase_stat(uid, stat, points)
         await sync_stat_roles(interaction.user)
-        await interaction.response.send_message(f"🔧 {stat.title()} increased by {points}.")
+        await interaction.response.send_message(
+            f"🔧 {stat.title()} increased by {points}."
+        )
 
     @bot.tree.command(name="fishing", description="Phish for stat-points")
     async def fish(interaction: discord.Interaction):
@@ -224,7 +246,9 @@ def setup(bot: commands.Bot, shop: dict[int, tuple[int, float]]):
         uid = str(interaction.user.id)
         register_user(uid, interaction.user.display_name)
         if level not in rod_shop:
-            await interaction.response.send_message("This rod is not available.", ephemeral=True)
+            await interaction.response.send_message(
+                "This rod is not available.", ephemeral=True
+            )
             return
         price, _ = rod_shop[level]
         balance = get_money(uid)
@@ -243,22 +267,33 @@ def setup(bot: commands.Bot, shop: dict[int, tuple[int, float]]):
         set_rod_level(uid, level)
         await interaction.response.send_message(f"🎣 You bought Rod {level}!")
 
-    @bot.tree.command(name="addrod", description="Add a fishing rod to the shop (Admin/Owner only)")
-    @app_commands.describe(level="Rod identifier (must be a unique positive number)", price="Price in coins", multiplier="Reward multiplier (e.g. 1.25)")
-    async def addrod(interaction: discord.Interaction, level: int, price: int, multiplier: float):
+    @bot.tree.command(
+        name="addrod", description="Add a fishing rod to the shop (Admin/Owner only)"
+    )
+    @app_commands.describe(
+        level="Rod identifier (must be a unique positive number)",
+        price="Price in coins",
+        multiplier="Reward multiplier (e.g. 1.25)",
+    )
+    async def addrod(
+        interaction: discord.Interaction, level: int, price: int, multiplier: float
+    ):
         if not has_role(interaction.user, ADMIN_ROLE_ID):
             await interaction.response.send_message("No permission.", ephemeral=True)
             return
         rod_shop[level] = (price, multiplier)
         add_rod_to_shop(level, price, multiplier)
         await interaction.response.send_message(
-            f"🎣 Rod {level} added: {price} coins, {multiplier}× reward.", ephemeral=True
+            f"🎣 Rod {level} added: {price} coins, {multiplier}× reward.",
+            ephemeral=True,
         )
 
     @bot.tree.command(name="rodshop", description="Show available fishing rods")
     async def rodshop(inter: discord.Interaction):
         if not rod_shop:
-            await inter.response.send_message("🛒 The rod shop is empty.", ephemeral=True)
+            await inter.response.send_message(
+                "🛒 The rod shop is empty.", ephemeral=True
+            )
             return
         lines = [
             f"🎣 Rod {lvl}: **{price}** coins – {mult:.2f}× rewards"
