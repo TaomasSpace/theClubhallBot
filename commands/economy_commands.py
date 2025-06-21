@@ -55,6 +55,101 @@ class RequestView(ui.View):
         await interaction.response.edit_message(content="❌ Request declined.", view=None)
 
 
+class DuelRequestView(ui.View):
+    def __init__(self, challenger_id: int, opponent_id: int, amount: int):
+        super().__init__(timeout=60)
+        self.challenger_id = challenger_id
+        self.opponent_id = opponent_id
+        self.amount = amount
+
+    @ui.button(label="Accept", style=discord.ButtonStyle.success)
+    async def accept(self, interaction: discord.Interaction, button: ui.Button):
+        if interaction.user.id != self.opponent_id:
+            await interaction.response.send_message("This duel request isn't for you.", ephemeral=True)
+            return
+        opponent_balance = get_money(str(self.opponent_id))
+        if opponent_balance < self.amount:
+            await interaction.response.send_message("You don't have enough clubhall coins to accept this duel.", ephemeral=True)
+            return
+        view = RPSView(self.challenger_id, self.opponent_id, self.amount)
+        view.message = interaction.message
+        await interaction.response.edit_message(
+            content=f"<@{self.challenger_id}> vs <@{self.opponent_id}> — choose your move!",
+            view=view,
+        )
+
+    @ui.button(label="Decline", style=discord.ButtonStyle.danger)
+    async def decline(self, interaction: discord.Interaction, button: ui.Button):
+        if interaction.user.id != self.opponent_id:
+            await interaction.response.send_message("This duel request isn't for you.", ephemeral=True)
+            return
+        await interaction.response.edit_message(content="❌ Duel declined.", view=None)
+
+
+class RPSView(ui.View):
+    def __init__(self, p1_id: int, p2_id: int, bet: int):
+        super().__init__(timeout=120)
+        self.p1_id = p1_id
+        self.p2_id = p2_id
+        self.bet = bet
+        self.choices: dict[int, str | None] = {p1_id: None, p2_id: None}
+        self.message: discord.Message | None = None
+
+    async def _choose(self, interaction: discord.Interaction, choice: str):
+        if interaction.user.id not in self.choices:
+            await interaction.response.send_message("This duel isn't for you.", ephemeral=True)
+            return
+        if self.choices[interaction.user.id] is not None:
+            await interaction.response.send_message("You already chose.", ephemeral=True)
+            return
+        self.choices[interaction.user.id] = choice
+        await interaction.response.send_message(f"You chose {choice}.", ephemeral=True)
+        if all(self.choices.values()):
+            await self._finish()
+
+    async def _finish(self):
+        c1 = self.choices[self.p1_id]
+        c2 = self.choices[self.p2_id]
+        winner: int | None = None
+        if c1 != c2:
+            beats = {"rock": "scissors", "scissors": "paper", "paper": "rock"}
+            if beats[c1] == c2:
+                winner = self.p1_id
+            else:
+                winner = self.p2_id
+        text = f"<@{self.p1_id}> chose **{c1}**, <@{self.p2_id}> chose **{c2}**."
+        if winner is None:
+            text += "\nIt's a draw!"
+        else:
+            loser = self.p2_id if winner == self.p1_id else self.p1_id
+            loser_balance = get_money(str(loser))
+            transfer = min(self.bet, loser_balance)
+            set_money(str(loser), loser_balance - transfer)
+            safe_add_coins(str(winner), transfer)
+            text += f"\n<@{winner}> wins {transfer} coins!"
+        self.clear_items()
+        if self.message:
+            await self.message.edit(content=text, view=None)
+        self.stop()
+
+    @ui.button(label="🪨 Rock", style=discord.ButtonStyle.secondary)
+    async def rock(self, interaction: discord.Interaction, button: ui.Button):
+        await self._choose(interaction, "rock")
+
+    @ui.button(label="📄 Paper", style=discord.ButtonStyle.secondary)
+    async def paper(self, interaction: discord.Interaction, button: ui.Button):
+        await self._choose(interaction, "paper")
+
+    @ui.button(label="✂️ Scissors", style=discord.ButtonStyle.secondary)
+    async def scissors(self, interaction: discord.Interaction, button: ui.Button):
+        await self._choose(interaction, "scissors")
+
+    async def on_timeout(self) -> None:
+        if self.message and any(v is None for v in self.choices.values()):
+            await self.message.edit(content="⌛ Duel timed out.", view=None)
+        self.stop()
+
+
 class BlackjackView(ui.View):
     def __init__(self, user_id: int, bet: int):
         super().__init__(timeout=120)
@@ -383,6 +478,29 @@ def setup(bot: commands.Bot):
         )
         return
 
+    @bot.tree.command(name="duel", description="Challenge another player to rock-paper-scissors for coins")
+    @app_commands.describe(bet="How many coins to wager")
+    async def duel(interaction: discord.Interaction, opponent: discord.Member, bet: int):
+        if opponent.id == interaction.user.id:
+            await interaction.response.send_message("You can't duel yourself.", ephemeral=True)
+            return
+        challenger_id = str(interaction.user.id)
+        opponent_id = str(opponent.id)
+        register_user(challenger_id, interaction.user.display_name)
+        register_user(opponent_id, opponent.display_name)
+        challenger_balance = get_money(challenger_id)
+        if bet <= 0:
+            await interaction.response.send_message("Bet must be greater than 0.", ephemeral=True)
+            return
+        if bet > challenger_balance:
+            await interaction.response.send_message("You don't have enough coins.", ephemeral=True)
+            return
+        view = DuelRequestView(interaction.user.id, opponent.id, bet)
+        await interaction.response.send_message(
+            f"{opponent.mention}, {interaction.user.display_name} challenges you to a duel for **{bet}** coins!",
+            view=view,
+        )
+
     @bot.tree.command(name="blackjack", description="Play blackjack against the bot")
     @app_commands.describe(bet="How much you want to bet")
     async def blackjack(interaction: discord.Interaction, bet: int):
@@ -398,7 +516,7 @@ def setup(bot: commands.Bot):
         view = BlackjackView(interaction.user.id, bet)
         await interaction.response.send_message(view._render(), view=view)
         view.message = await interaction.original_response()
-        
+
     return (
         money,
         balance,
@@ -412,5 +530,6 @@ def setup(bot: commands.Bot):
         daily,
         gamble,
         casino,
+        duel,
         blackjack,
     )
