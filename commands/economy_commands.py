@@ -4,7 +4,7 @@ import discord
 from discord import app_commands, ui
 from discord.ext import commands
 from datetime import datetime, timedelta
-from random import random
+from random import random, choice
 
 from config import ADMIN_ROLE_ID, WEEKLY_REWARD, DAILY_REWARD
 from db.DBHelper import (
@@ -53,6 +53,113 @@ class RequestView(ui.View):
             await interaction.response.send_message("This request isn't for you.", ephemeral=True)
             return
         await interaction.response.edit_message(content="❌ Request declined.", view=None)
+
+
+class BlackjackView(ui.View):
+    def __init__(self, user_id: int, bet: int):
+        super().__init__(timeout=120)
+        self.user_id = user_id
+        self.bet = bet
+        self.player = [self._draw(), self._draw()]
+        self.dealer = [self._draw(), self._draw()]
+        self.message: discord.Message | None = None
+        self.finished = False
+
+    def _draw(self) -> tuple[str, int]:
+        card = choice(
+            [
+                ("A", 11),
+                ("2", 2),
+                ("3", 3),
+                ("4", 4),
+                ("5", 5),
+                ("6", 6),
+                ("7", 7),
+                ("8", 8),
+                ("9", 9),
+                ("10", 10),
+                ("J", 10),
+                ("Q", 10),
+                ("K", 10),
+            ]
+        )
+        return card
+
+    def _total(self, hand: list[tuple[str, int]]) -> int:
+        total = sum(v for _, v in hand)
+        aces = sum(1 for c, _ in hand if c == "A")
+        while total > 21 and aces:
+            total -= 10
+            aces -= 1
+        return total
+
+    def _hand_str(self, hand: list[tuple[str, int]], hide_second: bool = False) -> str:
+        if hide_second:
+            return f"{hand[0][0]} ??"
+        return " ".join(c for c, _ in hand)
+
+    def _render(self, reveal: bool = False) -> str:
+        dealer_val = self._total(self.dealer) if reveal else "?"
+        dealer_hand = self._hand_str(self.dealer, hide_second=not reveal)
+        player_val = self._total(self.player)
+        player_hand = self._hand_str(self.player)
+        return (
+            f"**Dealer**: {dealer_hand} ({dealer_val})\n"
+            f"**You**: {player_hand} ({player_val})\n"
+            f"Bet: {self.bet} clubhall coins"
+        )
+
+    async def _finish(self, interaction: discord.Interaction, busted: bool = False):
+        if self.finished:
+            return
+        self.finished = True
+        while self._total(self.dealer) < 17:
+            self.dealer.append(self._draw())
+
+        player_total = self._total(self.player)
+        dealer_total = self._total(self.dealer)
+        if busted or player_total > 21:
+            outcome = "lose"
+        elif dealer_total > 21 or player_total > dealer_total:
+            outcome = "win"
+        elif dealer_total == player_total:
+            outcome = "push"
+        else:
+            outcome = "lose"
+
+        balance = get_money(str(self.user_id))
+        if outcome == "win":
+            safe_add_coins(str(self.user_id), self.bet)
+            result_text = f"🎉 You won {self.bet} coins!"
+        elif outcome == "push":
+            result_text = "It's a draw."
+        else:
+            set_money(str(self.user_id), balance - self.bet)
+            result_text = f"💀 You lost {self.bet} coins."
+
+        self.clear_items()
+        await interaction.response.edit_message(
+            content=self._render(reveal=True) + f"\n{result_text}", view=None
+        )
+        self.stop()
+
+    @ui.button(label="Hit", style=discord.ButtonStyle.primary)
+    async def hit(self, interaction: discord.Interaction, button: ui.Button):
+        if interaction.user.id != self.user_id:
+            await interaction.response.send_message("This game isn't for you.", ephemeral=True)
+            return
+        self.player.append(self._draw())
+        if self._total(self.player) > 21:
+            await self._finish(interaction, busted=True)
+        else:
+            await interaction.response.edit_message(content=self._render(), view=self)
+
+    @ui.button(label="Stand", style=discord.ButtonStyle.secondary)
+    async def stand(self, interaction: discord.Interaction, button: ui.Button):
+        if interaction.user.id != self.user_id:
+            await interaction.response.send_message("This game isn't for you.", ephemeral=True)
+            return
+        await self._finish(interaction)
 
 
 def setup(bot: commands.Bot):
@@ -276,6 +383,22 @@ def setup(bot: commands.Bot):
         )
         return
 
+    @bot.tree.command(name="blackjack", description="Play blackjack against the bot")
+    @app_commands.describe(bet="How much you want to bet")
+    async def blackjack(interaction: discord.Interaction, bet: int):
+        uid = str(interaction.user.id)
+        register_user(uid, interaction.user.display_name)
+        balance = get_money(uid)
+        if bet <= 0:
+            await interaction.response.send_message("❌ Bet must be greater than 0.", ephemeral=True)
+            return
+        if bet > balance:
+            await interaction.response.send_message("❌ Not enough coins.", ephemeral=True)
+            return
+        view = BlackjackView(interaction.user.id, bet)
+        await interaction.response.send_message(view._render(), view=view)
+        view.message = await interaction.original_response()
+        
     return (
         money,
         balance,
@@ -289,4 +412,5 @@ def setup(bot: commands.Bot):
         daily,
         gamble,
         casino,
+        blackjack,
     )
