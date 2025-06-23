@@ -3,6 +3,7 @@ import logging
 from datetime import datetime, timezone
 import discord
 from discord import app_commands
+from discord.app_commands import CommandOnCooldown
 from discord.ext import commands
 
 from config import WELCOME_CHANNEL_ID, LOG_CHANNEL_ID
