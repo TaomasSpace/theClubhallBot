@@ -161,28 +161,27 @@ class BlackjackView(ui.View):
         self.finished = False
 
     def _draw(self) -> tuple[str, int]:
-        card = choice(
+        return choice(
             [
-                ("A", 11),
-                ("2", 2),
-                ("3", 3),
-                ("4", 4),
-                ("5", 5),
-                ("6", 6),
-                ("7", 7),
-                ("8", 8),
-                ("9", 9),
-                ("10", 10),
-                ("J", 10),
-                ("Q", 10),
-                ("K", 10),
+                ("🂱", 11),  # Ace of hearts
+                ("🂲", 2),
+                ("🂳", 3),
+                ("🂴", 4),
+                ("🂵", 5),
+                ("🂶", 6),
+                ("🂷", 7),
+                ("🂸", 8),
+                ("🂹", 9),
+                ("🂺", 10),
+                ("🂻", 10),  # Jack
+                ("🂽", 10),  # Queen
+                ("🂾", 10),  # King
             ]
         )
-        return card
 
     def _total(self, hand: list[tuple[str, int]]) -> int:
         total = sum(v for _, v in hand)
-        aces = sum(1 for c, _ in hand if c == "A")
+        aces = sum(1 for _, v in hand if v == 11)
         while total > 21 and aces:
             total -= 10
             aces -= 1
@@ -190,7 +189,7 @@ class BlackjackView(ui.View):
 
     def _hand_str(self, hand: list[tuple[str, int]], hide_second: bool = False) -> str:
         if hide_second:
-            return f"{hand[0][0]} ??"
+            return f"{hand[0][0]} 🂠"
         return " ".join(c for c, _ in hand)
 
     def _render(self, reveal: bool = False) -> str:
