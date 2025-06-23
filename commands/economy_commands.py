@@ -6,6 +6,26 @@ from discord.ext import commands
 from datetime import datetime, timedelta
 from random import random, choice
 
+CARD_DECK: list[tuple[str, int]] = []
+_rank_codes = [
+    ("1", 11),  # Ace
+    ("2", 2),
+    ("3", 3),
+    ("4", 4),
+    ("5", 5),
+    ("6", 6),
+    ("7", 7),
+    ("8", 8),
+    ("9", 9),
+    ("A", 10),  # Ten
+    ("B", 10),  # Jack
+    ("D", 10),  # Queen
+    ("E", 10),  # King
+]
+for suit in "ABCD":  # spades, hearts, diamonds, clubs
+    for code, value in _rank_codes:
+        CARD_DECK.append((chr(int(f"1F0{suit}{code}", 16)), value))
+
 from config import ADMIN_ROLE_ID, WEEKLY_REWARD, DAILY_REWARD
 from db.DBHelper import (
     register_user,
@@ -21,6 +41,7 @@ from db.DBHelper import (
 )
 from utils import has_role
 
+
 class RequestView(ui.View):
     def __init__(self, sender_id: int, receiver_id: int, amount: int):
         super().__init__(timeout=60)
@@ -31,13 +52,16 @@ class RequestView(ui.View):
     @ui.button(label="Accept", style=discord.ButtonStyle.success)
     async def accept(self, interaction: discord.Interaction, button: ui.Button):
         if interaction.user.id != self.receiver_id:
-            await interaction.response.send_message("This request isn't for you.", ephemeral=True)
+            await interaction.response.send_message(
+                "This request isn't for you.", ephemeral=True
+            )
             return
         sender_balance = get_money(str(self.sender_id))
         receiver_balance = get_money(str(self.receiver_id))
         if receiver_balance < self.amount:
             await interaction.response.send_message(
-                "You don't have enough clubhall coins to accept this request.", ephemeral=True
+                "You don't have enough clubhall coins to accept this request.",
+                ephemeral=True,
             )
             return
         set_money(str(self.receiver_id), receiver_balance - self.amount)
@@ -50,9 +74,13 @@ class RequestView(ui.View):
     @ui.button(label="Decline", style=discord.ButtonStyle.danger)
     async def decline(self, interaction: discord.Interaction, button: ui.Button):
         if interaction.user.id != self.receiver_id:
-            await interaction.response.send_message("This request isn't for you.", ephemeral=True)
+            await interaction.response.send_message(
+                "This request isn't for you.", ephemeral=True
+            )
             return
-        await interaction.response.edit_message(content="❌ Request declined.", view=None)
+        await interaction.response.edit_message(
+            content="❌ Request declined.", view=None
+        )
 
 
 class DuelRequestView(ui.View):
@@ -65,11 +93,16 @@ class DuelRequestView(ui.View):
     @ui.button(label="Accept", style=discord.ButtonStyle.success)
     async def accept(self, interaction: discord.Interaction, button: ui.Button):
         if interaction.user.id != self.opponent_id:
-            await interaction.response.send_message("This duel request isn't for you.", ephemeral=True)
+            await interaction.response.send_message(
+                "This duel request isn't for you.", ephemeral=True
+            )
             return
         opponent_balance = get_money(str(self.opponent_id))
         if opponent_balance < self.amount:
-            await interaction.response.send_message("You don't have enough clubhall coins to accept this duel.", ephemeral=True)
+            await interaction.response.send_message(
+                "You don't have enough clubhall coins to accept this duel.",
+                ephemeral=True,
+            )
             return
         view = RPSView(self.challenger_id, self.opponent_id, self.amount)
         view.message = interaction.message
@@ -81,7 +114,9 @@ class DuelRequestView(ui.View):
     @ui.button(label="Decline", style=discord.ButtonStyle.danger)
     async def decline(self, interaction: discord.Interaction, button: ui.Button):
         if interaction.user.id != self.opponent_id:
-            await interaction.response.send_message("This duel request isn't for you.", ephemeral=True)
+            await interaction.response.send_message(
+                "This duel request isn't for you.", ephemeral=True
+            )
             return
         await interaction.response.edit_message(content="❌ Duel declined.", view=None)
 
@@ -97,10 +132,14 @@ class RPSView(ui.View):
 
     async def _choose(self, interaction: discord.Interaction, choice: str):
         if interaction.user.id not in self.choices:
-            await interaction.response.send_message("This duel isn't for you.", ephemeral=True)
+            await interaction.response.send_message(
+                "This duel isn't for you.", ephemeral=True
+            )
             return
         if self.choices[interaction.user.id] is not None:
-            await interaction.response.send_message("You already chose.", ephemeral=True)
+            await interaction.response.send_message(
+                "You already chose.", ephemeral=True
+            )
             return
         self.choices[interaction.user.id] = choice
         await interaction.response.send_message(f"You chose {choice}.", ephemeral=True)
@@ -240,7 +279,9 @@ class BlackjackView(ui.View):
     @ui.button(label="Hit", style=discord.ButtonStyle.primary)
     async def hit(self, interaction: discord.Interaction, button: ui.Button):
         if interaction.user.id != self.user_id:
-            await interaction.response.send_message("This game isn't for you.", ephemeral=True)
+            await interaction.response.send_message(
+                "This game isn't for you.", ephemeral=True
+            )
             return
         self.player.append(self._draw())
         if self._total(self.player) > 21:
@@ -251,7 +292,9 @@ class BlackjackView(ui.View):
     @ui.button(label="Stand", style=discord.ButtonStyle.secondary)
     async def stand(self, interaction: discord.Interaction, button: ui.Button):
         if interaction.user.id != self.user_id:
-            await interaction.response.send_message("This game isn't for you.", ephemeral=True)
+            await interaction.response.send_message(
+                "This game isn't for you.", ephemeral=True
+            )
             return
         await self._finish(interaction)
 
@@ -265,7 +308,9 @@ def setup(bot: commands.Bot):
             f"You have {get_money(user_id)} clubhall coins.", ephemeral=True
         )
 
-    @bot.tree.command(name="balance", description="Check someone else's clubhall coin balance")
+    @bot.tree.command(
+        name="balance", description="Check someone else's clubhall coin balance"
+    )
     async def balance(interaction: discord.Interaction, user: discord.Member):
         register_user(str(user.id), user.display_name)
         money_amt = get_money(str(user.id))
@@ -273,46 +318,72 @@ def setup(bot: commands.Bot):
             f"{user.display_name} has {money_amt} clubhall coins.", ephemeral=False
         )
 
-    @bot.tree.command(name="give", description="Give coins to a user (Admin/Owner only)")
+    @bot.tree.command(
+        name="give", description="Give coins to a user (Admin/Owner only)"
+    )
     async def give(interaction: discord.Interaction, user: discord.Member, amount: int):
         if not has_role(interaction.user, ADMIN_ROLE_ID):
-            await interaction.response.send_message("You don't have permission to give clubhall coins.", ephemeral=True)
+            await interaction.response.send_message(
+                "You don't have permission to give clubhall coins.", ephemeral=True
+            )
             return
         register_user(str(user.id), user.display_name)
         added = safe_add_coins(str(user.id), amount)
         if added == 0:
-            await interaction.response.send_message("Clubhall coin limit reached. No coins added.", ephemeral=True)
+            await interaction.response.send_message(
+                "Clubhall coin limit reached. No coins added.", ephemeral=True
+            )
         elif added < amount:
             await interaction.response.send_message(
-                f"Partial success: Only {added} coins added due to server limit.", ephemeral=True
+                f"Partial success: Only {added} coins added due to server limit.",
+                ephemeral=True,
             )
         else:
-            await interaction.response.send_message(f"{added} clubhall coins added to {user.display_name}.")
+            await interaction.response.send_message(
+                f"{added} clubhall coins added to {user.display_name}."
+            )
 
-    @bot.tree.command(name="remove", description="Remove clubhall coins from a user (Admin/Owner only)")
-    async def remove(interaction: discord.Interaction, user: discord.Member, amount: int):
+    @bot.tree.command(
+        name="remove",
+        description="Remove clubhall coins from a user (Admin/Owner only)",
+    )
+    async def remove(
+        interaction: discord.Interaction, user: discord.Member, amount: int
+    ):
         if not has_role(interaction.user, ADMIN_ROLE_ID):
-            await interaction.response.send_message("You don't have permission to remove clubhall coins.", ephemeral=True)
+            await interaction.response.send_message(
+                "You don't have permission to remove clubhall coins.", ephemeral=True
+            )
             return
         current = get_money(str(user.id))
         set_money(str(user.id), max(0, current - amount))
-        await interaction.response.send_message(f"{amount} clubhall coins removed from {user.display_name}.")
+        await interaction.response.send_message(
+            f"{amount} clubhall coins removed from {user.display_name}."
+        )
 
     @bot.tree.command(name="donate", description="Send coins to another user")
-    async def donate(interaction: discord.Interaction, user: discord.Member, amount: int):
+    async def donate(
+        interaction: discord.Interaction, user: discord.Member, amount: int
+    ):
         sender_id = str(interaction.user.id)
         receiver_id = str(user.id)
         if sender_id == receiver_id:
-            await interaction.response.send_message("You can't donate coins on yourself.", ephemeral=True)
+            await interaction.response.send_message(
+                "You can't donate coins on yourself.", ephemeral=True
+            )
             return
         register_user(sender_id, interaction.user.display_name)
         register_user(receiver_id, user.display_name)
         sender_balance = get_money(sender_id)
         if amount <= 0:
-            await interaction.response.send_message("Amount must be greater than 0.", ephemeral=True)
+            await interaction.response.send_message(
+                "Amount must be greater than 0.", ephemeral=True
+            )
             return
         if amount > sender_balance:
-            await interaction.response.send_message("You don't have enough clubhall coins.", ephemeral=True)
+            await interaction.response.send_message(
+                "You don't have enough clubhall coins.", ephemeral=True
+            )
             return
         set_money(sender_id, sender_balance - amount)
         safe_add_coins(receiver_id, amount)
@@ -321,20 +392,30 @@ def setup(bot: commands.Bot):
             ephemeral=False,
         )
 
-    @bot.tree.command(name="setlimit", description="Set the maximum clubhall coins limit (Owner only)")
+    @bot.tree.command(
+        name="setlimit", description="Set the maximum clubhall coins limit (Owner only)"
+    )
     async def setlimit(interaction: discord.Interaction, new_limit: int):
         if not has_role(interaction.user, ADMIN_ROLE_ID):
-            await interaction.response.send_message("Only the owner can change the limit.", ephemeral=True)
+            await interaction.response.send_message(
+                "Only the owner can change the limit.", ephemeral=True
+            )
             return
         set_max_coins(new_limit)
         await interaction.response.send_message(f"New coin limit set to {new_limit}.")
 
-    @bot.tree.command(name="request", description="Request clubhall coins from another user")
-    async def request(interaction: discord.Interaction, user: discord.Member, amount: int, reason: str):
+    @bot.tree.command(
+        name="request", description="Request clubhall coins from another user"
+    )
+    async def request(
+        interaction: discord.Interaction, user: discord.Member, amount: int, reason: str
+    ):
         sender_id = interaction.user.id
         receiver_id = user.id
         if sender_id == receiver_id:
-            await interaction.response.send_message("You can't request clubhall coins from yourself.", ephemeral=True)
+            await interaction.response.send_message(
+                "You can't request clubhall coins from yourself.", ephemeral=True
+            )
             return
         register_user(str(sender_id), interaction.user.display_name)
         register_user(str(receiver_id), user.display_name)
@@ -352,7 +433,10 @@ def setup(bot: commands.Bot):
         if not top:
             await interaction.response.send_message("No data yet 🤷‍♂️")
             return
-        lines = [f"**#{i + 1:02d}**  {name} – **{coins}** 💰" for i, (name, coins) in enumerate(top)]
+        lines = [
+            f"**#{i + 1:02d}**  {name} – **{coins}** 💰"
+            for i, (name, coins) in enumerate(top)
+        ]
         embed = discord.Embed(
             title=f"🏆 Top {count} Coin Holders",
             description="\n".join(lines),
@@ -360,7 +444,9 @@ def setup(bot: commands.Bot):
         )
         await interaction.response.send_message(embed=embed)
 
-    @bot.tree.command(name="weekly", description="Claim your weekly clubhall coins (7d cooldown)")
+    @bot.tree.command(
+        name="weekly", description="Claim your weekly clubhall coins (7d cooldown)"
+    )
     async def weekly(interaction: discord.Interaction):
         user_id = str(interaction.user.id)
         register_user(user_id, interaction.user.display_name)
@@ -389,7 +475,9 @@ def setup(bot: commands.Bot):
                 ephemeral=True,
             )
 
-    @bot.tree.command(name="daily", description="Claim your daily coins (24 h cooldown)")
+    @bot.tree.command(
+        name="daily", description="Claim your daily coins (24 h cooldown)"
+    )
     async def daily(interaction: discord.Interaction):
         user_id = str(interaction.user.id)
         register_user(user_id, interaction.user.display_name)
@@ -417,18 +505,26 @@ def setup(bot: commands.Bot):
                 ephemeral=True,
             )
 
-    @bot.tree.command(name="gamble", description="Gamble your coins for a chance to win more!")
+    @bot.tree.command(
+        name="gamble", description="Gamble your coins for a chance to win more!"
+    )
     async def gamble(interaction: discord.Interaction, amount: int):
         user_id = str(interaction.user.id)
         register_user(user_id, interaction.user.display_name)
         if amount < 2:
-            await interaction.response.send_message("🎲 Minimum bet is 2 clubhall coins.", ephemeral=True)
+            await interaction.response.send_message(
+                "🎲 Minimum bet is 2 clubhall coins.", ephemeral=True
+            )
             return
         balance = get_money(user_id)
         if amount > balance:
-            await interaction.response.send_message("❌ You don't have enough clubhall coins!", ephemeral=True)
+            await interaction.response.send_message(
+                "❌ You don't have enough clubhall coins!", ephemeral=True
+            )
             return
-        await interaction.response.send_message("🎲 Rolling the dice...", ephemeral=False)
+        await interaction.response.send_message(
+            "🎲 Rolling the dice...", ephemeral=False
+        )
         await asyncio.sleep(2)
         roll = random()
         if roll < 0.05:
@@ -461,7 +557,9 @@ def setup(bot: commands.Bot):
         register_user(uid, inter.user.display_name)
         balance = get_money(uid)
         if bet <= 0:
-            await inter.response.send_message("❌ Try number more than 0", ephemeral=True)
+            await inter.response.send_message(
+                "❌ Try number more than 0", ephemeral=True
+            )
         if bet > balance:
             await inter.response.send_message("❌ Not enough coins.", ephemeral=True)
             return
@@ -477,11 +575,18 @@ def setup(bot: commands.Bot):
         )
         return
 
-    @bot.tree.command(name="duel", description="Challenge another player to rock-paper-scissors for coins")
+    @bot.tree.command(
+        name="duel",
+        description="Challenge another player to rock-paper-scissors for coins",
+    )
     @app_commands.describe(bet="How many coins to wager")
-    async def duel(interaction: discord.Interaction, opponent: discord.Member, bet: int):
+    async def duel(
+        interaction: discord.Interaction, opponent: discord.Member, bet: int
+    ):
         if opponent.id == interaction.user.id:
-            await interaction.response.send_message("You can't duel yourself.", ephemeral=True)
+            await interaction.response.send_message(
+                "You can't duel yourself.", ephemeral=True
+            )
             return
         challenger_id = str(interaction.user.id)
         opponent_id = str(opponent.id)
@@ -489,10 +594,14 @@ def setup(bot: commands.Bot):
         register_user(opponent_id, opponent.display_name)
         challenger_balance = get_money(challenger_id)
         if bet <= 0:
-            await interaction.response.send_message("Bet must be greater than 0.", ephemeral=True)
+            await interaction.response.send_message(
+                "Bet must be greater than 0.", ephemeral=True
+            )
             return
         if bet > challenger_balance:
-            await interaction.response.send_message("You don't have enough coins.", ephemeral=True)
+            await interaction.response.send_message(
+                "You don't have enough coins.", ephemeral=True
+            )
             return
         view = DuelRequestView(interaction.user.id, opponent.id, bet)
         await interaction.response.send_message(
@@ -507,10 +616,14 @@ def setup(bot: commands.Bot):
         register_user(uid, interaction.user.display_name)
         balance = get_money(uid)
         if bet <= 0:
-            await interaction.response.send_message("❌ Bet must be greater than 0.", ephemeral=True)
+            await interaction.response.send_message(
+                "❌ Bet must be greater than 0.", ephemeral=True
+            )
             return
         if bet > balance:
-            await interaction.response.send_message("❌ Not enough coins.", ephemeral=True)
+            await interaction.response.send_message(
+                "❌ Not enough coins.", ephemeral=True
+            )
             return
         view = BlackjackView(interaction.user.id, bet)
         await interaction.response.send_message(view._render(), view=view)
