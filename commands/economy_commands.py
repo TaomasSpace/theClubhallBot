@@ -6,6 +6,28 @@ from discord.ext import commands
 from datetime import datetime, timedelta
 from random import random, choice
 
+# 52 colored playing card emojis used for blackjack
+CARD_DECK: list[tuple[str, int]] = []
+_rank_codes = [
+    ("1", 11),  # Ace
+    ("2", 2),
+    ("3", 3),
+    ("4", 4),
+    ("5", 5),
+    ("6", 6),
+    ("7", 7),
+    ("8", 8),
+    ("9", 9),
+    ("A", 10),  # Ten
+    ("B", 10),  # Jack
+    ("D", 10),  # Queen
+    ("E", 10),  # King
+]
+for suit in "ABCD":  # spades, hearts, diamonds, clubs
+    for code, value in _rank_codes:
+        CARD_DECK.append((chr(int(f"1F0{suit}{code}", 16)), value))
+
+
 from config import ADMIN_ROLE_ID, WEEKLY_REWARD, DAILY_REWARD
 from db.DBHelper import (
     register_user,
@@ -161,23 +183,7 @@ class BlackjackView(ui.View):
         self.finished = False
 
     def _draw(self) -> tuple[str, int]:
-        return choice(
-            [
-                ("🂱", 11),  # Ace of hearts
-                ("🂲", 2),
-                ("🂳", 3),
-                ("🂴", 4),
-                ("🂵", 5),
-                ("🂶", 6),
-                ("🂷", 7),
-                ("🂸", 8),
-                ("🂹", 9),
-                ("🂺", 10),
-                ("🂻", 10),  # Jack
-                ("🂽", 10),  # Queen
-                ("🂾", 10),  # King
-            ]
-        )
+        return choice(CARD_DECK)
 
     def _total(self, hand: list[tuple[str, int]]) -> int:
         total = sum(v for _, v in hand)
