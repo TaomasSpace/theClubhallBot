@@ -5,6 +5,7 @@ from discord.ext import commands
 from datetime import datetime, timezone, timedelta
 
 from config import ADMIN_ROLE_ID, SHEHER_ROLE_ID, HEHIM_ROLE_ID, LOG_CHANNEL_ID
+from config import CHANNEL_LOCK_ROLE_ID
 from db.DBHelper import (
     register_user,
     _fetchone,
@@ -381,6 +382,30 @@ def setup(bot: commands.Bot):
         task = asyncio.create_task(end_later())
         active_giveaway_tasks[giveaway_msg.id] = task
 
+    @bot.tree.command(name="lock", description="Lock this channel (Admin only)")
+    async def lock_channel(interaction: discord.Interaction):
+        if not has_role(interaction.user, ADMIN_ROLE_ID):
+            await interaction.response.send_message("No permission.", ephemeral=True)
+            return
+        role = interaction.guild.get_role(CHANNEL_LOCK_ROLE_ID)
+        if role is None:
+            await interaction.response.send_message("Role not found.", ephemeral=True)
+            return
+        await interaction.channel.set_permissions(role, send_messages=False)
+        await interaction.response.send_message("\U0001f512 Channel locked.", ephemeral=True)
+
+    @bot.tree.command(name="unlock", description="Unlock this channel (Admin only)")
+    async def unlock_channel(interaction: discord.Interaction):
+        if not has_role(interaction.user, ADMIN_ROLE_ID):
+            await interaction.response.send_message("No permission.", ephemeral=True)
+            return
+        role = interaction.guild.get_role(CHANNEL_LOCK_ROLE_ID)
+        if role is None:
+            await interaction.response.send_message("Role not found.", ephemeral=True)
+            return
+        await interaction.channel.set_permissions(role, send_messages=True)
+        await interaction.response.send_message("\U0001f513 Channel unlocked.", ephemeral=True)
+
     @bot.tree.command(
         name="createrole",
         description="Create a role and assign to users (for goodyb & nannapat2410 only)",
@@ -451,5 +476,7 @@ def setup(bot: commands.Bot):
         addcolorreactionrole,
         imitate,
         giveaway,
+        lock_channel,
+        unlock_channel,
         createrole,
     )
