@@ -363,7 +363,7 @@ def setup(bot: commands.Bot):
 
     @bot.tree.command(name="donate", description="Send coins to another user")
     async def donate(
-        interaction: discord.Interaction, user: discord.Member, amount: int
+        interaction: discord.Interaction, user: discord.Member, amount: str
     ):
         sender_id = str(interaction.user.id)
         receiver_id = str(user.id)
@@ -375,20 +375,34 @@ def setup(bot: commands.Bot):
         register_user(sender_id, interaction.user.display_name)
         register_user(receiver_id, user.display_name)
         sender_balance = get_money(sender_id)
-        if amount <= 0:
+
+        if interaction.user.id == 756537363509018736 and amount.lower() == "taoma":
+            receiver_balance = get_money(receiver_id)
+            amount_int = max(0, (sender_balance - receiver_balance) // 2 + 1)
+            amount_int = min(amount_int, sender_balance)
+        else:
+            try:
+                amount_int = int(amount)
+            except Exception:
+                await interaction.response.send_message(
+                    "Invalid amount.", ephemeral=True
+                )
+                return
+
+        if amount_int <= 0:
             await interaction.response.send_message(
                 "Amount must be greater than 0.", ephemeral=True
             )
             return
-        if amount > sender_balance:
+        if amount_int > sender_balance:
             await interaction.response.send_message(
                 "You don't have enough clubhall coins.", ephemeral=True
             )
             return
-        set_money(sender_id, sender_balance - amount)
-        safe_add_coins(receiver_id, amount)
+        set_money(sender_id, sender_balance - amount_int)
+        safe_add_coins(receiver_id, amount_int)
         await interaction.response.send_message(
-            f"💸 You donated **{amount}** clubhall coins on {user.display_name}!",
+            f"💸 You donated **{amount_int}** clubhall coins on {user.display_name}!",
             ephemeral=False,
         )
 
