@@ -8,7 +8,7 @@ def rebalance():
     conn = sqlite3.connect("users.db")
     cursor = conn.cursor()
     cursor.execute(
-        "SELECT user_id, money, stat_points, intelligence, strength, stealth FROM users where money > 1000000000000"
+        "SELECT user_id, money, stat_points, intelligence, strength, stealth FROM users WHERE money > 1000000000000"
     )
     for user_id, money, sp, intel, stren, stealth in cursor.fetchall():
         cursor.execute(
