@@ -13,6 +13,7 @@ from config import DB_PATH
 # working directory in which this script is executed
 DB_FILE = ROOT / DB_PATH
 
+
 SCALE_COINS = 1_000_000
 SCALE_STATS = 10
 
@@ -24,6 +25,7 @@ def rebalance():
     cursor = conn.cursor()
     cursor.execute(
         "SELECT user_id, money, stat_points, intelligence, strength, stealth FROM users"
+
     )
     for user_id, money, sp, intel, stren, stealth in cursor.fetchall():
         cursor.execute(
