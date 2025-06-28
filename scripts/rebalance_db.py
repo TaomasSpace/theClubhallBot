@@ -21,7 +21,7 @@ SCALE_STATS = 10
 def rebalance():
     if not DB_FILE.exists():
         raise SystemExit(f"Database not found at {DB_FILE}")
-    conn = sqlite3.connect(DB_FILE)
+    conn = sqlite3.connect(str(DB_FILE))
     cursor = conn.cursor()
     cursor.execute(
         "SELECT user_id, money, stat_points, intelligence, strength, stealth FROM users"
