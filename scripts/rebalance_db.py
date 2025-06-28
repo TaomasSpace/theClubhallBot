@@ -1,14 +1,24 @@
 import sqlite3
+import sys
+from pathlib import Path
 
-SCALE_COINS = 1_000_000_000
-SCALE_STATS = 1000
+# ensure project root is on the Python path when running as a script
+ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.append(str(ROOT))
+
+from config import DB_PATH
+
+SCALE_COINS = 1_000_000
+SCALE_STATS = 10
 
 
 def rebalance():
-    conn = sqlite3.connect("users.db")
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute(
-        "SELECT user_id, money, stat_points, intelligence, strength, stealth FROM users WHERE money > 1000000000000"
+        "SELECT user_id, money, stat_points, intelligence, strength, stealth FROM users"
+
     )
     for user_id, money, sp, intel, stren, stealth in cursor.fetchall():
         cursor.execute(
