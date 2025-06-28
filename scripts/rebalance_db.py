@@ -1,4 +1,12 @@
 import sqlite3
+import sys
+from pathlib import Path
+
+# ensure project root is on the Python path when running as a script
+ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.append(str(ROOT))
+
 from config import DB_PATH
 
 SCALE_COINS = 1_000_000
