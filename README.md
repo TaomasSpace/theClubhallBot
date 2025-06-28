@@ -7,6 +7,7 @@ Utility bot for Discord.
 A maintenance script lives in `scripts/rebalance_db.py` to shrink coin totals and stats.
 Run it from the project root with:
 
+
 ```bash
 python scripts/rebalance_db.py
 ```
