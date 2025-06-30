@@ -1,5 +1,6 @@
 DB_PATH = "users.db"
 ADMIN_ROLE_ID = 1351479405699928108
+MOD_ROLE_ID = 1352179673374916691
 SHEHER_ROLE_ID = 1351546875492302859
 HEHIM_ROLE_ID = 1351546766855634984
 CHANNEL_LOCK_ROLE_ID = 1356577214325460992
@@ -19,12 +20,10 @@ TRIGGER_RESPONSES = {
         "Long live our beloved King 👑"
     ),
     "goodyb": (
-        "Our beautiful majestic Emperor goodyb! "
-        "Long live our beloved King 👑"
+        "Our beautiful majestic Emperor goodyb! " "Long live our beloved King 👑"
     ),
     "Taoma": (
-        "Our beautiful majestic Emperor TAOMA™! "
-        "Long live our beloved King 👑"
+        "Our beautiful majestic Emperor TAOMA™! " "Long live our beloved King 👑"
     ),
 }
 
@@ -33,4 +32,3 @@ ROLE_THRESHOLDS = {
     "strength": ("Warriour", 100),
     "stealth": ("Ninja", 100),
 }
-
