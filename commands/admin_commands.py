@@ -4,7 +4,7 @@ from discord import app_commands
 from discord.ext import commands
 from datetime import datetime, timezone, timedelta
 
-from config import ADMIN_ROLE_ID, SHEHER_ROLE_ID, HEHIM_ROLE_ID, LOG_CHANNEL_ID
+from config import ADMIN_ROLE_ID, SHEHER_ROLE_ID, HEHIM_ROLE_ID, LOG_CHANNEL_ID, MOD_ROLE_ID
 from config import CHANNEL_LOCK_ROLE_ID
 from db.DBHelper import (
     register_user,
@@ -207,7 +207,7 @@ def setup(bot: commands.Bot):
     async def managePrisonMember(
         interaction: discord.Interaction, user: discord.Member, time: str | None = None
     ):
-        if not has_role(interaction.user, ADMIN_ROLE_ID):
+        if not has_role(interaction.user, MOD_ROLE_ID):
             await interaction.response.send_message("No permission.", ephemeral=True)
             return
         gooyb = interaction.user.name == "goodyb"
