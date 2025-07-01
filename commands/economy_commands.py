@@ -616,7 +616,9 @@ def setup(bot: commands.Bot):
         role = discord.utils.get(guild.roles, name=role_name)
         if role is None:
             try:
-                role = await guild.create_role(name=role_name, reason="Superpower reward")
+                role = await guild.create_role(
+                    name=role_name, reason="Superpower reward"
+                )
             except discord.Forbidden:
                 role = None
         if role:
@@ -626,7 +628,7 @@ def setup(bot: commands.Bot):
                 pass
 
         await interaction.response.send_message(
-            f"🦸 {interaction.user.display_name} rolled **{power}**! ({rarity})"
+            f"{interaction.user.display_name} rolled **{power}**! ({rarity})"
         )
 
     @bot.tree.command(
