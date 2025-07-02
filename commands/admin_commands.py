@@ -4,7 +4,13 @@ from discord import app_commands
 from discord.ext import commands
 from datetime import datetime, timezone, timedelta
 
-from config import ADMIN_ROLE_ID, SHEHER_ROLE_ID, HEHIM_ROLE_ID, LOG_CHANNEL_ID, MOD_ROLE_ID
+from config import (
+    ADMIN_ROLE_ID,
+    SHEHER_ROLE_ID,
+    HEHIM_ROLE_ID,
+    LOG_CHANNEL_ID,
+    MOD_ROLE_ID,
+)
 from config import CHANNEL_LOCK_ROLE_ID
 from db.DBHelper import (
     register_user,
@@ -276,7 +282,7 @@ def setup(bot: commands.Bot):
     @app_commands.describe(emoji="Emoji to react with", role="Role to assign")
     async def addcolorreactionrole(
         interaction: discord.Interaction,
-        target_message_id: int,
+        target_message_id: str,
         emoji: str,
         role: discord.Role,
     ):
@@ -392,7 +398,9 @@ def setup(bot: commands.Bot):
             await interaction.response.send_message("Role not found.", ephemeral=True)
             return
         await interaction.channel.set_permissions(role, send_messages=False)
-        await interaction.response.send_message("\U0001f512 Channel locked.", ephemeral=True)
+        await interaction.response.send_message(
+            "\U0001f512 Channel locked.", ephemeral=True
+        )
 
     @bot.tree.command(name="unlock", description="Unlock this channel (Admin only)")
     async def unlock_channel(interaction: discord.Interaction):
@@ -404,7 +412,9 @@ def setup(bot: commands.Bot):
             await interaction.response.send_message("Role not found.", ephemeral=True)
             return
         await interaction.channel.set_permissions(role, send_messages=True)
-        await interaction.response.send_message("\U0001f513 Channel unlocked.", ephemeral=True)
+        await interaction.response.send_message(
+            "\U0001f513 Channel unlocked.", ephemeral=True
+        )
 
     @bot.tree.command(
         name="createrole",
