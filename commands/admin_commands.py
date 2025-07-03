@@ -283,7 +283,7 @@ def setup(bot: commands.Bot):
     async def manageViltrumite(interaction: discord.Interaction, user: discord.Member):
         if (
             not has_role(interaction.user, ADMIN_ROLE_ID)
-            and not user.display_name == "AnonymPotato"
+            and not user.id == 1068512374719520768
         ):
             await interaction.response.send_message(
                 "You dont have permission to use this command.", ephemeral=True
