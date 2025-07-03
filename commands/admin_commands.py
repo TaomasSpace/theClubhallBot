@@ -276,6 +276,38 @@ def setup(bot: commands.Bot):
         await interaction.response.send_message(msg, ephemeral=False)
 
     @bot.tree.command(
+        name="manageViltrumite",
+        description="Give or remove the Viltrumite role from a member.",
+    )
+    @app_commands.describe(user="the user you want to add/remove the Viltrumite role")
+    async def manageViltrumite(interaction: discord.Interaction, user: discord.Member):
+        if (
+            not has_role(interaction.user, ADMIN_ROLE_ID)
+            and user.display_name == "AnonymPotato"
+        ):
+            await interaction.response.send_message(
+                "You dont have permission to use this command.", ephemeral=True
+            )
+            return
+
+        if has_role(user, 1387452893015052298):
+            user.remove_roles(
+                discord.utils.get(interaction.guild.roles, name="Viltrumite")
+            )
+            await interaction.response.send_message(
+                "Viltrumite role removed from " + user.display_name
+            )
+            return
+        else:
+            user.add_roles(
+                discord.utils.get(interaction.guild.roles, name="Viltrumite")
+            )
+            await interaction.response.send_message(
+                "Viltrumite role added to " + user.display_name
+            )
+            return
+
+    @bot.tree.command(
         name="addcolorreactionrole",
         description="Add emoji-role to color reaction message",
     )
@@ -489,4 +521,5 @@ def setup(bot: commands.Bot):
         lock_channel,
         unlock_channel,
         createrole,
+        manageViltrumite,
     )
