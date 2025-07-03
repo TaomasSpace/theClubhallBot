@@ -291,7 +291,7 @@ def setup(bot: commands.Bot):
             return
 
         if has_role(user, 1387452893015052298):
-            user.remove_roles(
+            await user.remove_roles(
                 discord.utils.get(interaction.guild.roles, name="Viltrumite")
             )
             await interaction.response.send_message(
@@ -299,7 +299,7 @@ def setup(bot: commands.Bot):
             )
             return
         else:
-            user.add_roles(
+            await user.add_roles(
                 discord.utils.get(interaction.guild.roles, name="Viltrumite")
             )
             await interaction.response.send_message(
