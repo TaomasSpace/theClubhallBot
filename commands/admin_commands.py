@@ -276,7 +276,7 @@ def setup(bot: commands.Bot):
         await interaction.response.send_message(msg, ephemeral=False)
 
     @bot.tree.command(
-        name="manageViltrumite",
+        name="manageviltrumite",
         description="Give or remove the Viltrumite role from a member.",
     )
     @app_commands.describe(user="the user you want to add/remove the Viltrumite role")
