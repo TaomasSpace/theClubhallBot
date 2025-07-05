@@ -95,6 +95,15 @@ def init_db():
 
     cursor.execute(
         """
+    CREATE TABLE IF NOT EXISTS anime_titles (
+        user_id TEXT PRIMARY KEY,
+        role_name TEXT NOT NULL
+    )
+    """
+    )
+
+    cursor.execute(
+        """
         CREATE TABLE IF NOT EXISTS dates (
             user_id TEXT PRIMARY KEY,
             registered_date TEXT
