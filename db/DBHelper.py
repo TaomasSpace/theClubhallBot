@@ -251,6 +251,24 @@ def delete_custom_role(user_id: str):
     _execute("DELETE FROM custom_roles WHERE user_id = ?", (user_id,))
 
 
+# ---------- anime title helpers ----------
+
+def get_anime_title(user_id: str):
+    row = _fetchone("SELECT role_name FROM anime_titles WHERE user_id = ?", (user_id,))
+    return row[0] if row else None
+
+
+def set_anime_title(user_id: str, role_name: str):
+    _execute(
+        "INSERT OR REPLACE INTO anime_titles (user_id, role_name) VALUES (?, ?)",
+        (user_id, role_name),
+    )
+
+
+def delete_anime_title(user_id: str):
+    _execute("DELETE FROM anime_titles WHERE user_id = ?", (user_id,))
+
+
 # ---------- giveaway helpers ----------
 
 def create_giveaway(
