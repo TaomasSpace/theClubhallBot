@@ -27,6 +27,15 @@ TRIGGER_RESPONSES = {
     "Taoma": (
         "Our beautiful majestic Emperor TAOMA™! " "Long live our beloved King 👑"
     ),
+    "T*oma": (
+        "Our beautiful majestic Emperor TAOMA™! " "Long live our beloved King 👑"
+    ),
+    "Ta0ma": (
+        "Our beautiful majestic Emperor TAOMA™! " "Long live our beloved King 👑"
+    ),
+    "Ta*ma": (
+        "Our beautiful majestic Emperor TAOMA™! " "Long live our beloved King 👑"
+    ),
 }
 
 ROLE_THRESHOLDS = {
