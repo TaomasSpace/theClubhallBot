@@ -18,7 +18,7 @@ STAT_NAMES = ["intelligence", "strength", "stealth"]
 import re
 
 TRIGGER_RESPONSES = {
-    re.compile(r"(?i)t[\W_]*[a4@][\W_]*[o0][\W_]*m[\W_]*[a4@]"): (
+    re.compile(r"(?i)[t7][\W_]*[a@4][\W_]*[o0][\W_]*[m][\W_]*[a@4]"): (
         "Our beautiful majestic Emperor TAOMA™! Long live our beloved King 👑"
     ),
     re.compile(r"(?i)シャドウ.?ストーム"): (
