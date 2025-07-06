@@ -114,8 +114,8 @@ async def on_message(bot: commands.Bot, message: discord.Message, lowercase_lock
     from config import TRIGGER_RESPONSES
     from db.DBHelper import update_date
 
-    for trigger, reply in TRIGGER_RESPONSES.items():
-        if trigger.lower() in content:
+    for pattern, reply in TRIGGER_RESPONSES.items():
+        if pattern.search(content):
             await message.channel.send(reply)
             break
     if message.author.bot:
