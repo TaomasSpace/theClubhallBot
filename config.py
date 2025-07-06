@@ -15,26 +15,17 @@ WEEKLY_REWARD = 50
 SUPERPOWER_COST = 80_000
 SUPERPOWER_COOLDOWN_HOURS = 24
 STAT_NAMES = ["intelligence", "strength", "stealth"]
+import re
 
-TRIGGER_RESPONSES = {
-    "シャドウストーム": (
-        "Our beautiful majestic Emperor シャドウストーム! "
-        "Long live our beloved King 👑"
+TRIGGER_PATTERNS = {
+    re.compile(r"(?i)t[^\w]?a[^\w]?o[^\w]?m[^\w]?a"): (
+        "Our beautiful majestic Emperor TAOMA™! Long live our beloved King 👑"
     ),
-    "goodyb": (
-        "Our beautiful majestic Emperor goodyb! " "Long live our beloved King 👑"
+    re.compile(r"(?i)シャドウ.?ストーム"): (
+        "Our beautiful majestic Emperor シャドウストーム! Long live our beloved King 👑"
     ),
-    "Taoma": (
-        "Our beautiful majestic Emperor TAOMA™! " "Long live our beloved King 👑"
-    ),
-    "T*oma": (
-        "Our beautiful majestic Emperor TAOMA™! " "Long live our beloved King 👑"
-    ),
-    "Ta0ma": (
-        "Our beautiful majestic Emperor TAOMA™! " "Long live our beloved King 👑"
-    ),
-    "Ta*ma": (
-        "Our beautiful majestic Emperor TAOMA™! " "Long live our beloved King 👑"
+    re.compile(r"(?i)goodyb"): (
+        "Our beautiful majestic Emperor goodyb! Long live our beloved King 👑"
     ),
 }
 
