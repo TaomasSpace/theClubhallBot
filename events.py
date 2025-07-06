@@ -110,14 +110,14 @@ async def on_message(bot: commands.Bot, message: discord.Message, lowercase_lock
             avatar_url=message.author.display_avatar.url,
             allowed_mentions=discord.AllowedMentions.all(),
         )
-    content = message.content.lower()
+    content = message.content
     from config import TRIGGER_RESPONSES
     from db.DBHelper import update_date
 
     for pattern, reply in TRIGGER_RESPONSES.items():
         if pattern.search(content):
             await message.channel.send(reply)
-            break
+            return
     if message.author.bot:
         return
     update_date(message.author.id, message.author.name)
