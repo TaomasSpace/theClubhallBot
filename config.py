@@ -17,7 +17,7 @@ SUPERPOWER_COOLDOWN_HOURS = 24
 STAT_NAMES = ["intelligence", "strength", "stealth"]
 import re
 
-TRIGGER_PATTERNS = {
+TRIGGER_RESPONSES = {
     re.compile(r"(?i)t[^\w]?a[^\w]?o[^\w]?m[^\w]?a"): (
         "Our beautiful majestic Emperor TAOMA™! Long live our beloved King 👑"
     ),
