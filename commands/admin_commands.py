@@ -307,6 +307,71 @@ def setup(bot: commands.Bot):
             )
             return
 
+
+    @bot.tree.command(
+        name="manageyeager",
+        description="Give or remove the Yeager role from a member.",
+    )
+    @app_commands.describe(user="the user you want to add/remove the Yeager role")
+    async def manageYeager(interaction: discord.Interaction, user: discord.Member):
+        if (
+            not has_role(interaction.user, ADMIN_ROLE_ID)
+            and not interaction.user.id == 1348356899354972180
+        ):
+            await interaction.response.send_message(
+                "You dont have permission to use this command.", ephemeral=True
+            )
+            return
+
+        if has_role(user, 1392537949639544852):
+            await user.remove_roles(
+                discord.utils.get(interaction.guild.roles, name="yeager")
+            )
+            await interaction.response.send_message(
+                "Yeager role removed from " + user.display_name
+            )
+            return
+        else:
+            await user.add_roles(
+                discord.utils.get(interaction.guild.roles, name="yeager")
+            )
+            await interaction.response.send_message(
+                "Yeager role added to " + user.display_name
+            )
+            return
+
+    @bot.tree.command(
+        name="manageackerman",
+        description="Give or remove the ackerman  role from a member.",
+    )
+    @app_commands.describe(user="the user you want to add/remove the ackerman  role")
+    async def manageackerman(interaction: discord.Interaction, user: discord.Member):
+        if (
+            not has_role(interaction.user, ADMIN_ROLE_ID)
+            and not interaction.user.id == 1348356899354972180
+        ):
+            await interaction.response.send_message(
+                "You dont have permission to use this command.", ephemeral=True
+            )
+            return
+
+        if has_role(user, 1392537815132147904):
+            await user.remove_roles(
+                discord.utils.get(interaction.guild.roles, name="ackerman")
+            )
+            await interaction.response.send_message(
+                "ackerman role removed from " + user.display_name
+            )
+            return
+        else:
+            await user.add_roles(
+                discord.utils.get(interaction.guild.roles, name="ackerman")
+            )
+            await interaction.response.send_message(
+                "ackerman role added to " + user.display_name
+            )
+            return
+
     @bot.tree.command(
         name="addcolorreactionrole",
         description="Add emoji-role to color reaction message",
@@ -522,4 +587,6 @@ def setup(bot: commands.Bot):
         unlock_channel,
         createrole,
         manageViltrumite,
+        manageYeager,
+        manageackerman,
     )
