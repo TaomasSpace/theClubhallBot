@@ -514,6 +514,32 @@ def setup(bot: commands.Bot):
         )
 
     @bot.tree.command(
+        name="addfilterword", description="Add a word to the filter list"
+    )
+    @app_commands.describe(word="Word to filter")
+    @app_commands.checks.has_permissions(manage_messages=True)
+    async def addfilterword(interaction: discord.Interaction, word: str):
+        from db.DBHelper import add_filtered_word
+
+        add_filtered_word(word)
+        await interaction.response.send_message(
+            f"\u2705 Added `{word}` to the filter.", ephemeral=True
+        )
+
+    @bot.tree.command(
+        name="removefilterword", description="Remove a word from the filter list"
+    )
+    @app_commands.describe(word="Word to remove")
+    @app_commands.checks.has_permissions(manage_messages=True)
+    async def removefilterword(interaction: discord.Interaction, word: str):
+        from db.DBHelper import remove_filtered_word
+
+        remove_filtered_word(word)
+        await interaction.response.send_message(
+            f"\u2705 Removed `{word}` from the filter.", ephemeral=True
+        )
+
+    @bot.tree.command(
         name="createrole",
         description="Create a role and assign to users (for goodyb & nannapat2410 only)",
     )
@@ -585,6 +611,8 @@ def setup(bot: commands.Bot):
         giveaway,
         lock_channel,
         unlock_channel,
+        addfilterword,
+        removefilterword,
         createrole,
         manageViltrumite,
         manageYeager,

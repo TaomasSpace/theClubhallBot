@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import discord
 from discord import app_commands
 from discord.app_commands import CommandOnCooldown
@@ -13,6 +13,7 @@ from utils import get_channel_webhook, has_role
 
 rod_shop: dict[int, tuple[int, float]] = {}
 active_giveaway_tasks: dict[int, asyncio.Task] = {}
+filtered_violations: dict[int, list[float]] = {}
 
 async def end_giveaway(bot: commands.Bot, channel_id: int, message_id: int, prize: str, winners: int):
     channel = bot.get_channel(channel_id)
@@ -112,7 +113,29 @@ async def on_message(bot: commands.Bot, message: discord.Message, lowercase_lock
         )
     content = message.content.lower()
     from config import TRIGGER_RESPONSES
-    from db.DBHelper import update_date
+    from db.DBHelper import update_date, get_filtered_words
+
+    for word in get_filtered_words():
+        if word in content:
+            try:
+                await message.delete()
+            except discord.Forbidden:
+                return
+            now = datetime.now().timestamp()
+            history = filtered_violations.setdefault(message.author.id, [])
+            history.append(now)
+            history = [t for t in history if now - t <= 60]
+            filtered_violations[message.author.id] = history
+            if len(history) >= 3:
+                try:
+                    await message.author.timeout(
+                        datetime.now(timezone.utc) + timedelta(minutes=10),
+                        reason="Filtered words",
+                    )
+                except Exception:
+                    pass
+                filtered_violations[message.author.id] = []
+            return
 
     for trigger, reply in TRIGGER_RESPONSES.items():
         if trigger.lower() in content:
@@ -281,4 +304,5 @@ def setup(bot: commands.Bot, lowercase_locked: set[int]):
     bot.add_listener(reaction_remove_wrapper, name="on_raw_reaction_remove")
     bot.tree.error(app_error_wrapper)
     bot.add_listener(command_completion_wrapper, name="on_app_command_completion")
+
 
