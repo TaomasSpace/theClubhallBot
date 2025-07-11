@@ -310,3 +310,25 @@ def update_date(user_id: str, name: str):
 def get_lastdate(user_id: str):
     row = _fetchone("SELECT registered_date FROM dates WHERE user_id = ?", (user_id,))
     return row[0] if row else "No date found"
+
+
+# ---------- filtered words helpers ----------
+
+def add_filtered_word(word: str):
+    _execute(
+        "INSERT OR IGNORE INTO filtered_words (word) VALUES (?)",
+        (word.lower(),),
+    )
+
+
+def remove_filtered_word(word: str):
+    _execute("DELETE FROM filtered_words WHERE word = ?", (word.lower(),))
+
+
+def get_filtered_words() -> list[str]:
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT word FROM filtered_words")
+    rows = cursor.fetchall()
+    conn.close()
+    return [row[0] for row in rows]
