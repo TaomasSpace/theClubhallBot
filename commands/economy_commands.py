@@ -4,7 +4,8 @@ import discord
 from discord import app_commands, ui
 from discord.ext import commands
 from datetime import datetime, timedelta
-from random import random, choice
+from random import random, choice, shuffle
+from collections import Counter
 
 CARD_DECK: list[tuple[str, int]] = []
 _rank_codes = [
@@ -25,6 +26,93 @@ _rank_codes = [
 for suit in "ABCD":  # spades, hearts, diamonds, clubs
     for code, value in _rank_codes:
         CARD_DECK.append((chr(int(f"1F0{suit}{code}", 16)), value))
+
+_rank_map = {
+    "1": 14,
+    "2": 2,
+    "3": 3,
+    "4": 4,
+    "5": 5,
+    "6": 6,
+    "7": 7,
+    "8": 8,
+    "9": 9,
+    "A": 10,
+    "B": 11,
+    "D": 12,
+    "E": 13,
+}
+_suit_map = {"A": "S", "B": "H", "C": "D", "D": "C"}
+
+
+def _parse_card(emoji: str) -> tuple[int, str]:
+    code = f"{ord(emoji):05X}"
+    return _rank_map[code[4]], _suit_map[code[3]]
+
+
+def _hand_name(rank_type: int) -> str:
+    names = [
+        "High Card",
+        "One Pair",
+        "Two Pair",
+        "Three of a Kind",
+        "Straight",
+        "Flush",
+        "Full House",
+        "Four of a Kind",
+        "Straight Flush",
+    ]
+    return names[rank_type]
+
+
+def _evaluate_hand(cards: list[tuple[int, str]]) -> tuple:
+    ranks = sorted((r for r, _ in cards), reverse=True)
+    counts = Counter(ranks)
+    suits = Counter(s for _, s in cards)
+    flush = next((s for s, c in suits.items() if c >= 5), None)
+    unique = sorted(set(ranks), reverse=True)
+    if 14 in unique:
+        unique.append(1)
+    straight_high = None
+    for i in range(len(unique) - 4):
+        seq = unique[i : i + 5]
+        if seq[0] - seq[4] == 4:
+            straight_high = seq[0]
+            break
+    if flush:
+        flush_cards = [r for r, s in cards if s == flush]
+        flush_cards.sort(reverse=True)
+        fu = sorted(set(flush_cards), reverse=True)
+        if 14 in fu:
+            fu.append(1)
+        for i in range(len(fu) - 4):
+            seq = fu[i : i + 5]
+            if seq[0] - seq[4] == 4:
+                return (8, seq[0])
+        return (5, flush_cards[:5])
+    if 4 in counts.values():
+        quad = max(r for r, c in counts.items() if c == 4)
+        kicker = max(r for r in ranks if r != quad)
+        return (7, quad, kicker)
+    if 3 in counts.values() and 2 in counts.values():
+        tri = max(r for r, c in counts.items() if c == 3)
+        pair = max(r for r, c in counts.items() if c == 2)
+        return (6, tri, pair)
+    if straight_high:
+        return (4, straight_high)
+    if 3 in counts.values():
+        tri = max(r for r, c in counts.items() if c == 3)
+        kick = [r for r in ranks if r != tri][:2]
+        return (3, tri, kick[0], kick[1])
+    pairs = sorted([r for r, c in counts.items() if c == 2], reverse=True)
+    if len(pairs) >= 2:
+        kicker = max(r for r in ranks if r not in pairs)
+        return (2, pairs[0], pairs[1], kicker)
+    if len(pairs) == 1:
+        pair = pairs[0]
+        kick = [r for r in ranks if r != pair][:3]
+        return (1, pair, kick[0], kick[1], kick[2])
+    return (0, ranks[:5])
 
 from config import (
     ADMIN_ROLE_ID,
@@ -307,6 +395,91 @@ class BlackjackView(ui.View):
             )
             return
         await self._finish(interaction)
+
+
+class PokerJoinView(ui.View):
+    def __init__(self, bot: commands.Bot, host_id: int, bet: int):
+        super().__init__(timeout=30)
+        self.bot = bot
+        self.bet = bet
+        self.players: dict[int, str] = {host_id: ""}
+        self.message: discord.Message | None = None
+
+    def render(self) -> str:
+        joined = " ".join(f"<@{pid}>" for pid in self.players)
+        return (
+            f"Poker starting soon! Bet: {self.bet} coins\n"
+            f"Players: {joined}\nPress Join to participate."
+        )
+
+    @ui.button(label="Join", style=discord.ButtonStyle.primary)
+    async def join(self, interaction: discord.Interaction, button: ui.Button):
+        uid = str(interaction.user.id)
+        register_user(uid, interaction.user.display_name)
+        if interaction.user.id in self.players:
+            await interaction.response.send_message(
+                "You're already in the game.", ephemeral=True
+            )
+            return
+        if get_money(uid) < self.bet:
+            await interaction.response.send_message(
+                "Not enough coins to join.", ephemeral=True
+            )
+            return
+        self.players[interaction.user.id] = interaction.user.display_name
+        await interaction.response.send_message("Joined!", ephemeral=True)
+        if self.message:
+            await self.message.edit(content=self.render(), view=self)
+
+    async def on_timeout(self) -> None:
+        if not self.message:
+            return
+        await self.message.edit(content="Dealing cards...", view=None)
+        await start_poker_game(self.message.channel, self.players, self.bet)
+
+
+async def start_poker_game(
+    channel: discord.abc.Messageable, players: dict[int, str], bet: int
+) -> None:
+    deck = CARD_DECK.copy()
+    shuffle(deck)
+    hands: dict[int, list[str]] = {}
+    community = [deck.pop()[0] for _ in range(5)]
+    active: dict[int, str] = {}
+    pot = 0
+    for pid, name in list(players.items()):
+        uid = str(pid)
+        balance = get_money(uid)
+        if balance < bet:
+            continue
+        set_money(uid, balance - bet)
+        pot += bet
+        active[pid] = name
+        hands[pid] = [deck.pop()[0], deck.pop()[0]]
+    if not active:
+        await channel.send("No players had enough coins for the game.")
+        return
+
+    ranks: dict[int, tuple] = {}
+    for pid in active:
+        cards = [
+            _parse_card(c) for c in hands[pid] + community
+        ]
+        ranks[pid] = _evaluate_hand(cards)
+
+    best = max(ranks.values())
+    winners = [pid for pid, r in ranks.items() if r == best]
+    prize = pot // len(winners)
+    for pid in winners:
+        safe_add_coins(str(pid), prize)
+
+    text = f"Community: {' '.join(community)}\n"
+    for pid, name in active.items():
+        text += f"<@{pid}>: {' '.join(hands[pid])}\n"
+    win_names = ', '.join(f"<@{pid}>" for pid in winners)
+    text += f"Winner: {win_names} with {_hand_name(best[0])}! (+{prize} coins)"
+    await channel.send(text)
+
 
 
 def setup(bot: commands.Bot):
@@ -929,6 +1102,26 @@ def setup(bot: commands.Bot):
         await interaction.response.send_message(view._render(), view=view)
         view.message = await interaction.original_response()
 
+    @bot.tree.command(name="poker", description="Multiplayer Texas Hold'em style poker")
+    @app_commands.describe(bet="Coins each player wagers")
+    async def poker(interaction: discord.Interaction, bet: int):
+        uid = str(interaction.user.id)
+        register_user(uid, interaction.user.display_name)
+        if bet <= 0:
+            await interaction.response.send_message(
+                "Bet must be greater than 0.", ephemeral=True
+            )
+            return
+        if get_money(uid) < bet:
+            await interaction.response.send_message(
+                "Not enough coins.", ephemeral=True
+            )
+            return
+        view = PokerJoinView(bot, interaction.user.id, bet)
+        view.players[interaction.user.id] = interaction.user.display_name
+        await interaction.response.send_message(view.render(), view=view)
+        view.message = await interaction.original_response()
+
     return (
         money,
         balance,
@@ -946,4 +1139,5 @@ def setup(bot: commands.Bot):
         casino,
         duel,
         blackjack,
+        poker,
     )
