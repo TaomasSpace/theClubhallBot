@@ -132,6 +132,42 @@ def init_db():
         """
     )
 
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS anti_nuke_settings (
+            category TEXT PRIMARY KEY,
+            enabled INTEGER DEFAULT 0,
+            threshold INTEGER DEFAULT 1,
+            punishment TEXT DEFAULT 'kick',
+            duration INTEGER
+        )
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS anti_nuke_safe_users (
+            user_id TEXT PRIMARY KEY
+        )
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS anti_nuke_safe_roles (
+            role_id TEXT PRIMARY KEY
+        )
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS anti_nuke_log_channel (
+            channel_id TEXT PRIMARY KEY
+        )
+        """
+    )
+
     cursor.execute("PRAGMA table_info(users)")
     existing = {col[1] for col in cursor.fetchall()}
     for col, default in [
