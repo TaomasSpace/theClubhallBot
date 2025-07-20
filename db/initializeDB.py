@@ -160,6 +160,14 @@ def init_db():
         """
     )
 
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS anti_nuke_log_channel (
+            channel_id TEXT PRIMARY KEY
+        )
+        """
+    )
+
     cursor.execute("PRAGMA table_info(users)")
     existing = {col[1] for col in cursor.fetchall()}
     for col, default in [

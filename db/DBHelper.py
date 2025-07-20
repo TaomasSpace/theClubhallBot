@@ -391,3 +391,15 @@ def get_safe_roles() -> list[int]:
     rows = cursor.fetchall()
     conn.close()
     return [int(r[0]) for r in rows]
+
+
+def set_anti_nuke_log_channel(cid: int) -> None:
+    _execute(
+        "INSERT OR REPLACE INTO anti_nuke_log_channel (channel_id) VALUES (?)",
+        (str(cid),),
+    )
+
+
+def get_anti_nuke_log_channel() -> int | None:
+    row = _fetchone("SELECT channel_id FROM anti_nuke_log_channel LIMIT 1")
+    return int(row[0]) if row else None
