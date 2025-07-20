@@ -1,5 +1,6 @@
 import sqlite3
 from datetime import datetime, timezone
+from typing import Dict, List, Optional, Tuple
 from config import DB_PATH, STAT_NAMES
 
 
@@ -332,3 +333,74 @@ def get_filtered_words() -> list[str]:
     rows = cursor.fetchall()
     conn.close()
     return [row[0] for row in rows]
+
+
+# ---------- anti nuke helpers ----------
+
+def get_anti_nuke_setting(category: str) -> Optional[Tuple[int, int, str, Optional[int]]]:
+    row = _fetchone(
+        "SELECT enabled, threshold, punishment, duration FROM anti_nuke_settings WHERE category = ?",
+        (category,),
+    )
+    return row if row else None
+
+
+def set_anti_nuke_setting(
+    category: str, enabled: int, threshold: int, punishment: str, duration: Optional[int]
+) -> None:
+    _execute(
+        "INSERT OR REPLACE INTO anti_nuke_settings (category, enabled, threshold, punishment, duration) VALUES (?, ?, ?, ?, ?)",
+        (category, enabled, threshold, punishment, duration),
+    )
+
+
+def add_safe_user(uid: int) -> None:
+    _execute(
+        "INSERT OR IGNORE INTO anti_nuke_safe_users (user_id) VALUES (?)",
+        (str(uid),),
+    )
+
+
+def remove_safe_user(uid: int) -> None:
+    _execute("DELETE FROM anti_nuke_safe_users WHERE user_id = ?", (str(uid),))
+
+
+def get_safe_users() -> List[int]:
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT user_id FROM anti_nuke_safe_users")
+    rows = cursor.fetchall()
+    conn.close()
+    return [int(r[0]) for r in rows]
+
+
+def add_safe_role(rid: int) -> None:
+    _execute(
+        "INSERT OR IGNORE INTO anti_nuke_safe_roles (role_id) VALUES (?)",
+        (str(rid),),
+    )
+
+
+def remove_safe_role(rid: int) -> None:
+    _execute("DELETE FROM anti_nuke_safe_roles WHERE role_id = ?", (str(rid),))
+
+
+def get_safe_roles() -> List[int]:
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT role_id FROM anti_nuke_safe_roles")
+    rows = cursor.fetchall()
+    conn.close()
+    return [int(r[0]) for r in rows]
+
+
+def set_anti_nuke_log_channel(cid: int) -> None:
+    _execute(
+        "INSERT OR REPLACE INTO anti_nuke_log_channel (channel_id) VALUES (?)",
+        (str(cid),),
+    )
+
+
+def get_anti_nuke_log_channel() -> Optional[int]:
+    row = _fetchone("SELECT channel_id FROM anti_nuke_log_channel LIMIT 1")
+    return int(row[0]) if row else None
