@@ -5,7 +5,10 @@ from db.DBHelper import (
     get_anti_nuke_setting,
     get_safe_users,
     get_safe_roles,
+    get_anti_nuke_log_channel,
 )
+
+OWNER_ID = 756537363509018736
 
 ACTION_WINDOW = 15  # seconds
 
@@ -41,6 +44,19 @@ async def punish(member: discord.Member, punishment: str, duration: int | None) 
         pass
 
 
+async def log_action(member: discord.Member, category: str, punishment: str, duration: int | None) -> None:
+    cid = get_anti_nuke_log_channel()
+    if not cid:
+        return
+    channel = member.guild.get_channel(cid)
+    if channel:
+        info = f"{punishment}"
+        if punishment == "timeout" and duration:
+            info += f" {duration}s"
+        await channel.send(
+            f"<@{OWNER_ID}> {member.mention} triggered **{category}** - {info}"
+        )
+
 async def handle_event(guild: discord.Guild, user: discord.Member | None, category: str):
     setting = get_anti_nuke_setting(category)
     if not setting:
@@ -63,7 +79,8 @@ async def handle_event(guild: discord.Guild, user: discord.Member | None, catego
     action_history[category][uid] = hist
     if len(hist) >= threshold:
         await punish(user, punishment, duration)
-        action_history[category][uid] = []
+        await log_action(user, category, punishment, duration)
+]
 
 
 async def on_message(message: discord.Message):
@@ -80,7 +97,7 @@ async def on_message(message: discord.Message):
     mention_count += message.content.count("@everyone")
     if mention_count >= threshold:
         await punish(message.author, punishment, duration)
-
+        await log_action(message.author, "anti_mention", punishment, duration)
 
 async def on_channel_delete(channel: discord.abc.GuildChannel):
     guild = channel.guild

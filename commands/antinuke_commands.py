@@ -11,6 +11,9 @@ from db.DBHelper import (
     add_safe_role,
     remove_safe_role,
     get_safe_roles,
+    set_anti_nuke_log_channel,
+    get_anti_nuke_log_channel,
+
 )
 
 OWNER_ID = 756537363509018736
@@ -76,3 +79,41 @@ def setup(bot: commands.Bot):
         else:
             add_safe_role(role.id)
             await interaction.response.send_message("Role added to safe list.", ephemeral=True)
+
+    @bot.tree.command(name="antinukelog", description="Set anti nuke log channel")
+    async def antinukelog(interaction: discord.Interaction, channel: discord.TextChannel):
+        if interaction.user.id != OWNER_ID:
+            await interaction.response.send_message("No permission.", ephemeral=True)
+            return
+        set_anti_nuke_log_channel(channel.id)
+        await interaction.response.send_message(
+            f"Log channel set to {channel.mention}", ephemeral=True
+        )
+
+    @bot.tree.command(name="antinukesettings", description="Show anti nuke configuration")
+    async def antinukesettings(interaction: discord.Interaction):
+        if interaction.user.id != OWNER_ID:
+            await interaction.response.send_message("No permission.", ephemeral=True)
+            return
+        lines = []
+        for cat in CATEGORIES:
+            setting = get_anti_nuke_setting(cat)
+            if setting:
+                en, th, p, dur = setting
+                desc = f"on" if en else "off"
+                desc += f", threshold={th}, punishment={p}"
+                if p == "timeout" and dur:
+                    desc += f" {dur}s"
+            else:
+                desc = "not set"
+            lines.append(f"**{cat}**: {desc}")
+
+        users = [f"<@{u}>" for u in get_safe_users()] or ["None"]
+        roles = [f"<@&{r}>" for r in get_safe_roles()] or ["None"]
+        cid = get_anti_nuke_log_channel()
+        log_line = f"<#{cid}>" if cid else "None"
+        lines.append(f"Safe users: {', '.join(users)}")
+        lines.append(f"Safe roles: {', '.join(roles)}")
+        lines.append(f"Log channel: {log_line}")
+        await interaction.response.send_message("\n".join(lines), ephemeral=True)
+
