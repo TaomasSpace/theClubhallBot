@@ -1,6 +1,8 @@
 import discord
 from discord.ext import commands
 from datetime import datetime, timedelta
+from typing import Dict, List, Optional
+
 from db.DBHelper import (
     get_anti_nuke_setting,
     get_safe_users,
@@ -12,7 +14,8 @@ OWNER_ID = 756537363509018736
 
 ACTION_WINDOW = 15  # seconds
 
-action_history: dict[str, dict[int, list[float]]] = {}
+action_history: Dict[str, Dict[int, List[float]]] = {}
+
 
 CATEGORIES = {
     "delete_roles": discord.AuditLogAction.role_delete,
@@ -25,7 +28,8 @@ CATEGORIES = {
 }
 
 
-async def punish(member: discord.Member, punishment: str, duration: int | None) -> None:
+async def punish(member: discord.Member, punishment: str, duration: Optional[int]) -> None:
+
     try:
         if punishment == "timeout":
             if duration is None:
@@ -44,7 +48,8 @@ async def punish(member: discord.Member, punishment: str, duration: int | None) 
         pass
 
 
-async def log_action(member: discord.Member, category: str, punishment: str, duration: int | None) -> None:
+async def log_action(member: discord.Member, category: str, punishment: str, duration: Optional[int]) -> None:
+
     cid = get_anti_nuke_log_channel()
     if not cid:
         return
@@ -57,7 +62,8 @@ async def log_action(member: discord.Member, category: str, punishment: str, dur
             f"<@{OWNER_ID}> {member.mention} triggered **{category}** - {info}"
         )
 
-async def handle_event(guild: discord.Guild, user: discord.Member | None, category: str):
+async def handle_event(guild: discord.Guild, user: Optional[discord.Member], category: str):
+
     setting = get_anti_nuke_setting(category)
     if not setting:
         return
@@ -80,7 +86,8 @@ async def handle_event(guild: discord.Guild, user: discord.Member | None, catego
     if len(hist) >= threshold:
         await punish(user, punishment, duration)
         await log_action(user, category, punishment, duration)
-]
+        action_history[category][uid] = []
+
 
 
 async def on_message(message: discord.Message):
@@ -98,6 +105,7 @@ async def on_message(message: discord.Message):
     if mention_count >= threshold:
         await punish(message.author, punishment, duration)
         await log_action(message.author, "anti_mention", punishment, duration)
+
 
 async def on_channel_delete(channel: discord.abc.GuildChannel):
     guild = channel.guild

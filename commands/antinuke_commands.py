@@ -1,6 +1,8 @@
 import discord
 from discord import app_commands
 from discord.ext import commands
+from typing import Optional
+
 from utils import parse_duration
 from db.DBHelper import (
     set_anti_nuke_setting,
@@ -13,7 +15,6 @@ from db.DBHelper import (
     get_safe_roles,
     set_anti_nuke_log_channel,
     get_anti_nuke_log_channel,
-
 )
 
 OWNER_ID = 756537363509018736
@@ -43,7 +44,7 @@ def setup(bot: commands.Bot):
         category: str,
         threshold: int,
         punishment: str,
-        duration: str | None,
+        duration: Optional[str],
         enabled: bool,
     ):
         if interaction.user.id != OWNER_ID:
