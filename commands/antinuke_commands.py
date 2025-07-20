@@ -13,6 +13,7 @@ from db.DBHelper import (
     get_safe_roles,
     set_anti_nuke_log_channel,
     get_anti_nuke_log_channel,
+
 )
 
 OWNER_ID = 756537363509018736
@@ -115,3 +116,4 @@ def setup(bot: commands.Bot):
         lines.append(f"Safe roles: {', '.join(roles)}")
         lines.append(f"Log channel: {log_line}")
         await interaction.response.send_message("\n".join(lines), ephemeral=True)
+

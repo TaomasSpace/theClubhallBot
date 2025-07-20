@@ -403,3 +403,4 @@ def set_anti_nuke_log_channel(cid: int) -> None:
 def get_anti_nuke_log_channel() -> int | None:
     row = _fetchone("SELECT channel_id FROM anti_nuke_log_channel LIMIT 1")
     return int(row[0]) if row else None
+

@@ -57,7 +57,6 @@ async def log_action(member: discord.Member, category: str, punishment: str, dur
             f"<@{OWNER_ID}> {member.mention} triggered **{category}** - {info}"
         )
 
-
 async def handle_event(guild: discord.Guild, user: discord.Member | None, category: str):
     setting = get_anti_nuke_setting(category)
     if not setting:
@@ -81,7 +80,7 @@ async def handle_event(guild: discord.Guild, user: discord.Member | None, catego
     if len(hist) >= threshold:
         await punish(user, punishment, duration)
         await log_action(user, category, punishment, duration)
-        action_history[category][uid] = []
+]
 
 
 async def on_message(message: discord.Message):
@@ -99,7 +98,6 @@ async def on_message(message: discord.Message):
     if mention_count >= threshold:
         await punish(message.author, punishment, duration)
         await log_action(message.author, "anti_mention", punishment, duration)
-
 
 async def on_channel_delete(channel: discord.abc.GuildChannel):
     guild = channel.guild
