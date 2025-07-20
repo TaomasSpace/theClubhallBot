@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
+
 from db.DBHelper import (
     get_anti_nuke_setting,
     get_safe_users,
@@ -15,6 +16,7 @@ ACTION_WINDOW = 15  # seconds
 
 action_history: Dict[str, Dict[int, List[float]]] = {}
 
+
 CATEGORIES = {
     "delete_roles": discord.AuditLogAction.role_delete,
     "add_roles": discord.AuditLogAction.role_create,
@@ -27,6 +29,7 @@ CATEGORIES = {
 
 
 async def punish(member: discord.Member, punishment: str, duration: Optional[int]) -> None:
+
     try:
         if punishment == "timeout":
             if duration is None:
@@ -46,6 +49,7 @@ async def punish(member: discord.Member, punishment: str, duration: Optional[int
 
 
 async def log_action(member: discord.Member, category: str, punishment: str, duration: Optional[int]) -> None:
+
     cid = get_anti_nuke_log_channel()
     if not cid:
         return
@@ -58,8 +62,8 @@ async def log_action(member: discord.Member, category: str, punishment: str, dur
             f"<@{OWNER_ID}> {member.mention} triggered **{category}** - {info}"
         )
 
-
 async def handle_event(guild: discord.Guild, user: Optional[discord.Member], category: str):
+
     setting = get_anti_nuke_setting(category)
     if not setting:
         return
@@ -83,6 +87,7 @@ async def handle_event(guild: discord.Guild, user: Optional[discord.Member], cat
         await punish(user, punishment, duration)
         await log_action(user, category, punishment, duration)
         action_history[category][uid] = []
+
 
 
 async def on_message(message: discord.Message):

@@ -2,6 +2,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 from typing import Optional
+
 from utils import parse_duration
 from db.DBHelper import (
     set_anti_nuke_setting,
@@ -116,3 +117,4 @@ def setup(bot: commands.Bot):
         lines.append(f"Safe roles: {', '.join(roles)}")
         lines.append(f"Log channel: {log_line}")
         await interaction.response.send_message("\n".join(lines), ephemeral=True)
+

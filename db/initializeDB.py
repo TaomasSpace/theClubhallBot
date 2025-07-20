@@ -168,6 +168,7 @@ def init_db():
         """
     )
 
+
     cursor.execute("PRAGMA table_info(users)")
     existing = {col[1] for col in cursor.fetchall()}
     for col, default in [

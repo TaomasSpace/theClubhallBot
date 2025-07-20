@@ -338,6 +338,7 @@ def get_filtered_words() -> list[str]:
 # ---------- anti nuke helpers ----------
 
 def get_anti_nuke_setting(category: str) -> Optional[Tuple[int, int, str, Optional[int]]]:
+
     row = _fetchone(
         "SELECT enabled, threshold, punishment, duration FROM anti_nuke_settings WHERE category = ?",
         (category,),
@@ -347,6 +348,7 @@ def get_anti_nuke_setting(category: str) -> Optional[Tuple[int, int, str, Option
 
 def set_anti_nuke_setting(
     category: str, enabled: int, threshold: int, punishment: str, duration: Optional[int]
+
 ) -> None:
     _execute(
         "INSERT OR REPLACE INTO anti_nuke_settings (category, enabled, threshold, punishment, duration) VALUES (?, ?, ?, ?, ?)",
@@ -366,6 +368,7 @@ def remove_safe_user(uid: int) -> None:
 
 
 def get_safe_users() -> List[int]:
+
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute("SELECT user_id FROM anti_nuke_safe_users")
@@ -386,6 +389,7 @@ def remove_safe_role(rid: int) -> None:
 
 
 def get_safe_roles() -> List[int]:
+
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute("SELECT role_id FROM anti_nuke_safe_roles")
@@ -404,3 +408,4 @@ def set_anti_nuke_log_channel(cid: int) -> None:
 def get_anti_nuke_log_channel() -> Optional[int]:
     row = _fetchone("SELECT channel_id FROM anti_nuke_log_channel LIMIT 1")
     return int(row[0]) if row else None
+
