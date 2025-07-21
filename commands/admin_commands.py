@@ -307,7 +307,6 @@ def setup(bot: commands.Bot):
             )
             return
 
-
     @bot.tree.command(
         name="manageyeager",
         description="Give or remove the Yeager role from a member.",
@@ -513,9 +512,7 @@ def setup(bot: commands.Bot):
             "\U0001f513 Channel unlocked.", ephemeral=True
         )
 
-    @bot.tree.command(
-        name="addfilterword", description="Add a word to the filter list"
-    )
+    @bot.tree.command(name="addfilterword", description="Add a word to the filter list")
     @app_commands.describe(word="Word to filter")
     @app_commands.checks.has_permissions(manage_messages=True)
     async def addfilterword(interaction: discord.Interaction, word: str):
@@ -538,6 +535,16 @@ def setup(bot: commands.Bot):
         await interaction.response.send_message(
             f"\u2705 Removed `{word}` from the filter.", ephemeral=True
         )
+
+    @bot.tree.command(name="filterwords", description="Show all filtered words")
+    async def filterwords(interaction: discord.Interaction):
+        from db.DBHelper import get_filtered_words
+
+        words = get_filtered_words()
+        if not words:
+            await interaction.response.send_message("No filtered words.")
+            return
+        await interaction.response.send_message(", ".join(sorted(words)))
 
     @bot.tree.command(
         name="createrole",
@@ -613,6 +620,7 @@ def setup(bot: commands.Bot):
         unlock_channel,
         addfilterword,
         removefilterword,
+        filterwords,
         createrole,
         manageViltrumite,
         manageYeager,
