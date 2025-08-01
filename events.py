@@ -5,6 +5,7 @@ import discord
 from discord import app_commands
 from discord.app_commands import CommandOnCooldown
 from discord.ext import commands
+import random
 
 from config import WELCOME_CHANNEL_ID, LOG_CHANNEL_ID
 from db.initializeDB import init_db
@@ -45,7 +46,8 @@ async def end_giveaway(bot: commands.Bot, channel_id: int, message_id: int, priz
         return
     if winners > len(users):
         winners = len(users)
-    selected_winners = ", ".join(u.mention for u in (users if winners > 1 else [users[0]]))
+    selected = random.sample(users, winners)
+    selected_winners = ", ".join(u.mention for u in selected)
     await refreshed.reply(f"🎊 Congratulations! {selected_winners} won **{prize}** 🎉")
     from db.DBHelper import finish_giveaway
     finish_giveaway(str(message_id))
