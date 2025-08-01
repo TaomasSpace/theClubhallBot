@@ -116,7 +116,7 @@ async def on_message(bot: commands.Bot, message: discord.Message, lowercase_lock
     from db.DBHelper import update_date, get_filtered_words
 
     for word in get_filtered_words():
-        if " " + word in content:
+        if content.startswith(word) or " " + word in content:
             try:
                 await message.delete()
             except discord.Forbidden:
