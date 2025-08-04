@@ -309,6 +309,18 @@ def remove_role(guild_id: int, name: str) -> None:
     )
 
 
+def get_roles(guild_id: int) -> dict[str, int]:
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT name, role_id FROM roles WHERE guild_id = ?",
+        (str(guild_id),),
+    )
+    rows = cursor.fetchall()
+    conn.close()
+    return {name: int(rid) for name, rid in rows}
+
+
 def set_command_permission(guild_id: int, command: str, role_id: int) -> None:
     _execute(
         "INSERT OR REPLACE INTO command_permissions (guild_id, command, role_id) VALUES (?, ?, ?)",
@@ -329,6 +341,18 @@ def remove_command_permission(guild_id: int, command: str) -> None:
         "DELETE FROM command_permissions WHERE guild_id = ? AND command = ?",
         (str(guild_id), command),
     )
+
+
+def get_command_permissions(guild_id: int) -> dict[str, int]:
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT command, role_id FROM command_permissions WHERE guild_id = ?",
+        (str(guild_id),),
+    )
+    rows = cursor.fetchall()
+    conn.close()
+    return {cmd: int(rid) for cmd, rid in rows}
 
 
 # ---------- shop helpers ----------
