@@ -313,6 +313,13 @@ def remove_role(guild_id: int, name: str) -> None:
     )
 
 
+def _fetchall(query: str, params: tuple = ()) -> list[tuple]:
+    with sqlite3.connect(DB_PATH) as conn:
+        cursor = conn.cursor()
+        cursor.execute(query, params)
+        return cursor.fetchall()
+
+
 def get_roles(guild_id: int) -> dict[str, int]:
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
@@ -332,12 +339,12 @@ def set_command_permission(guild_id: int, command: str, role_id: int) -> None:
     )
 
 
-def get_command_permission(guild_id: int, command: str) -> Optional[int]:
-    row = _fetchone(
-        "SELECT role_id FROM command_permissions WHERE guild_id = ? AND command = ?",
-        (str(guild_id), command),
+def get_command_permission(guild_id: int) -> dict[str, int]:
+    rows = _fetchall(
+        "SELECT command, role_id FROM command_permissions WHERE guild_id = ?",
+        (guild_id,),
     )
-    return int(row[0]) if row and row[0] else None
+    return {cmd: int(rid) for cmd, rid in rows if rid is not None}
 
 
 def remove_command_permission(guild_id: int, command: str) -> None:
