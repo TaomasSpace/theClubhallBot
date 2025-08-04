@@ -1,5 +1,5 @@
 import sqlite3
-from config import DB_PATH, MAX_COINS
+from config import DB_PATH
 
 
 def init_db():
@@ -44,7 +44,6 @@ def init_db():
         """
         CREATE TABLE IF NOT EXISTS server (
             id INTEGER PRIMARY KEY CHECK (id = 1),
-            max_coins INTEGER,
             welcome_channel_id TEXT,
             leave_channel_id TEXT,
             welcome_message TEXT,
@@ -66,19 +65,9 @@ def init_db():
     ]:
         if col not in columns:
             cursor.execute(f"ALTER TABLE server ADD COLUMN {col} TEXT")
-    cursor.execute("SELECT max_coins FROM server WHERE id = 1")
-    row = cursor.fetchone()
-
-    if row is None:
-        cursor.execute(
-            "INSERT INTO server (id, max_coins) VALUES (?, ?)",
-            (1, MAX_COINS),
-        )
-    elif row[0] < MAX_COINS:
-        cursor.execute(
-            "UPDATE server SET max_coins = ? WHERE id = 1",
-            (MAX_COINS,),
-        )
+    cursor.execute("SELECT id FROM server WHERE id = 1")
+    if cursor.fetchone() is None:
+        cursor.execute("INSERT INTO server (id) VALUES (1)")
     cursor.execute(
         """
     CREATE TABLE IF NOT EXISTS shop_roles (
