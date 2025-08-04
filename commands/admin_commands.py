@@ -79,7 +79,8 @@ async def run_command_tests(bot: commands.Bot) -> dict[str, str]:
             return role
 
     class DummyUser:
-        def __init__(self, user_id: int = 0, name: str = "tester", guild: "DummyGuild" | None = None):
+        def __init__(self, user_id: int = 0, name: str = "tester", guild: DummyGuild | None = None):
+
             self.id = user_id
             self.name = name
             self.display_name = name
