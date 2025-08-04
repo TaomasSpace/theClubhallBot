@@ -23,6 +23,7 @@ def _execute(query: str, params=()):
 
 # ---------- user registration ----------
 
+
 def register_user(user_id: str, username: str):
     user_exists = _fetchone("SELECT 1 FROM users WHERE user_id = ?", (user_id,))
     if user_exists:
@@ -40,6 +41,7 @@ def register_user(user_id: str, username: str):
 
 
 # ---------- coins ----------
+
 
 def get_rod_multiplier(level: int) -> float:
     row = _fetchone("SELECT multiplier FROM rod_shop WHERE level = ?", (level,))
@@ -120,6 +122,7 @@ def set_last_claim(user_id: str, ts: datetime):
 
 # ---------- stats & stat‑points ----------
 
+
 def get_stats(user_id: str):
     row = _fetchone(
         "SELECT intelligence, strength, stealth, stat_points FROM users WHERE user_id = ?",
@@ -164,6 +167,7 @@ def set_rod_level(user_id: str, level: int):
 
 
 # ---------- timing helpers ----------
+
 
 def get_timestamp(user_id: str, column: str):
     row = _fetchone(f"SELECT {column} FROM users WHERE user_id = ?", (user_id,))
@@ -352,10 +356,11 @@ def get_command_permissions(guild_id: int) -> dict[str, int]:
     )
     rows = cursor.fetchall()
     conn.close()
-    return {cmd: int(rid) for cmd, rid in rows}
+    return {cmd: int(rid) for cmd, rid in rows if rid is not None}
 
 
 # ---------- shop helpers ----------
+
 
 def add_shop_role(role_id: int, price: int):
     _execute(
@@ -401,6 +406,7 @@ def delete_custom_role(guild_id: int, user_id: str):
 
 # ---------- anime title helpers ----------
 
+
 def get_anime_title(user_id: str):
     row = _fetchone("SELECT role_name FROM anime_titles WHERE user_id = ?", (user_id,))
     return row[0] if row else None
@@ -418,6 +424,7 @@ def delete_anime_title(user_id: str):
 
 
 # ---------- giveaway helpers ----------
+
 
 def create_giveaway(
     message_id: str, channel_id: str, end_time: datetime, prize: str, winners: int
@@ -442,6 +449,7 @@ def get_active_giveaways():
     conn.close()
     return rows
 
+
 def update_date(user_id: str, name: str):
     if _fetchone("SELECT * FROM dates WHERE user_id = ?", (user_id,)):
         _execute(
@@ -462,6 +470,7 @@ def get_lastdate(user_id: str):
 
 # ---------- filtered words helpers ----------
 
+
 def add_filtered_word(guild_id: int, word: str):
     _execute(
         "INSERT OR IGNORE INTO filtered_words (guild_id, word) VALUES (?, ?)",
@@ -479,13 +488,16 @@ def remove_filtered_word(guild_id: int, word: str):
 def get_filtered_words(guild_id: int) -> list[str]:
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    cursor.execute("SELECT word FROM filtered_words WHERE guild_id = ?", (str(guild_id),))
+    cursor.execute(
+        "SELECT word FROM filtered_words WHERE guild_id = ?", (str(guild_id),)
+    )
     rows = cursor.fetchall()
     conn.close()
     return [row[0] for row in rows]
 
 
 # ---------- trigger response helpers ----------
+
 
 def add_trigger_response(trigger: str, response: str, guild_id: int):
     _execute(
@@ -512,7 +524,9 @@ def get_trigger_responses(guild_id: int) -> dict:
     conn.close()
     return {trigger: response for trigger, response in rows}
 
+
 # ---------- anti nuke helpers ----------
+
 
 def get_anti_nuke_setting(
     category: str, guild_id: int
@@ -606,4 +620,3 @@ def get_anti_nuke_log_channel(guild_id: int) -> Optional[int]:
         (str(guild_id),),
     )
     return int(row[0]) if row else None
-
