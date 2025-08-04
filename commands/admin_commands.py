@@ -124,7 +124,7 @@ async def run_command_tests(bot: commands.Bot) -> dict[str, str]:
         user = dummy_user
         guild = dummy_guild
         channel = DummyChannel()
-        original_response = "DummyOriginalResponse"
+        original_response = 102
         response = DummyResponse()
         followup = DummyFollowup()
 
