@@ -25,7 +25,7 @@ def setup(bot: commands.Bot):
             )
             return
 
-        role_id = get_custom_role(str(member.id))
+        role_id = get_custom_role(guild.id, str(member.id))
 
         if role_id:
             role = guild.get_role(role_id)
@@ -41,7 +41,7 @@ def setup(bot: commands.Bot):
                 name=name, colour=colour_obj, reason="Custom booster role"
             )
             await member.add_roles(role, reason="Assigned custom booster role")
-            set_custom_role(str(member.id), role.id)
+            set_custom_role(guild.id, str(member.id), role.id)
             await interaction.response.send_message(
                 f"✅ Custom role **{name}** created and assigned!", ephemeral=True
             )
@@ -65,7 +65,7 @@ def setup(bot: commands.Bot):
             )
             return
 
-        role_id = get_custom_role(booster_id)
+        role_id = get_custom_role(interaction.guild.id, booster_id)
         if not role_id:
             await interaction.response.send_message(
                 "You don't have a custom role.", ephemeral=True

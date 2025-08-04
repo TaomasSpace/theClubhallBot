@@ -115,13 +115,17 @@ def init_db():
     """
     )
 
-    cursor.execute(
+    _recreate(
+        "custom_roles",
         """
-    CREATE TABLE IF NOT EXISTS custom_roles (
-        user_id TEXT PRIMARY KEY,
-        role_id TEXT NOT NULL
-    )
-    """
+        CREATE TABLE IF NOT EXISTS custom_roles (
+            guild_id TEXT,
+            user_id TEXT,
+            role_id TEXT NOT NULL,
+            PRIMARY KEY (guild_id, user_id)
+        )
+        """,
+        {"guild_id", "user_id", "role_id"},
     )
 
     cursor.execute(
