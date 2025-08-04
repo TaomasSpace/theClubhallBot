@@ -184,16 +184,16 @@ def setup(bot: commands.Bot):
         embed.set_image(url=gif)
         await interaction.response.send_message(embed=embed)
 
-    @bot.tree.command(name="peek", description="get a random peek gif")
-    async def peek(interaction: discord.Interaction):
+    @bot.tree.command(name="lick", description="Lick another member")
+    async def lick(interaction: discord.Interaction, user: discord.Member):
         response = requests.get(
-            "https://api.otakugifs.xyz/gif?reaction=peek&format=gif"
+            "https://api.otakugifs.xyz/gif?reaction=lick&format=gif"
         )
 
         gif = response.json()
         gif = gif["url"]
         embed = discord.Embed(
-            title=f"{interaction.user.display_name} peeks around the corner",
+            title=f"{interaction.user.display_name} licks {user.display_name} ꨄ︎ how does it taste?",
             color=discord.Color.red(),
         )
         embed.set_image(url=gif)
@@ -241,5 +241,5 @@ def setup(bot: commands.Bot):
         dance,
         good,
         kiss,
-        peek,
+        lick,
     )
