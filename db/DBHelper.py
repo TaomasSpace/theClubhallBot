@@ -286,6 +286,17 @@ def get_role(name: str) -> Optional[int]:
     return int(row[0]) if row and row[0] else None
 
 
+def remove_role(name: str) -> None:
+    role_id = get_role(name)
+    if role_id is None:
+        return
+    _execute("DELETE FROM roles WHERE name = ?", (name,))
+    _execute(
+        "UPDATE command_permissions SET role_id = NULL WHERE role_id = ?",
+        (str(role_id),),
+    )
+
+
 def set_command_permission(command: str, role_id: int) -> None:
     _execute(
         "INSERT OR REPLACE INTO command_permissions (command, role_id) VALUES (?, ?)",
