@@ -97,6 +97,13 @@ async def run_command_tests(bot: commands.Bot) -> dict[str, str]:
         async def reply(self, *args, **kwargs):
             pass  # Placeholder
 
+    class DummyAvatar:
+        url = "https://example.com/avatar.png"
+
+    class DummyWebhook:
+        async def send(self, *args, **kwargs):
+            pass
+
     class DummyUser:
         def __init__(
             self,
@@ -112,21 +119,35 @@ async def run_command_tests(bot: commands.Bot) -> dict[str, str]:
             self.guild_permissions = discord.Permissions.none()
             self.premium_since = None
             self.guild = guild
+            self.display_avatar = DummyAvatar()
 
         @property
         def mention(self) -> str:  # pragma: no cover - simple placeholder
             return f"<@{self.id}>"
 
         async def add_roles(self, *roles, **kwargs):
-            self.roles.extend(roles)
+            self.roles.extend([r for r in roles if r is not None])
 
         async def remove_roles(self, *roles, **kwargs):
             for role in roles:
-                if role in self.roles:
+                if role is not None and role in self.roles:
                     self.roles.remove(role)
 
     class DummyChannel:
         id = 0
+        mention = "<#0>"
+
+        async def webhooks(self):
+            return []
+
+        async def create_webhook(self, name: str):
+            return DummyWebhook()
+
+        async def fetch_message(self, message_id):
+            return DummyMessage()
+
+        async def set_permissions(self, *args, **kwargs):
+            pass
 
     dummy_guild = DummyGuild()
     dummy_role = DummyRole(name="role", role_id=1)
@@ -190,6 +211,9 @@ async def run_command_tests(bot: commands.Bot) -> dict[str, str]:
         return None
 
     for cmd in bot.tree.get_commands():
+        if cmd.name == "test":
+            results[cmd.name] = "Skipped"
+            continue
         try:
             sig = inspect.signature(cmd.callback)
             params = list(sig.parameters.values())[1:]

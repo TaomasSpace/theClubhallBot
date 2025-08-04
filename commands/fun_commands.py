@@ -240,18 +240,26 @@ def setup(bot: commands.Bot):
 
     @bot.tree.command(name="slap", description="slap another user")
     async def slap(interaction: discord.Interaction, user: discord.Member):
-        response = requests.get(
-            "https://api.otakugifs.xyz/gif?reaction=slap&format=gif"
-        )
-
-        gif = response.json()
-        gif = gif["url"]
+        try:
+            response = requests.get(
+                "https://api.otakugifs.xyz/gif?reaction=slap&format=gif",
+                timeout=5,
+            )
+            response.raise_for_status()
+            data = response.json()
+            gif = data.get("url", "")
+        except requests.RequestException:
+            gif = ""
         embed = discord.Embed(
             title=f"{interaction.user.display_name} slaps {user.display_name} really hard!",
             color=discord.Color.red(),
         )
-        embed.set_image(url=gif)
-        await interaction.response.send_message(embed=embed)
+        if gif:
+            embed.set_image(url=gif)
+        await interaction.response.send_message(
+            embed=embed if gif else None,
+            content=None if gif else "*whiff* Can't fetch a slap gif right now.",
+        )
 
     @bot.tree.command(name="lick", description="Lick another member")
     async def lick(interaction: discord.Interaction, user: discord.Member):
