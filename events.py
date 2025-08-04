@@ -19,8 +19,10 @@ from db.DBHelper import (
     get_leave_channel,
     get_welcome_message,
     get_leave_message,
+    get_booster_channel,
+    get_booster_message,
 )
-from utils import get_channel_webhook, has_role
+from utils import get_channel_webhook
 
 rod_shop: dict[int, tuple[int, float]] = {}
 active_giveaway_tasks: dict[int, asyncio.Task] = {}
@@ -116,12 +118,26 @@ async def on_member_update(
                     pass
             delete_custom_role(str(after.id))
     if not before.premium_since and after.premium_since:
-        channel = bot.get_channel(1371395099824750664)
-        if channel:
-            await channel.send(
-                f"🎉 {after.mention} just boosted the server — thank you so much for the support! 💜\n"
-                f"Check <https://discord.com/channels/1351475070312255498/1351528109702119496/1371189412125216869> to see what new features you unlock!"
-            )
+        cid = get_booster_channel()
+        if cid:
+            channel = bot.get_channel(cid)
+            if channel:
+                args = {
+                    "member": after.name,
+                    "member_mention": after.mention,
+                    "server": after.guild.name,
+                }
+                template = get_booster_message()
+                if template:
+                    try:
+                        message = template.format(**args)
+                    except Exception:
+                        message = template
+                else:
+                    message = (
+                        f"🎉 {after.mention} just boosted the server — thank you so much for the support! 💜"
+                    )
+                await channel.send(message)
 
 
 async def on_message(

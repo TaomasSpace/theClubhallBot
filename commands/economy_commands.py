@@ -115,7 +115,6 @@ def _evaluate_hand(cards: list[tuple[int, str]]) -> tuple:
     return (0, ranks[:5])
 
 from config import (
-    ADMIN_ROLE_ID,
     WEEKLY_REWARD,
     DAILY_REWARD,
     SUPERPOWER_COST,
@@ -137,7 +136,7 @@ from db.DBHelper import (
     get_anime_title,
     set_anime_title,
 )
-from utils import has_role
+from utils import has_command_permission
 
 
 class RequestView(ui.View):
@@ -505,9 +504,10 @@ def setup(bot: commands.Bot):
         name="give", description="Give coins to a user (Admin/Owner only)"
     )
     async def give(interaction: discord.Interaction, user: discord.Member, amount: int):
-        if not has_role(interaction.user, ADMIN_ROLE_ID):
+        if not has_command_permission(interaction.user, "give", "admin"):
             await interaction.response.send_message(
-                "You don't have permission to give clubhall coins.", ephemeral=True
+                "You don't have permission to give clubhall coins.",
+                ephemeral=True,
             )
             return
         register_user(str(user.id), user.display_name)
@@ -533,9 +533,10 @@ def setup(bot: commands.Bot):
     async def remove(
         interaction: discord.Interaction, user: discord.Member, amount: int
     ):
-        if not has_role(interaction.user, ADMIN_ROLE_ID):
+        if not has_command_permission(interaction.user, "remove", "admin"):
             await interaction.response.send_message(
-                "You don't have permission to remove clubhall coins.", ephemeral=True
+                "You don't have permission to remove clubhall coins.",
+                ephemeral=True,
             )
             return
         current = get_money(str(user.id))
@@ -593,7 +594,7 @@ def setup(bot: commands.Bot):
         name="setlimit", description="Set the maximum clubhall coins limit (Owner only)"
     )
     async def setlimit(interaction: discord.Interaction, new_limit: int):
-        if not has_role(interaction.user, ADMIN_ROLE_ID):
+        if not has_command_permission(interaction.user, "setlimit", "admin"):
             await interaction.response.send_message(
                 "Only the owner can change the limit.", ephemeral=True
             )

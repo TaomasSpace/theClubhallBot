@@ -1,6 +1,7 @@
 import discord
 from discord import ui
 from typing import Optional
+from db.DBHelper import get_command_permission, get_role
 
 webhook_cache: dict[int, discord.Webhook] = {}
 
@@ -34,3 +35,17 @@ def has_role(member: discord.Member, role: int | str) -> bool:
     if isinstance(role, int):
         return any(r.id == role for r in member.roles)
     return any(r.name == role for r in member.roles)
+
+
+def has_command_permission(
+    member: discord.Member, command: str, default: int | str | None = None
+) -> bool:
+    role_id = get_command_permission(command)
+    if role_id is None and default is not None:
+        if isinstance(default, str):
+            role_id = get_role(default)
+        else:
+            role_id = default
+    if role_id is None:
+        return True
+    return has_role(member, role_id)

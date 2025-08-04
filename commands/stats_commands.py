@@ -5,7 +5,6 @@ from datetime import datetime, timedelta
 from random import choice, randint, random
 
 from config import (
-    ADMIN_ROLE_ID,
     STAT_PRICE,
     STAT_NAMES,
     QUEST_COOLDOWN_HOURS,
@@ -26,7 +25,7 @@ from db.DBHelper import (
     get_money,
     set_money,
 )
-from utils import has_role
+from utils import has_command_permission
 
 rod_shop: dict[int, tuple[int, float]] = {}
 
@@ -278,7 +277,7 @@ def setup(bot: commands.Bot, shop: dict[int, tuple[int, float]]):
     async def addrod(
         interaction: discord.Interaction, level: int, price: int, multiplier: float
     ):
-        if not has_role(interaction.user, ADMIN_ROLE_ID):
+        if not has_command_permission(interaction.user, "addrod", "admin"):
             await interaction.response.send_message("No permission.", ephemeral=True)
             return
         rod_shop[level] = (price, multiplier)

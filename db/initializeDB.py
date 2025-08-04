@@ -45,7 +45,9 @@ def init_db():
             welcome_channel_id TEXT,
             leave_channel_id TEXT,
             welcome_message TEXT,
-            leave_message TEXT
+            leave_message TEXT,
+            booster_channel_id TEXT,
+            booster_message TEXT
         )
     """
     )
@@ -56,6 +58,8 @@ def init_db():
         "leave_channel_id",
         "welcome_message",
         "leave_message",
+        "booster_channel_id",
+        "booster_message",
     ]:
         if col not in columns:
             cursor.execute(f"ALTER TABLE server ADD COLUMN {col} TEXT")
@@ -77,6 +81,22 @@ def init_db():
     CREATE TABLE IF NOT EXISTS shop_roles (
         role_id     TEXT PRIMARY KEY,
         price       INTEGER NOT NULL
+    )
+    """
+    )
+    cursor.execute(
+        """
+    CREATE TABLE IF NOT EXISTS roles (
+        name     TEXT PRIMARY KEY,
+        role_id  TEXT
+    )
+    """
+    )
+    cursor.execute(
+        """
+    CREATE TABLE IF NOT EXISTS command_permissions (
+        command TEXT PRIMARY KEY,
+        role_id TEXT
     )
     """
     )
