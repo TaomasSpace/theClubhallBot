@@ -38,6 +38,12 @@ from utils import has_role, get_channel_webhook, parse_duration
 async def run_command_tests(bot: commands.Bot) -> dict[str, str]:
     results: dict[str, str] = {}
 
+    class DummyRole:
+        def __init__(self, name: str = "role", role_id: int = 0):
+            self.id = role_id
+            self.name = name
+
+
     class DummyResponse:
         async def send_message(self, *args, **kwargs):
             pass
@@ -53,14 +59,32 @@ async def run_command_tests(bot: commands.Bot) -> dict[str, str]:
         id = 0
         name = "tester"
         display_name = "tester"
-
-        roles: list[discord.Role] = []
+        roles: list[DummyRole] = []
         guild_permissions = discord.Permissions.none()
         premium_since = None
 
+        async def add_roles(self, *roles, **kwargs):
+            self.roles.extend(roles)
+
+        async def remove_roles(self, *roles, **kwargs):
+            for role in roles:
+                if role in self.roles:
+                    self.roles.remove(role)
+
     class DummyGuild:
+        roles: list[DummyRole] = []
+
         def get_role(self, role_id: int):
+            for role in self.roles:
+                if role.id == role_id:
+                    return role
             return None
+
+        async def create_role(self, name: str, **kwargs):
+            role = DummyRole(name=name)
+            self.roles.append(role)
+            return role
+
 
     class DummyChannel:
         id = 0
