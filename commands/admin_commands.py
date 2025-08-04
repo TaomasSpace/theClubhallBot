@@ -55,13 +55,38 @@ async def run_command_tests(bot: commands.Bot) -> dict[str, str]:
         async def send(self, *args, **kwargs):
             pass
 
+    class DummyGuild:
+        def __init__(self):
+            self.roles: list[DummyRole] = []
+            self.members: list[DummyUser] = []  # type: ignore[name-defined]
+
+
+        def get_role(self, role_id: int):
+            for role in self.roles:
+                if role.id == role_id:
+                    return role
+            return None
+
+        def get_member(self, user_id: int):
+            for member in self.members:
+                if member.id == user_id:
+                    return member
+            return None
+
+        async def create_role(self, name: str, **kwargs):
+            role = DummyRole(name=name)
+            self.roles.append(role)
+            return role
+
     class DummyUser:
-        id = 0
-        name = "tester"
-        display_name = "tester"
-        roles: list[DummyRole] = []
-        guild_permissions = discord.Permissions.none()
-        premium_since = None
+        def __init__(self, user_id: int = 0, name: str = "tester", guild: "DummyGuild" | None = None):
+            self.id = user_id
+            self.name = name
+            self.display_name = name
+            self.roles: list[DummyRole] = []
+            self.guild_permissions = discord.Permissions.none()
+            self.premium_since = None
+            self.guild = guild
 
         async def add_roles(self, *roles, **kwargs):
             self.roles.extend(roles)
@@ -71,27 +96,17 @@ async def run_command_tests(bot: commands.Bot) -> dict[str, str]:
                 if role in self.roles:
                     self.roles.remove(role)
 
-    class DummyGuild:
-        roles: list[DummyRole] = []
-
-        def get_role(self, role_id: int):
-            for role in self.roles:
-                if role.id == role_id:
-                    return role
-            return None
-
-        async def create_role(self, name: str, **kwargs):
-            role = DummyRole(name=name)
-            self.roles.append(role)
-            return role
-
-
     class DummyChannel:
         id = 0
 
+    dummy_guild = DummyGuild()
+    dummy_user = DummyUser(guild=dummy_guild)
+    dummy_target = DummyUser(user_id=1, name="target", guild=dummy_guild)
+    dummy_guild.members.extend([dummy_user, dummy_target])
+
     class DummyInteraction:
-        user = DummyUser()
-        guild = DummyGuild()
+        user = dummy_user
+        guild = dummy_guild
         channel = DummyChannel()
 
         response = DummyResponse()
@@ -107,10 +122,17 @@ async def run_command_tests(bot: commands.Bot) -> dict[str, str]:
             skip = False
             for p in params:
                 if p.default is inspect.Parameter.empty:
-                    results[cmd.name] = "Skipped (missing parameters)"
-                    skip = True
-                    break
-                args.append(p.default)
+                    if (
+                        p.annotation in (discord.Member, discord.User)
+                        or p.name in {"user", "member"}
+                    ):
+                        args.append(dummy_target)
+                    else:
+                        results[cmd.name] = "Skipped (missing parameters)"
+                        skip = True
+                        break
+                else:
+                    args.append(p.default)
             if skip:
                 continue
 
