@@ -27,16 +27,21 @@ active_giveaway_tasks: dict[int, asyncio.Task] = {}
 filtered_violations: dict[int, list[float]] = {}
 trigger_responses: dict[str, str] = {}
 
-async def end_giveaway(bot: commands.Bot, channel_id: int, message_id: int, prize: str, winners: int):
+
+async def end_giveaway(
+    bot: commands.Bot, channel_id: int, message_id: int, prize: str, winners: int
+):
     channel = bot.get_channel(channel_id)
     if channel is None:
         from db.DBHelper import finish_giveaway
+
         finish_giveaway(str(message_id))
         return
     try:
         refreshed = await channel.fetch_message(message_id)
     except Exception:
         from db.DBHelper import finish_giveaway
+
         finish_giveaway(str(message_id))
         return
 
@@ -44,6 +49,7 @@ async def end_giveaway(bot: commands.Bot, channel_id: int, message_id: int, priz
     if reaction is None:
         await refreshed.reply("No one has participated.")
         from db.DBHelper import finish_giveaway
+
         finish_giveaway(str(message_id))
         active_giveaway_tasks.pop(message_id, None)
         return
@@ -52,6 +58,7 @@ async def end_giveaway(bot: commands.Bot, channel_id: int, message_id: int, priz
     if not users:
         await refreshed.reply("No one has participated.")
         from db.DBHelper import finish_giveaway
+
         finish_giveaway(str(message_id))
         active_giveaway_tasks.pop(message_id, None)
         return
@@ -61,11 +68,14 @@ async def end_giveaway(bot: commands.Bot, channel_id: int, message_id: int, priz
     selected_winners = ", ".join(u.mention for u in selected)
     await refreshed.reply(f"🎊 Congratulations! {selected_winners} won **{prize}** 🎉")
     from db.DBHelper import finish_giveaway
+
     finish_giveaway(str(message_id))
     active_giveaway_tasks.pop(message_id, None)
 
+
 async def load_giveaways(bot: commands.Bot):
     from db.DBHelper import get_active_giveaways
+
     for mid, cid, end, prize, winners in get_active_giveaways():
         end_dt = datetime.fromisoformat(end)
         delay = (end_dt - datetime.now(timezone.utc)).total_seconds()
@@ -77,6 +87,7 @@ async def load_giveaways(bot: commands.Bot):
                 await end_giveaway(bot, c, m, p, w)
             except asyncio.CancelledError:
                 pass
+
         task = asyncio.create_task(runner())
         active_giveaway_tasks[int(mid)] = task
 
@@ -91,7 +102,9 @@ async def on_ready(bot: commands.Bot):
     print(f"Bot is online as {bot.user}")
 
 
-async def on_member_update(bot: commands.Bot, before: discord.Member, after: discord.Member):
+async def on_member_update(
+    bot: commands.Bot, before: discord.Member, after: discord.Member
+):
     if before.premium_since and not after.premium_since:
         role_id = get_custom_role(str(after.id))
         if role_id:
@@ -110,7 +123,10 @@ async def on_member_update(bot: commands.Bot, before: discord.Member, after: dis
                 f"Check <https://discord.com/channels/1351475070312255498/1351528109702119496/1371189412125216869> to see what new features you unlock!"
             )
 
-async def on_message(bot: commands.Bot, message: discord.Message, lowercase_locked: set[int]):
+
+async def on_message(
+    bot: commands.Bot, message: discord.Message, lowercase_locked: set[int]
+):
     if message.author.bot or message.webhook_id:
         return
     if message.author.id in lowercase_locked:
@@ -159,6 +175,7 @@ async def on_message(bot: commands.Bot, message: discord.Message, lowercase_lock
     update_date(message.author.id, message.author.name)
     await bot.process_commands(message)
 
+
 async def on_member_join(bot: commands.Bot, member: discord.Member):
     role = discord.utils.get(member.guild.roles, name="Member")
     if role:
@@ -183,10 +200,11 @@ async def on_member_join(bot: commands.Bot, member: discord.Member):
                 message = (
                     f"Welcome new member {member.mention}! <3\n"
                     f"Thanks for joining **{args['server']}**.\n"
-                    "Don't forget to read the #rules and #information!\n"
+                    "Don't forget to read the #rules\n"
                     f"We are now **{args['member_count']}** members."
                 )
             await channel.send(message)
+
 
 async def on_member_remove(bot: commands.Bot, member: discord.Member):
     cid = get_leave_channel()
@@ -213,7 +231,9 @@ async def on_member_remove(bot: commands.Bot, member: discord.Member):
             await channel.send(message)
 
 
-async def on_raw_reaction_add(bot: commands.Bot, payload: discord.RawReactionActionEvent):
+async def on_raw_reaction_add(
+    bot: commands.Bot, payload: discord.RawReactionActionEvent
+):
     if payload.member is None or payload.member.bot:
         return
     row = _fetchone(
@@ -227,7 +247,9 @@ async def on_raw_reaction_add(bot: commands.Bot, payload: discord.RawReactionAct
         await payload.member.add_roles(role, reason="Reaction role added")
 
 
-async def on_raw_reaction_remove(bot: commands.Bot, payload: discord.RawReactionActionEvent):
+async def on_raw_reaction_remove(
+    bot: commands.Bot, payload: discord.RawReactionActionEvent
+):
     guild = bot.get_guild(payload.guild_id)
     member = guild.get_member(payload.user_id)
     if member is None or member.bot:
@@ -253,7 +275,9 @@ async def on_app_error(bot: commands.Bot, inter: discord.Interaction, error: Exc
             description=f"```py\n{error}\n```",
         )
         embed.add_field(name="Command", value=inter.command.qualified_name)
-        embed.add_field(name="User", value=f"{inter.user} (`{inter.user.id}`)", inline=False)
+        embed.add_field(
+            name="User", value=f"{inter.user} (`{inter.user.id}`)", inline=False
+        )
         embed.add_field(name="Channel", value=f"{inter.channel.mention}", inline=False)
         await log_ch.send(embed=embed)
     if isinstance(error, CommandOnCooldown):
@@ -265,7 +289,9 @@ async def on_app_error(bot: commands.Bot, inter: discord.Interaction, error: Exc
     if inter.response.is_done():
         await inter.followup.send("Oops, something went wrong 😵", ephemeral=True)
     else:
-        await inter.response.send_message("Oops, something went wrong 😵", ephemeral=True)
+        await inter.response.send_message(
+            "Oops, something went wrong 😵", ephemeral=True
+        )
 
 
 def format_options(data: dict, interaction: discord.Interaction) -> str:
@@ -274,7 +300,10 @@ def format_options(data: dict, interaction: discord.Interaction) -> str:
     users_data = resolved.get("users", {}) if resolved else {}
     for opt in data.get("options", []):
         if opt.get("type") == 1:
-            inner = ", ".join(_format_option(o, users_data) for o in opt.get("options", [])) or "–"
+            inner = (
+                ", ".join(_format_option(o, users_data) for o in opt.get("options", []))
+                or "–"
+            )
             result.append(f"{opt['name']}({inner})")
         else:
             result.append(_format_option(opt, users_data))
@@ -293,7 +322,10 @@ def _format_option(opt: dict, users_data: dict) -> str:
             return f"{name}=(unknown user) ({value})"
     return f"{name}={value}"
 
-async def on_app_command_completion(bot: commands.Bot, inter: discord.Interaction, command: app_commands.Command):
+
+async def on_app_command_completion(
+    bot: commands.Bot, inter: discord.Interaction, command: app_commands.Command
+):
     log_ch = bot.get_channel(LOG_CHANNEL_ID)
     if not log_ch:
         return
@@ -304,7 +336,9 @@ async def on_app_command_completion(bot: commands.Bot, inter: discord.Interactio
         timestamp=datetime.utcnow(),
     )
     embed.add_field(name="Command", value=f"/{command.qualified_name}")
-    embed.add_field(name="User", value=f"{inter.user} (`{inter.user.id}`)", inline=False)
+    embed.add_field(
+        name="User", value=f"{inter.user} (`{inter.user.id}`)", inline=False
+    )
     embed.add_field(name="Channel", value=inter.channel.mention, inline=False)
     embed.add_field(name="Options", value=opts, inline=False)
     await log_ch.send(embed=embed)
@@ -326,7 +360,9 @@ def setup(bot: commands.Bot, lowercase_locked: set[int]):
     async def member_remove_wrapper(member: discord.Member):
         await on_member_remove(bot, member)
 
-    async def command_completion_wrapper(inter: discord.Interaction, command: app_commands.Command):
+    async def command_completion_wrapper(
+        inter: discord.Interaction, command: app_commands.Command
+    ):
         await on_app_command_completion(bot, inter, command)
 
     async def reaction_add_wrapper(payload: discord.RawReactionActionEvent):
@@ -347,5 +383,3 @@ def setup(bot: commands.Bot, lowercase_locked: set[int]):
     bot.add_listener(reaction_remove_wrapper, name="on_raw_reaction_remove")
     bot.tree.error(app_error_wrapper)
     bot.add_listener(command_completion_wrapper, name="on_app_command_completion")
-
-
