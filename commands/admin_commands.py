@@ -1,4 +1,7 @@
 import asyncio
+import inspect
+import io
+
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -31,10 +34,129 @@ from db.DBHelper import (
 )
 from utils import has_role, get_channel_webhook, parse_duration
 
+async def run_command_tests(bot: commands.Bot) -> dict[str, str]:
+    results: dict[str, str] = {}
+
+    class DummyRole:
+        def __init__(self, name: str = "role", role_id: int = 0):
+            self.id = role_id
+            self.name = name
+
+    class DummyResponse:
+        async def send_message(self, *args, **kwargs):
+            pass
+
+        async def defer(self, *args, **kwargs):
+            pass
+
+    class DummyFollowup:
+        async def send(self, *args, **kwargs):
+            pass
+
+    class DummyGuild:
+        def __init__(self):
+            self.roles: list[DummyRole] = []
+            self.members: list[DummyUser] = []  # type: ignore[name-defined]
+
+        def get_role(self, role_id: int):
+            for role in self.roles:
+                if role.id == role_id:
+                    return role
+            return None
+
+        def get_member(self, user_id: int):
+            for member in self.members:
+                if member.id == user_id:
+                    return member
+            return None
+
+        async def create_role(self, name: str, **kwargs):
+            role = DummyRole(name=name)
+            self.roles.append(role)
+            return role
+
+    class DummyUser:
+        def __init__(self, user_id: int = 0, name: str = "tester", guild: "DummyGuild" | None = None):
+            self.id = user_id
+            self.name = name
+            self.display_name = name
+            self.roles: list[DummyRole] = []
+            self.guild_permissions = discord.Permissions.none()
+            self.premium_since = None
+            self.guild = guild
+
+        async def add_roles(self, *roles, **kwargs):
+            self.roles.extend(roles)
+
+        async def remove_roles(self, *roles, **kwargs):
+            for role in roles:
+                if role in self.roles:
+                    self.roles.remove(role)
+
+    class DummyChannel:
+        id = 0
+
+    dummy_guild = DummyGuild()
+    dummy_user = DummyUser(guild=dummy_guild)
+    dummy_target = DummyUser(user_id=1, name="target", guild=dummy_guild)
+    dummy_guild.members.extend([dummy_user, dummy_target])
+
+    class DummyInteraction:
+        user = dummy_user
+        guild = dummy_guild
+        channel = DummyChannel()
+        response = DummyResponse()
+        followup = DummyFollowup()
+
+    dummy = DummyInteraction()
+
+    for cmd in bot.tree.get_commands():
+        try:
+            sig = inspect.signature(cmd.callback)
+            params = list(sig.parameters.values())[1:]
+            args = []
+            skip = False
+            for p in params:
+                if p.default is inspect.Parameter.empty:
+                    if (
+                        p.annotation in (discord.Member, discord.User)
+                        or p.name in {"user", "member"}
+                    ):
+                        args.append(dummy_target)
+                    else:
+                        results[cmd.name] = "Skipped (missing parameters)"
+                        skip = True
+                        break
+                else:
+                    args.append(p.default)
+            if skip:
+                continue
+            await cmd.callback(dummy, *args)
+            results[cmd.name] = "OK"
+        except Exception as e:
+            results[cmd.name] = f"Error: {e}"
+    return results
+
+
 active_prison_timers: dict[int, asyncio.Task] = {}
 
 
 def setup(bot: commands.Bot):
+    @bot.tree.command(name="test", description="Test all commands")
+    async def test_commands(inter: discord.Interaction):
+        if not has_role(inter.user, ADMIN_ROLE_ID):
+            await inter.response.send_message("No permission.", ephemeral=True)
+            return
+        await inter.response.defer(thinking=True, ephemeral=True)
+        results = await run_command_tests(bot)
+        report_lines = [f"{name}: {status}" for name, status in results.items()]
+        report = "\n".join(report_lines)
+        if len(report) > 1900:
+            file = discord.File(io.StringIO(report), filename="command_report.txt")
+            await inter.followup.send("**Testergebnis**:", file=file, ephemeral=True)
+        else:
+            await inter.followup.send(f"**Testergebnis**:\n{report}", ephemeral=True)
+
     @bot.tree.command(
         name="setstatpoints", description="Set a user's stat points (Admin only)"
     )
