@@ -5,12 +5,15 @@ from db.DBHelper import get_command_permission, get_role
 
 webhook_cache: dict[int, discord.Webhook] = {}
 
+
 async def get_channel_webhook(channel: discord.TextChannel) -> discord.Webhook:
     wh = webhook_cache.get(channel.id)
     if wh:
         return wh
     webhooks = await channel.webhooks()
-    wh = discord.utils.get(webhooks, name="LowercaseRelay") or await channel.create_webhook(name="LowercaseRelay")
+    wh = discord.utils.get(
+        webhooks, name="LowercaseRelay"
+    ) or await channel.create_webhook(name="LowercaseRelay")
     webhook_cache[channel.id] = wh
     return wh
 
@@ -38,14 +41,11 @@ def has_role(member: discord.Member, role: int | str) -> bool:
 
 
 def has_command_permission(
-    member: discord.Member, command: str, default: int | str | None = None
+    user: discord.Member, command: str, fallback_role_key: str
 ) -> bool:
     role_id = get_command_permission(command)
-    if role_id is None and default is not None:
-        if isinstance(default, str):
-            role_id = get_role(default)
-        else:
-            role_id = default
     if role_id is None:
-        return True
-    return has_role(member, role_id)
+        role_id = get_role(fallback_role_key)
+    if role_id is None:
+        return False
+    return any(role.id == role_id for role in user.roles)
