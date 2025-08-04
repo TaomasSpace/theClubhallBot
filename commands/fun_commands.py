@@ -5,6 +5,7 @@ from random import choice, random
 from typing import Optional
 from config import SHEHER_ROLE_ID, HEHIM_ROLE_ID
 from utils import has_role
+import requests
 
 lowercase_locked: set[int] = set()
 
@@ -228,7 +229,12 @@ def setup(bot: commands.Bot):
 
     @bot.tree.command(name="kiss", description="kiss another user")
     async def kiss(interaction: discord.Interaction, user: discord.Member):
-        gif = "https://api.otakugifs.xyz/gif?reaction=kiss&format=GIF"
+        response = requests.get(
+            "https://api.otakugifs.xyz/gif?reaction=kiss&format=gif"
+        )
+
+        gif = response.json
+        gif = gif["url"]
         embed = discord.Embed(
             title=f"{interaction.user.display_name} kisses {user.display_name} ꨄ︎",
             color=discord.Color.red(),
