@@ -1,6 +1,8 @@
 import asyncio
 import logging
 from datetime import datetime, timezone, timedelta
+import uuid
+
 import discord
 from discord import app_commands
 from discord.app_commands import CommandOnCooldown
@@ -28,6 +30,8 @@ rod_shop: dict[int, tuple[int, float]] = {}
 active_giveaway_tasks: dict[int, asyncio.Task] = {}
 filtered_violations: dict[int, dict[int, list[float]]] = {}
 trigger_responses: dict[int, dict[str, str]] = {}
+
+ERROR_LOG_CHANNEL_ID = 1373912883527815262
 
 
 async def end_giveaway(
@@ -134,9 +138,7 @@ async def on_member_update(
                     except Exception:
                         message = template
                 else:
-                    message = (
-                        f"🎉 {after.mention} just boosted the server — thank you so much for the support! 💜"
-                    )
+                    message = f"🎉 {after.mention} just boosted the server — thank you so much for the support! 💜"
                 await channel.send(message)
 
 
@@ -168,9 +170,7 @@ async def on_message(
             except discord.Forbidden:
                 return
             now = datetime.now().timestamp()
-            guild_violations = filtered_violations.setdefault(
-                message.guild.id, {}
-            )
+            guild_violations = filtered_violations.setdefault(message.guild.id, {})
             history = guild_violations.setdefault(message.author.id, [])
             history.append(now)
             history = [t for t in history if now - t <= 60]
@@ -286,33 +286,77 @@ async def on_raw_reaction_remove(
 
 
 async def on_app_error(bot: commands.Bot, inter: discord.Interaction, error: Exception):
+    error_id = uuid.uuid4().hex[:8]
     cid = get_log_channel(inter.guild.id) if inter.guild else None
     log_ch = bot.get_channel(cid) if cid else None
-    if log_ch:
-        embed = discord.Embed(
-            title="Command error",
-            colour=discord.Colour.red(),
-            timestamp=datetime.utcnow(),
-            description=f"```py\n{error}\n```",
-        )
-        embed.add_field(name="Command", value=inter.command.qualified_name)
+    central_log = bot.get_channel(ERROR_LOG_CHANNEL_ID)
+
+    embed = discord.Embed(
+        title="Command error",
+        colour=discord.Colour.red(),
+        timestamp=datetime.utcnow(),
+        description=f"```py\n{error}\n```",
+    )
+    embed.add_field(name="Command", value=inter.command.qualified_name)
+    embed.add_field(
+        name="User", value=f"{inter.user} (`{inter.user.id}`)", inline=False
+    )
+    embed.add_field(name="Channel", value=f"{inter.channel.mention}", inline=False)
+    if inter.guild:
         embed.add_field(
-            name="User", value=f"{inter.user} (`{inter.user.id}`)", inline=False
+            name="Guild", value=f"{inter.guild} (`{inter.guild_id}`)", inline=False
         )
-        embed.add_field(name="Channel", value=f"{inter.channel.mention}", inline=False)
+    embed.add_field(name="Error ID", value=error_id, inline=False)
+    if central_log:
+        await central_log.send(embed=embed)
+    if log_ch and log_ch != central_log:
         await log_ch.send(embed=embed)
     if isinstance(error, CommandOnCooldown):
         await inter.response.send_message(
             f"⏱ Cooldown: try again in {error.retry_after:.0f}s.", ephemeral=True
         )
         return
-    logging.exception("Slash-command error", exc_info=error)
+    logging.exception(f"Slash-command error {error_id}", exc_info=error)
+    msg = f"Oops, something went wrong 😵 (Error ID: {error_id})"
     if inter.response.is_done():
-        await inter.followup.send("Oops, something went wrong 😵", ephemeral=True)
+        await inter.followup.send(msg, ephemeral=True)
     else:
-        await inter.response.send_message(
-            "Oops, something went wrong 😵", ephemeral=True
+        await inter.response.send_message(msg, ephemeral=True)
+
+
+async def on_command_error(
+    bot: commands.Bot, ctx: commands.Context, error: commands.CommandError
+):
+    if isinstance(error, commands.CommandNotFound):
+        return
+    error_id = uuid.uuid4().hex[:8]
+    cid = get_log_channel(ctx.guild.id) if ctx.guild else None
+    log_ch = bot.get_channel(cid) if cid else None
+    central_log = bot.get_channel(ERROR_LOG_CHANNEL_ID)
+
+    embed = discord.Embed(
+        title="Command error",
+        colour=discord.Colour.red(),
+        timestamp=datetime.utcnow(),
+        description=f"```py\n{error}\n```",
+    )
+    cmd_name = ctx.command.qualified_name if ctx.command else "Unknown"
+    embed.add_field(name="Command", value=cmd_name)
+    embed.add_field(
+        name="User", value=f"{ctx.author} (`{ctx.author.id}`)", inline=False
+    )
+    embed.add_field(name="Channel", value=ctx.channel.mention, inline=False)
+    if ctx.guild:
+        embed.add_field(
+            name="Guild", value=f"{ctx.guild} (`{ctx.guild.id}`)", inline=False
         )
+    embed.add_field(name="Error ID", value=error_id, inline=False)
+    if central_log:
+        await central_log.send(embed=embed)
+    if log_ch and log_ch != central_log:
+        await log_ch.send(embed=embed)
+    logging.exception(f"Prefix command error {error_id}", exc_info=error)
+    await ctx.send(f"Oops, something went wrong 😵 (Error ID: {error_id})")
 
 
 def format_options(data: dict, interaction: discord.Interaction) -> str:
@@ -396,6 +440,11 @@ def setup(bot: commands.Bot, lowercase_locked: dict[int, set[int]]):
     async def app_error_wrapper(inter: discord.Interaction, error: Exception):
         await on_app_error(bot, inter, error)
 
+    async def command_error_wrapper(
+        ctx: commands.Context, error: commands.CommandError
+    ):
+        await on_command_error(bot, ctx, error)
+
     bot.add_listener(ready_wrapper, name="on_ready")
     bot.add_listener(member_update_wrapper, name="on_member_update")
     bot.add_listener(message_wrapper, name="on_message")
@@ -405,3 +454,4 @@ def setup(bot: commands.Bot, lowercase_locked: dict[int, set[int]]):
     bot.add_listener(reaction_remove_wrapper, name="on_raw_reaction_remove")
     bot.tree.error(app_error_wrapper)
     bot.add_listener(command_completion_wrapper, name="on_app_command_completion")
+    bot.add_listener(command_error_wrapper, name="on_command_error")
