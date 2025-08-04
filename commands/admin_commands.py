@@ -89,6 +89,7 @@ async def run_command_tests(bot: commands.Bot) -> dict[str, str]:
             self.reactions = []
 
         id = 10
+        channel = 10
 
         async def add_reaction(self, emoji):
             self.reactions.append(emoji)
