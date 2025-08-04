@@ -32,6 +32,10 @@ from db.DBHelper import (
     set_custom_role,
     delete_custom_role,
     create_giveaway,
+    set_welcome_channel,
+    set_leave_channel,
+    set_welcome_message,
+    set_leave_message,
 )
 from utils import has_role, get_channel_webhook, parse_duration
 
@@ -773,6 +777,50 @@ def setup(bot: commands.Bot):
             return
         await interaction.response.send_message(", ".join(sorted(data.keys())))
 
+    @bot.tree.command(name="setwelcomechannel", description="Set the welcome channel")
+    @app_commands.describe(channel="Channel for welcome messages")
+    @app_commands.checks.has_permissions(manage_guild=True)
+    async def setwelcomechannel(
+        interaction: discord.Interaction, channel: discord.TextChannel
+    ):
+        set_welcome_channel(channel.id)
+        await interaction.response.send_message(
+            f"\u2705 Welcome channel set to {channel.mention}.", ephemeral=True
+        )
+
+    @bot.tree.command(name="setleavechannel", description="Set the leave channel")
+    @app_commands.describe(channel="Channel for leave messages")
+    @app_commands.checks.has_permissions(manage_guild=True)
+    async def setleavechannel(
+        interaction: discord.Interaction, channel: discord.TextChannel
+    ):
+        set_leave_channel(channel.id)
+        await interaction.response.send_message(
+            f"\u2705 Leave channel set to {channel.mention}.", ephemeral=True
+        )
+
+    @bot.tree.command(name="setwelcomemsg", description="Set the welcome message")
+    @app_commands.describe(
+        message="Message; placeholders: {member}, {member_mention}, {server}, {member_count}"
+    )
+    @app_commands.checks.has_permissions(manage_guild=True)
+    async def setwelcomemsg(interaction: discord.Interaction, message: str):
+        set_welcome_message(message)
+        await interaction.response.send_message(
+            "\u2705 Welcome message updated.", ephemeral=True
+        )
+
+    @bot.tree.command(name="setleavemsg", description="Set the leave message")
+    @app_commands.describe(
+        message="Message; placeholders: {member}, {member_mention}, {server}, {member_count}"
+    )
+    @app_commands.checks.has_permissions(manage_guild=True)
+    async def setleavemsg(interaction: discord.Interaction, message: str):
+        set_leave_message(message)
+        await interaction.response.send_message(
+            "\u2705 Leave message updated.", ephemeral=True
+        )
+
     @bot.tree.command(
         name="createrole",
         description="Create a role and assign to users (for goodyb & nannapat2410 only)",
@@ -851,6 +899,10 @@ def setup(bot: commands.Bot):
         addtrigger,
         removetrigger,
         triggers,
+        setwelcomechannel,
+        setleavechannel,
+        setwelcomemsg,
+        setleavemsg,
         createrole,
         manageViltrumite,
         manageYeager,
