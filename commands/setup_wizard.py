@@ -15,8 +15,7 @@ from db.DBHelper import (
     set_booster_message,
     set_log_channel,
     set_anti_nuke_log_channel,
-    set_role,
-    set_command_permission,
+
     add_filtered_word,
     add_trigger_response,
     set_anti_nuke_setting,
@@ -260,57 +259,6 @@ class AntiNukeModal(discord.ui.Modal):
         await self.wizard.advance(interaction)
 
 
-class RolesModal(discord.ui.Modal, title="Server roles"):
-    mappings = discord.ui.TextInput(
-        label="role_name:role_id",
-        style=discord.TextStyle.long,
-        required=False,
-        placeholder="admin:@Admin\nmod:123456789",
-    )
-
-    def __init__(self, wizard: "SetupWizard"):
-        super().__init__()
-        self.wizard = wizard
-
-    async def on_submit(self, interaction: discord.Interaction):
-        guild = interaction.guild
-        for line in self.mappings.value.splitlines():
-            if ":" not in line:
-                continue
-            name, rid = line.split(":", 1)
-            role = _parse_role(guild, rid.strip())
-            if role:
-                set_role(guild.id, name.strip(), role.id)
-        await interaction.response.send_message("Roles saved.", ephemeral=True)
-        await self.wizard.advance(interaction)
-
-
-class CommandPermissionsModal(discord.ui.Modal, title="Command permissions"):
-    mappings = discord.ui.TextInput(
-        label="command:role_id",
-        style=discord.TextStyle.long,
-        required=False,
-        placeholder="ban:@Staff\nkick:123456",
-    )
-
-    def __init__(self, wizard: "SetupWizard"):
-        super().__init__()
-        self.wizard = wizard
-
-    async def on_submit(self, interaction: discord.Interaction):
-        guild = interaction.guild
-        for line in self.mappings.value.splitlines():
-            if ":" not in line:
-                continue
-            cmd, rid = line.split(":", 1)
-            role = _parse_role(guild, rid.strip())
-            if role:
-                set_command_permission(guild.id, cmd.strip(), role.id)
-        await interaction.response.send_message(
-            "Command permissions updated.", ephemeral=True
-        )
-        await self.wizard.advance(interaction)
-
 
 class FilterWordsModal(discord.ui.Modal, title="Filtered words"):
     words = discord.ui.TextInput(
@@ -366,7 +314,9 @@ class WizardStep:
     title: str
     description: str
     importance: str
-    modal_factory: Callable[["SetupWizard"], discord.ui.Modal]
+    modal_factory: Optional[Callable[["SetupWizard"], discord.ui.Modal]] = None
+    instruction: Optional[str] = None
+
 
 
 class StepView(discord.ui.View):
@@ -377,8 +327,15 @@ class StepView(discord.ui.View):
 
     @discord.ui.button(label="Configure", style=discord.ButtonStyle.green)
     async def configure(self, interaction: discord.Interaction, button: discord.ui.Button):
-        modal = self.step.modal_factory(self.wizard)
-        await interaction.response.send_modal(modal)
+        if self.step.modal_factory:
+            modal = self.step.modal_factory(self.wizard)
+            await interaction.response.send_modal(modal)
+        else:
+            await interaction.response.send_message(
+                self.step.instruction or "No action required.", ephemeral=True
+            )
+            await self.wizard.advance(interaction)
+
 
     @discord.ui.button(label="Skip", style=discord.ButtonStyle.gray)
     async def skip(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -453,13 +410,21 @@ class SetupWizard:
                     "Server roles",
                     "Map custom names to role IDs for use in commands.",
                     "Medium",
-                    lambda w: RolesModal(w),
+                    instruction=(
+                        "Use `/setrole <name> <@role>` after the wizard to register"
+                        " role shortcuts."
+                    ),
+
                 ),
                 WizardStep(
                     "Command permissions",
                     "Restrict commands to specific roles.",
                     "Medium",
-                    lambda w: CommandPermissionsModal(w),
+                    instruction=(
+                        "Use `/setcommandrole <command> <@role>` after the wizard"
+                        " to limit command usage."
+                    ),
+
                 ),
                 WizardStep(
                     "Filtered words",
