@@ -90,9 +90,8 @@ async def run_command_tests(bot: commands.Bot) -> dict[str, str]:
                     pass
 
             class DummyGuild:
-                def __init__(self, owner_id: int = 123456789):
+                def __init__(self):
                     self.id = 0
-                    self.owner_id = owner_id
                     self.roles: list[DummyRole] = []
                     self.members: list[DummyUser] = []  # type: ignore[name-defined]
 
