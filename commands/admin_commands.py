@@ -2,6 +2,7 @@ import asyncio
 import inspect
 import io
 
+
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -52,6 +53,7 @@ async def run_command_tests(bot: commands.Bot) -> dict[str, str]:
         id = 0
         name = "tester"
         display_name = "tester"
+
         roles: list[discord.Role] = []
         guild_permissions = discord.Permissions.none()
         premium_since = None
@@ -67,6 +69,7 @@ async def run_command_tests(bot: commands.Bot) -> dict[str, str]:
         user = DummyUser()
         guild = DummyGuild()
         channel = DummyChannel()
+
         response = DummyResponse()
         followup = DummyFollowup()
 
@@ -86,6 +89,7 @@ async def run_command_tests(bot: commands.Bot) -> dict[str, str]:
                 args.append(p.default)
             if skip:
                 continue
+
             await cmd.callback(dummy, *args)
             results[cmd.name] = "OK"
         except Exception as e:
