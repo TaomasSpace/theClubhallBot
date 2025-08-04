@@ -184,6 +184,82 @@ def setup(bot: commands.Bot):
         embed.set_image(url=gif)
         await interaction.response.send_message(embed=embed)
 
+    @bot.tree.command(name="blush", description="blush (bcs of another user)")
+    async def blush(interaction: discord.Interaction, user: discord.Member = None):
+        response = requests.get(
+            "https://api.otakugifs.xyz/gif?reaction=blush&format=gif"
+        )
+
+        gif = response.json()
+        gif = gif["url"]
+        if user == None:
+            embed = discord.Embed(
+                title=f"{interaction.user.display_name} blushes",
+                color=discord.Color.red(),
+            )
+            embed.set_image(url=gif)
+            await interaction.response.send_message(embed=embed)
+        else:
+            embed = discord.Embed(
+                title=f"{interaction.user.display_name} blushes because of {user.display_name} ꨄ",
+                color=discord.Color.red(),
+            )
+            embed.set_image(url=gif)
+            await interaction.response.send_message(embed=embed)
+
+    @bot.tree.command(name="woah", description="woah")
+    async def woah(interaction: discord.Interaction, user: discord.Member = None):
+        response = requests.get(
+            "https://api.otakugifs.xyz/gif?reaction=woah&format=gif"
+        )
+
+        gif = response.json()
+        gif = gif["url"]
+        if user == None:
+            embed = discord.Embed(
+                title=f"{interaction.user.display_name} says woah!",
+                color=discord.Color.red(),
+            )
+            embed.set_image(url=gif)
+            await interaction.response.send_message(embed=embed)
+        else:
+            embed = discord.Embed(
+                title=f"{interaction.user.display_name} says woah to {user.display_name}!",
+                color=discord.Color.red(),
+            )
+            embed.set_image(url=gif)
+            await interaction.response.send_message(embed=embed)
+
+    @bot.tree.command(name="tickle", description="tickle another user")
+    async def tickle(interaction: discord.Interaction, user: discord.Member):
+        response = requests.get(
+            "https://api.otakugifs.xyz/gif?reaction=tickle&format=gif"
+        )
+
+        gif = response.json()
+        gif = gif["url"]
+        embed = discord.Embed(
+            title=f"{interaction.user.display_name} tickles {user.display_name} ",
+            color=discord.Color.red(),
+        )
+        embed.set_image(url=gif)
+        await interaction.response.send_message(embed=embed)
+
+    @bot.tree.command(name="slap", description="slap another user")
+    async def slap(interaction: discord.Interaction, user: discord.Member):
+        response = requests.get(
+            "https://api.otakugifs.xyz/gif?reaction=slap&format=gif"
+        )
+
+        gif = response.json()
+        gif = gif["url"]
+        embed = discord.Embed(
+            title=f"{interaction.user.display_name} slaps {user.display_name} really hard!",
+            color=discord.Color.red(),
+        )
+        embed.set_image(url=gif)
+        await interaction.response.send_message(embed=embed)
+
     @bot.tree.command(name="lick", description="Lick another member")
     async def lick(interaction: discord.Interaction, user: discord.Member):
         response = requests.get(
@@ -242,4 +318,7 @@ def setup(bot: commands.Bot):
         good,
         kiss,
         lick,
+        blush,
+        woah,
+        tickle,
     )
