@@ -39,7 +39,6 @@ def rebalance():
             ),
         )
 
-    cursor.execute("UPDATE server SET max_coins = max_coins / ?", (SCALE_COINS,))
     conn.commit()
     conn.close()
 

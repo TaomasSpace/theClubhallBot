@@ -125,7 +125,6 @@ from db.DBHelper import (
     safe_add_coins,
     get_money,
     set_money,
-    set_max_coins,
     get_top_users,
     get_last_weekly,
     set_last_weekly,
@@ -589,18 +588,6 @@ def setup(bot: commands.Bot):
             f"💸 You donated **{amount_int}** clubhall coins on {user.display_name}!",
             ephemeral=False,
         )
-
-    @bot.tree.command(
-        name="setlimit", description="Set the maximum clubhall coins limit (Owner only)"
-    )
-    async def setlimit(interaction: discord.Interaction, new_limit: int):
-        if not has_command_permission(interaction.user, "setlimit", "admin"):
-            await interaction.response.send_message(
-                "Only the owner can change the limit.", ephemeral=True
-            )
-            return
-        set_max_coins(new_limit)
-        await interaction.response.send_message(f"New coin limit set to {new_limit}.")
 
     @bot.tree.command(
         name="request", description="Request clubhall coins from another user"
@@ -1129,7 +1116,6 @@ def setup(bot: commands.Bot):
         give,
         remove,
         donate,
-        setlimit,
         request,
         topcoins,
         weekly,

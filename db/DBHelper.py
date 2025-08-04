@@ -58,18 +58,9 @@ def set_money(user_id: str, amount: int):
 def safe_add_coins(user_id: str, amount: int) -> int:
     if amount <= 0:
         return 0
-
-    current_total = get_total_money()
-    max_total = get_max_coins()
-    free_space = max_total - current_total
-
-    if free_space <= 0:
-        return 0
-
-    addable = min(amount, free_space)
     old_balance = get_money(user_id)
-    set_money(user_id, old_balance + addable)
-    return addable
+    set_money(user_id, old_balance + amount)
+    return amount
 
 
 def add_rod_to_shop(level: int, price: int, multiplier: float):
@@ -205,14 +196,6 @@ def set_last_weekly(user_id: str, ts: datetime):
 
 
 # ---------- server helpers ----------
-
-def get_max_coins():
-    return _fetchone("SELECT max_coins FROM server WHERE id = 1")[0]
-
-
-def set_max_coins(limit: int):
-    _execute("UPDATE server SET max_coins = ? WHERE id = 1", (limit,))
-
 
 def set_welcome_channel(cid: int) -> None:
     _execute("UPDATE server SET welcome_channel_id = ? WHERE id = 1", (str(cid),))
