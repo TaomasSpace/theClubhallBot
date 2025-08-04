@@ -7,7 +7,7 @@ from discord.app_commands import CommandOnCooldown
 from discord.ext import commands
 import random
 
-from config import WELCOME_CHANNEL_ID, LOG_CHANNEL_ID
+from config import LOG_CHANNEL_ID
 from db.initializeDB import init_db
 from db.DBHelper import (
     get_all_rods_from_shop,
@@ -15,6 +15,10 @@ from db.DBHelper import (
     get_custom_role,
     _fetchone,
     get_trigger_responses,
+    get_welcome_channel,
+    get_leave_channel,
+    get_welcome_message,
+    get_leave_message,
 )
 from utils import get_channel_webhook, has_role
 
@@ -159,24 +163,54 @@ async def on_member_join(bot: commands.Bot, member: discord.Member):
     role = discord.utils.get(member.guild.roles, name="Member")
     if role:
         await member.add_roles(role)
-    channel = bot.get_channel(WELCOME_CHANNEL_ID)
-    if channel:
-        server_name = member.guild.name
-        member_count = member.guild.member_count
-        message = (
-            f"Welcome new member {member.mention}! <3\n"
-            f"Thanks for joining **{server_name}**.\n"
-            f"Don't forget to read the #rules and #information!\n"
-            f"We are now **{member_count}** members."
-        )
-        await channel.send(message)
+    cid = get_welcome_channel()
+    if cid:
+        channel = bot.get_channel(cid)
+        if channel:
+            args = {
+                "member": member.name,
+                "member_mention": member.mention,
+                "server": member.guild.name,
+                "member_count": member.guild.member_count,
+            }
+            template = get_welcome_message()
+            if template:
+                try:
+                    message = template.format(**args)
+                except Exception:
+                    message = template
+            else:
+                message = (
+                    f"Welcome new member {member.mention}! <3\n"
+                    f"Thanks for joining **{args['server']}**.\n"
+                    "Don't forget to read the #rules and #information!\n"
+                    f"We are now **{args['member_count']}** members."
+                )
+            await channel.send(message)
 
 async def on_member_remove(bot: commands.Bot, member: discord.Member):
-    channel = bot.get_channel(1361778101176107311)
-    if channel:
-        member_count = member.guild.member_count
-        message = f"It seems {member.name} has left us... We are now **{member_count}** members."
-        await channel.send(message)
+    cid = get_leave_channel()
+    if cid:
+        channel = bot.get_channel(cid)
+        if channel:
+            args = {
+                "member": member.name,
+                "member_mention": member.mention,
+                "server": member.guild.name,
+                "member_count": member.guild.member_count,
+            }
+            template = get_leave_message()
+            if template:
+                try:
+                    message = template.format(**args)
+                except Exception:
+                    message = template
+            else:
+                message = (
+                    f"It seems {member.name} has left us... "
+                    f"We are now **{args['member_count']}** members."
+                )
+            await channel.send(message)
 
 
 async def on_raw_reaction_add(bot: commands.Bot, payload: discord.RawReactionActionEvent):

@@ -214,6 +214,42 @@ def set_max_coins(limit: int):
     _execute("UPDATE server SET max_coins = ? WHERE id = 1", (limit,))
 
 
+def set_welcome_channel(cid: int) -> None:
+    _execute("UPDATE server SET welcome_channel_id = ? WHERE id = 1", (str(cid),))
+
+
+def get_welcome_channel() -> Optional[int]:
+    row = _fetchone("SELECT welcome_channel_id FROM server WHERE id = 1")
+    return int(row[0]) if row and row[0] else None
+
+
+def set_leave_channel(cid: int) -> None:
+    _execute("UPDATE server SET leave_channel_id = ? WHERE id = 1", (str(cid),))
+
+
+def get_leave_channel() -> Optional[int]:
+    row = _fetchone("SELECT leave_channel_id FROM server WHERE id = 1")
+    return int(row[0]) if row and row[0] else None
+
+
+def set_welcome_message(msg: str) -> None:
+    _execute("UPDATE server SET welcome_message = ? WHERE id = 1", (msg,))
+
+
+def get_welcome_message() -> Optional[str]:
+    row = _fetchone("SELECT welcome_message FROM server WHERE id = 1")
+    return row[0] if row and row[0] else None
+
+
+def set_leave_message(msg: str) -> None:
+    _execute("UPDATE server SET leave_message = ? WHERE id = 1", (msg,))
+
+
+def get_leave_message() -> Optional[str]:
+    row = _fetchone("SELECT leave_message FROM server WHERE id = 1")
+    return row[0] if row and row[0] else None
+
+
 # ---------- shop helpers ----------
 
 def add_shop_role(role_id: int, price: int):

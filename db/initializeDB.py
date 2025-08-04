@@ -41,10 +41,24 @@ def init_db():
         """
         CREATE TABLE IF NOT EXISTS server (
             id INTEGER PRIMARY KEY CHECK (id = 1),
-            max_coins INTEGER
+            max_coins INTEGER,
+            welcome_channel_id TEXT,
+            leave_channel_id TEXT,
+            welcome_message TEXT,
+            leave_message TEXT
         )
     """
     )
+    cursor.execute("PRAGMA table_info(server)")
+    columns = {col[1] for col in cursor.fetchall()}
+    for col in [
+        "welcome_channel_id",
+        "leave_channel_id",
+        "welcome_message",
+        "leave_message",
+    ]:
+        if col not in columns:
+            cursor.execute(f"ALTER TABLE server ADD COLUMN {col} TEXT")
     cursor.execute("SELECT max_coins FROM server WHERE id = 1")
     row = cursor.fetchone()
 
