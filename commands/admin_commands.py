@@ -8,14 +8,7 @@ from discord import app_commands
 from discord.ext import commands
 from datetime import datetime, timezone, timedelta
 
-from config import (
-    ADMIN_ROLE_ID,
-    SHEHER_ROLE_ID,
-    HEHIM_ROLE_ID,
-    LOG_CHANNEL_ID,
-    MOD_ROLE_ID,
-)
-from config import CHANNEL_LOCK_ROLE_ID
+from config import LOG_CHANNEL_ID
 from db.DBHelper import (
     register_user,
     _fetchone,
@@ -36,8 +29,13 @@ from db.DBHelper import (
     set_leave_channel,
     set_welcome_message,
     set_leave_message,
+    set_booster_channel,
+    set_booster_message,
+    set_role,
+    get_role,
+    set_command_permission,
 )
-from utils import has_role, get_channel_webhook, parse_duration
+from utils import has_role, has_command_permission, get_channel_webhook, parse_duration
 
 
 async def run_command_tests(bot: commands.Bot) -> dict[str, str]:
@@ -215,7 +213,7 @@ active_prison_timers: dict[int, asyncio.Task] = {}
 def setup(bot: commands.Bot):
     @bot.tree.command(name="test", description="Test all commands")
     async def test_commands(inter: discord.Interaction):
-        if not has_role(inter.user, ADMIN_ROLE_ID):
+        if not has_command_permission(inter.user, "test", "admin"):
             await inter.response.send_message("No permission.", ephemeral=True)
             return
         await inter.response.defer(thinking=True, ephemeral=True)
@@ -235,7 +233,7 @@ def setup(bot: commands.Bot):
     async def setstatpoints(
         interaction: discord.Interaction, user: discord.Member, amount: int
     ):
-        if not has_role(interaction.user, ADMIN_ROLE_ID):
+        if not has_command_permission(interaction.user, "setstatpoints", "admin"):
             await interaction.response.send_message(
                 "Only the Owner can use this command.", ephemeral=True
             )
@@ -259,7 +257,7 @@ def setup(bot: commands.Bot):
     @app_commands.describe(user="User")
     async def lastdate(interaction: discord.Interaction, user: discord.Member):
         if (
-            not has_role(interaction.user, ADMIN_ROLE_ID)
+            not has_command_permission(interaction.user, "lastdate", "admin")
             and not interaction.user.premium_since
         ):
             await interaction.response.send_message(
@@ -279,7 +277,7 @@ def setup(bot: commands.Bot):
     async def setstat(
         interaction: discord.Interaction, user: discord.Member, stat: str, amount: int
     ):
-        if not has_role(interaction.user, ADMIN_ROLE_ID):
+        if not has_command_permission(interaction.user, "setstat", "admin"):
             await interaction.response.send_message(
                 "Only the Owner can use this command.", ephemeral=True
             )
@@ -325,7 +323,7 @@ def setup(bot: commands.Bot):
         reference: discord.Role | None = None,
         above: bool = True,
     ):
-        if not has_role(inter.user, ADMIN_ROLE_ID):
+        if not has_command_permission(inter.user, "addshoprole", "admin"):
             await inter.response.send_message("No permission.", ephemeral=True)
             return
         try:
@@ -406,7 +404,7 @@ def setup(bot: commands.Bot):
     async def managePrisonMember(
         interaction: discord.Interaction, user: discord.Member, time: str | None = None
     ):
-        if not has_role(interaction.user, MOD_ROLE_ID):
+        if not has_command_permission(interaction.user, "manageprisonmember", "mod"):
             await interaction.response.send_message("No permission.", ephemeral=True)
             return
         gooyb = interaction.user.name == "goodyb"
@@ -475,8 +473,8 @@ def setup(bot: commands.Bot):
     @app_commands.describe(user="the user you want to add/remove the Viltrumite role")
     async def manageViltrumite(interaction: discord.Interaction, user: discord.Member):
         if (
-            not has_role(interaction.user, ADMIN_ROLE_ID)
-            and not interaction.user.id == 1068512374719520768
+            not has_command_permission(interaction.user, "manageviltrumite", "admin")
+            and interaction.user.id != 1068512374719520768
         ):
             await interaction.response.send_message(
                 "You dont have permission to use this command.", ephemeral=True
@@ -507,8 +505,8 @@ def setup(bot: commands.Bot):
     @app_commands.describe(user="the user you want to add/remove the Yeager role")
     async def manageYeager(interaction: discord.Interaction, user: discord.Member):
         if (
-            not has_role(interaction.user, ADMIN_ROLE_ID)
-            and not interaction.user.id == 1348356899354972180
+            not has_command_permission(interaction.user, "manageyeager", "admin")
+            and interaction.user.id != 1348356899354972180
         ):
             await interaction.response.send_message(
                 "You dont have permission to use this command.", ephemeral=True
@@ -539,8 +537,8 @@ def setup(bot: commands.Bot):
     @app_commands.describe(user="the user you want to add/remove the ackerman  role")
     async def manageackerman(interaction: discord.Interaction, user: discord.Member):
         if (
-            not has_role(interaction.user, ADMIN_ROLE_ID)
-            and not interaction.user.id == 1348356899354972180
+            not has_command_permission(interaction.user, "manageackerman", "admin")
+            and interaction.user.id != 1348356899354972180
         ):
             await interaction.response.send_message(
                 "You dont have permission to use this command.", ephemeral=True
@@ -575,7 +573,9 @@ def setup(bot: commands.Bot):
         emoji: str,
         role: discord.Role,
     ):
-        if not has_role(interaction.user, ADMIN_ROLE_ID):
+        if not has_command_permission(
+            interaction.user, "addcolorreactionrole", "admin"
+        ):
             await interaction.response.send_message("No permission.", ephemeral=True)
             return
         channel = interaction.channel
@@ -601,7 +601,7 @@ def setup(bot: commands.Bot):
     @app_commands.describe(user="User to imitate", msg="The message to send")
     async def imitate(interaction: discord.Interaction, user: discord.Member, msg: str):
         if (
-            not has_role(interaction.user, ADMIN_ROLE_ID)
+            not has_command_permission(interaction.user, "imitate", "admin")
             and not interaction.user.premium_since
         ):
             await interaction.response.send_message(
@@ -635,8 +635,8 @@ def setup(bot: commands.Bot):
         interaction: discord.Interaction, duration: int, prize: str, winners: int
     ):
         if (
-            not has_role(interaction.user, ADMIN_ROLE_ID)
-            and not interaction.user.id == 875279455222898698
+            not has_command_permission(interaction.user, "giveaway", "admin")
+            and interaction.user.id != 875279455222898698
         ):
             await interaction.response.send_message(
                 "Only admins and owners can use this command", ephemeral=True
@@ -679,10 +679,11 @@ def setup(bot: commands.Bot):
 
     @bot.tree.command(name="lock", description="Lock this channel (Admin only)")
     async def lock_channel(interaction: discord.Interaction):
-        if not has_role(interaction.user, ADMIN_ROLE_ID):
+        if not has_command_permission(interaction.user, "lock", "admin"):
             await interaction.response.send_message("No permission.", ephemeral=True)
             return
-        role = interaction.guild.get_role(CHANNEL_LOCK_ROLE_ID)
+        lock_id = get_role("channel_lock")
+        role = interaction.guild.get_role(lock_id) if lock_id else None
         if role is None:
             await interaction.response.send_message("Role not found.", ephemeral=True)
             return
@@ -693,10 +694,11 @@ def setup(bot: commands.Bot):
 
     @bot.tree.command(name="unlock", description="Unlock this channel (Admin only)")
     async def unlock_channel(interaction: discord.Interaction):
-        if not has_role(interaction.user, ADMIN_ROLE_ID):
+        if not has_command_permission(interaction.user, "unlock", "admin"):
             await interaction.response.send_message("No permission.", ephemeral=True)
             return
-        role = interaction.guild.get_role(CHANNEL_LOCK_ROLE_ID)
+        lock_id = get_role("channel_lock")
+        role = interaction.guild.get_role(lock_id) if lock_id else None
         if role is None:
             await interaction.response.send_message("Role not found.", ephemeral=True)
             return
@@ -821,6 +823,60 @@ def setup(bot: commands.Bot):
             "\u2705 Leave message updated.", ephemeral=True
         )
 
+    @bot.tree.command(name="setboostchannel", description="Set the booster channel")
+    @app_commands.describe(channel="Channel for booster messages")
+    @app_commands.checks.has_permissions(manage_guild=True)
+    async def setboostchannel(
+        interaction: discord.Interaction, channel: discord.TextChannel
+    ):
+        set_booster_channel(channel.id)
+        await interaction.response.send_message(
+            f"\u2705 Booster channel set to {channel.mention}.", ephemeral=True
+        )
+
+    @bot.tree.command(name="setboostmsg", description="Set the booster message")
+    @app_commands.describe(
+        message="Message; placeholders: {member}, {member_mention}, {server}"
+    )
+    @app_commands.checks.has_permissions(manage_guild=True)
+    async def setboostmsg(interaction: discord.Interaction, message: str):
+        set_booster_message(message)
+        await interaction.response.send_message(
+            "\u2705 Booster message updated.", ephemeral=True
+        )
+
+    @bot.tree.command(name="setrole", description="Configure a role used by the bot")
+    @app_commands.describe(
+        name="Which role to configure (admin/mod/sheher/hehim/channel_lock)",
+        role="The role to use",
+    )
+    @app_commands.checks.has_permissions(manage_guild=True)
+    async def setrole(
+        interaction: discord.Interaction, name: str, role: discord.Role
+    ):
+        key = name.lower()
+        valid = {"admin", "mod", "sheher", "hehim", "channel_lock"}
+        if key not in valid:
+            await interaction.response.send_message(
+                "\u274c Invalid role name.", ephemeral=True
+            )
+            return
+        set_role(key, role.id)
+        await interaction.response.send_message(
+            f"\u2705 Set {key} role to {role.mention}.", ephemeral=True
+        )
+
+    @bot.tree.command(name="setcommandrole", description="Set required role for a command")
+    @app_commands.describe(command="Command name", role="Role allowed to use the command")
+    @app_commands.checks.has_permissions(manage_guild=True)
+    async def setcommandrole(
+        interaction: discord.Interaction, command: str, role: discord.Role
+    ):
+        set_command_permission(command, role.id)
+        await interaction.response.send_message(
+            f"\u2705 Set {command} command role to {role.mention}.", ephemeral=True
+        )
+
     @bot.tree.command(
         name="createrole",
         description="Create a role and assign to users (for goodyb & nannapat2410 only)",
@@ -903,6 +959,9 @@ def setup(bot: commands.Bot):
         setleavechannel,
         setwelcomemsg,
         setleavemsg,
+        setboostchannel,
+        setboostmsg,
+        setrole,
         createrole,
         manageViltrumite,
         manageYeager,

@@ -3,7 +3,7 @@ from discord import app_commands
 from discord.ext import commands
 from random import choice, random
 from typing import Optional
-from config import SHEHER_ROLE_ID, HEHIM_ROLE_ID
+from db.DBHelper import get_role
 from utils import has_role
 import requests
 
@@ -276,14 +276,16 @@ def setup(bot: commands.Bot):
         gif = response.json()
         gif = gif["url"]
         try:
-            if has_role(user, SHEHER_ROLE_ID) and not user.name == "goodyb":
+            sheher_id = get_role("sheher")
+            hehim_id = get_role("hehim")
+            if sheher_id and has_role(user, sheher_id) and not user.name == "goodyb":
                 embed = discord.Embed(
                     title=f"{interaction.user.display_name} calls {user.display_name} a good girl",
                     color=discord.Color.red(),
                 )
                 embed.set_image(url=gif)
                 await interaction.response.send_message(embed=embed)
-            elif has_role(user, HEHIM_ROLE_ID):
+            elif hehim_id and has_role(user, hehim_id):
                 embed = discord.Embed(
                     title=f"{interaction.user.display_name} calls {user.display_name} a good boy",
                     color=discord.Color.red(),

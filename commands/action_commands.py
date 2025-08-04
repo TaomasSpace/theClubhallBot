@@ -4,7 +4,6 @@ from discord.ext import commands
 from datetime import datetime, timedelta
 from random import randint, random
 
-from config import ADMIN_ROLE_ID
 from db.DBHelper import (
     register_user,
     get_stats,

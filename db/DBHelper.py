@@ -250,6 +250,51 @@ def get_leave_message() -> Optional[str]:
     return row[0] if row and row[0] else None
 
 
+def set_booster_channel(cid: int) -> None:
+    _execute("UPDATE server SET booster_channel_id = ? WHERE id = 1", (str(cid),))
+
+
+def get_booster_channel() -> Optional[int]:
+    row = _fetchone("SELECT booster_channel_id FROM server WHERE id = 1")
+    return int(row[0]) if row and row[0] else None
+
+
+def set_booster_message(msg: str) -> None:
+    _execute("UPDATE server SET booster_message = ? WHERE id = 1", (msg,))
+
+
+def get_booster_message() -> Optional[str]:
+    row = _fetchone("SELECT booster_message FROM server WHERE id = 1")
+    return row[0] if row and row[0] else None
+
+
+def set_role(name: str, role_id: int) -> None:
+    _execute(
+        "INSERT OR REPLACE INTO roles (name, role_id) VALUES (?, ?)",
+        (name, str(role_id)),
+    )
+
+
+def get_role(name: str) -> Optional[int]:
+    row = _fetchone("SELECT role_id FROM roles WHERE name = ?", (name,))
+    return int(row[0]) if row and row[0] else None
+
+
+def set_command_permission(command: str, role_id: int) -> None:
+    _execute(
+        "INSERT OR REPLACE INTO command_permissions (command, role_id) VALUES (?, ?)",
+        (command, str(role_id)),
+    )
+
+
+def get_command_permission(command: str) -> Optional[int]:
+    row = _fetchone(
+        "SELECT role_id FROM command_permissions WHERE command = ?",
+        (command,),
+    )
+    return int(row[0]) if row and row[0] else None
+
+
 # ---------- shop helpers ----------
 
 def add_shop_role(role_id: int, price: int):
