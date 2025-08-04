@@ -1,5 +1,7 @@
 import asyncio
 import inspect
+import io
+
 
 import discord
 from discord import app_commands
@@ -69,7 +71,8 @@ async def run_command_tests(bot: commands.Bot) -> dict[str, str]:
             params = list(sig.parameters.values())[1:]
             args = []
             for p in params:
-                if p.default is inspect._empty:
+                if p.default is inspect.Parameter.empty:
+
                     raise TypeError("Missing parameters")
                 args.append(p.default)
             await cmd.callback(dummy, *args)
@@ -92,7 +95,11 @@ def setup(bot: commands.Bot):
         results = await run_command_tests(bot)
         report_lines = [f"{name}: {status}" for name, status in results.items()]
         report = "\n".join(report_lines)
-        await inter.followup.send(f"**Testergebnis**:\n{report}", ephemeral=True)
+        if len(report) > 1900:
+            file = discord.File(io.StringIO(report), filename="command_report.txt")
+            await inter.followup.send("**Testergebnis**:", file=file, ephemeral=True)
+        else:
+            await inter.followup.send(f"**Testergebnis**:\n{report}", ephemeral=True)
 
     @bot.tree.command(
         name="setstatpoints", description="Set a user's stat points (Admin only)"
