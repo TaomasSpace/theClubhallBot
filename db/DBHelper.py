@@ -396,21 +396,24 @@ def get_lastdate(user_id: str):
 
 # ---------- filtered words helpers ----------
 
-def add_filtered_word(word: str):
+def add_filtered_word(guild_id: int, word: str):
     _execute(
-        "INSERT OR IGNORE INTO filtered_words (word) VALUES (?)",
-        (word.lower(),),
+        "INSERT OR IGNORE INTO filtered_words (guild_id, word) VALUES (?, ?)",
+        (str(guild_id), word.lower()),
     )
 
 
-def remove_filtered_word(word: str):
-    _execute("DELETE FROM filtered_words WHERE word = ?", (word.lower(),))
+def remove_filtered_word(guild_id: int, word: str):
+    _execute(
+        "DELETE FROM filtered_words WHERE guild_id = ? AND word = ?",
+        (str(guild_id), word.lower()),
+    )
 
 
-def get_filtered_words() -> list[str]:
+def get_filtered_words(guild_id: int) -> list[str]:
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    cursor.execute("SELECT word FROM filtered_words")
+    cursor.execute("SELECT word FROM filtered_words WHERE guild_id = ?", (str(guild_id),))
     rows = cursor.fetchall()
     conn.close()
     return [row[0] for row in rows]
@@ -418,96 +421,123 @@ def get_filtered_words() -> list[str]:
 
 # ---------- trigger response helpers ----------
 
-def add_trigger_response(trigger: str, response: str):
+def add_trigger_response(trigger: str, response: str, guild_id: int):
     _execute(
-        "INSERT OR REPLACE INTO trigger_responses (trigger, response) VALUES (?, ?)",
-        (trigger.lower(), response),
+        "INSERT OR REPLACE INTO trigger_responses (guild_id, trigger, response) VALUES (?, ?, ?)",
+        (str(guild_id), trigger.lower(), response),
     )
 
 
-def remove_trigger_response(trigger: str):
-    _execute("DELETE FROM trigger_responses WHERE trigger = ?", (trigger.lower(),))
+def remove_trigger_response(trigger: str, guild_id: int):
+    _execute(
+        "DELETE FROM trigger_responses WHERE guild_id = ? AND trigger = ?",
+        (str(guild_id), trigger.lower()),
+    )
 
 
-def get_trigger_responses() -> dict:
+def get_trigger_responses(guild_id: int) -> dict:
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    cursor.execute("SELECT trigger, response FROM trigger_responses")
+    cursor.execute(
+        "SELECT trigger, response FROM trigger_responses WHERE guild_id = ?",
+        (str(guild_id),),
+    )
     rows = cursor.fetchall()
     conn.close()
     return {trigger: response for trigger, response in rows}
 
 # ---------- anti nuke helpers ----------
 
-def get_anti_nuke_setting(category: str) -> Optional[Tuple[int, int, str, Optional[int]]]:
+def get_anti_nuke_setting(
+    category: str, guild_id: int
+) -> Optional[Tuple[int, int, str, Optional[int]]]:
 
     row = _fetchone(
-        "SELECT enabled, threshold, punishment, duration FROM anti_nuke_settings WHERE category = ?",
-        (category,),
+        "SELECT enabled, threshold, punishment, duration FROM anti_nuke_settings WHERE guild_id = ? AND category = ?",
+        (str(guild_id), category),
     )
     return row if row else None
 
 
 def set_anti_nuke_setting(
-    category: str, enabled: int, threshold: int, punishment: str, duration: Optional[int]
-
+    category: str,
+    enabled: int,
+    threshold: int,
+    punishment: str,
+    duration: Optional[int],
+    guild_id: int,
 ) -> None:
     _execute(
-        "INSERT OR REPLACE INTO anti_nuke_settings (category, enabled, threshold, punishment, duration) VALUES (?, ?, ?, ?, ?)",
-        (category, enabled, threshold, punishment, duration),
+        "INSERT OR REPLACE INTO anti_nuke_settings (guild_id, category, enabled, threshold, punishment, duration) VALUES (?, ?, ?, ?, ?, ?)",
+        (str(guild_id), category, enabled, threshold, punishment, duration),
     )
 
 
-def add_safe_user(uid: int) -> None:
+def add_safe_user(guild_id: int, uid: int) -> None:
     _execute(
-        "INSERT OR IGNORE INTO anti_nuke_safe_users (user_id) VALUES (?)",
-        (str(uid),),
+        "INSERT OR IGNORE INTO anti_nuke_safe_users (guild_id, user_id) VALUES (?, ?)",
+        (str(guild_id), str(uid)),
     )
 
 
-def remove_safe_user(uid: int) -> None:
-    _execute("DELETE FROM anti_nuke_safe_users WHERE user_id = ?", (str(uid),))
+def remove_safe_user(guild_id: int, uid: int) -> None:
+    _execute(
+        "DELETE FROM anti_nuke_safe_users WHERE guild_id = ? AND user_id = ?",
+        (str(guild_id), str(uid)),
+    )
 
 
-def get_safe_users() -> List[int]:
+def get_safe_users(guild_id: int) -> List[int]:
 
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    cursor.execute("SELECT user_id FROM anti_nuke_safe_users")
+    cursor.execute(
+        "SELECT user_id FROM anti_nuke_safe_users WHERE guild_id = ?",
+        (str(guild_id),),
+    )
     rows = cursor.fetchall()
     conn.close()
     return [int(r[0]) for r in rows]
 
 
-def add_safe_role(rid: int) -> None:
+def add_safe_role(guild_id: int, rid: int) -> None:
     _execute(
-        "INSERT OR IGNORE INTO anti_nuke_safe_roles (role_id) VALUES (?)",
-        (str(rid),),
+        "INSERT OR IGNORE INTO anti_nuke_safe_roles (guild_id, role_id) VALUES (?, ?)",
+        (str(guild_id), str(rid)),
     )
 
 
-def remove_safe_role(rid: int) -> None:
-    _execute("DELETE FROM anti_nuke_safe_roles WHERE role_id = ?", (str(rid),))
+def remove_safe_role(guild_id: int, rid: int) -> None:
+    _execute(
+        "DELETE FROM anti_nuke_safe_roles WHERE guild_id = ? AND role_id = ?",
+        (str(guild_id), str(rid)),
+    )
 
 
-def get_safe_roles() -> List[int]:
+def get_safe_roles(guild_id: int) -> List[int]:
 
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    cursor.execute("SELECT role_id FROM anti_nuke_safe_roles")
+    cursor.execute(
+        "SELECT role_id FROM anti_nuke_safe_roles WHERE guild_id = ?",
+        (str(guild_id),),
+    )
     rows = cursor.fetchall()
     conn.close()
     return [int(r[0]) for r in rows]
 
 
-def set_anti_nuke_log_channel(cid: int) -> None:
+def set_anti_nuke_log_channel(guild_id: int, cid: int) -> None:
     _execute(
-        "INSERT OR REPLACE INTO anti_nuke_log_channel (channel_id) VALUES (?)",
-        (str(cid),),
+        "INSERT OR REPLACE INTO anti_nuke_log_channel (guild_id, channel_id) VALUES (?, ?)",
+        (str(guild_id), str(cid)),
     )
 
 
-def get_anti_nuke_log_channel() -> Optional[int]:
-    row = _fetchone("SELECT channel_id FROM anti_nuke_log_channel LIMIT 1")
+def get_anti_nuke_log_channel(guild_id: int) -> Optional[int]:
+    row = _fetchone(
+        "SELECT channel_id FROM anti_nuke_log_channel WHERE guild_id = ?",
+        (str(guild_id),),
+    )
     return int(row[0]) if row else None
 

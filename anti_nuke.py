@@ -50,7 +50,7 @@ async def punish(member: discord.Member, punishment: str, duration: Optional[int
 
 async def log_action(member: discord.Member, category: str, punishment: str, duration: Optional[int]) -> None:
 
-    cid = get_anti_nuke_log_channel()
+    cid = get_anti_nuke_log_channel(member.guild.id)
     if not cid:
         return
     channel = member.guild.get_channel(cid)
@@ -64,7 +64,7 @@ async def log_action(member: discord.Member, category: str, punishment: str, dur
 
 async def handle_event(guild: discord.Guild, user: Optional[discord.Member], category: str):
 
-    setting = get_anti_nuke_setting(category)
+    setting = get_anti_nuke_setting(category, guild.id)
     if not setting:
         return
     enabled, threshold, punishment, duration = setting
@@ -73,9 +73,9 @@ async def handle_event(guild: discord.Guild, user: Optional[discord.Member], cat
     uid = user.id if user else None
     if uid is None:
         return
-    if uid in get_safe_users():
+    if uid in get_safe_users(guild.id):
         return
-    safe_roles = set(get_safe_roles())
+    safe_roles = set(get_safe_roles(guild.id))
     if any(r.id in safe_roles for r in user.roles):
         return
     hist = action_history.setdefault(category, {}).setdefault(uid, [])
@@ -91,9 +91,9 @@ async def handle_event(guild: discord.Guild, user: Optional[discord.Member], cat
 
 
 async def on_message(message: discord.Message):
-    if message.author.bot or message.webhook_id:
+    if message.author.bot or message.webhook_id or not message.guild:
         return
-    setting = get_anti_nuke_setting("anti_mention")
+    setting = get_anti_nuke_setting("anti_mention", message.guild.id)
     if not setting:
         return
     enabled, threshold, punishment, duration = setting

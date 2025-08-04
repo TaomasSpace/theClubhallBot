@@ -27,7 +27,7 @@ from utils import get_channel_webhook
 rod_shop: dict[int, tuple[int, float]] = {}
 active_giveaway_tasks: dict[int, asyncio.Task] = {}
 filtered_violations: dict[int, list[float]] = {}
-trigger_responses: dict[str, str] = {}
+trigger_responses: dict[int, dict[str, str]] = {}
 
 
 async def end_giveaway(
@@ -98,7 +98,7 @@ async def on_ready(bot: commands.Bot):
     init_db()
     global rod_shop, trigger_responses
     rod_shop = get_all_rods_from_shop()
-    trigger_responses = get_trigger_responses()
+    trigger_responses = {g.id: get_trigger_responses(g.id) for g in bot.guilds}
     await bot.tree.sync()
     await load_giveaways(bot)
     print(f"Bot is online as {bot.user}")
@@ -143,7 +143,7 @@ async def on_member_update(
 async def on_message(
     bot: commands.Bot, message: discord.Message, lowercase_locked: set[int]
 ):
-    if message.author.bot or message.webhook_id:
+    if message.author.bot or message.webhook_id or not message.guild:
         return
     if message.author.id in lowercase_locked:
         try:
@@ -160,7 +160,7 @@ async def on_message(
     content = message.content.lower()
     from db.DBHelper import update_date, get_filtered_words
 
-    for word in get_filtered_words():
+    for word in get_filtered_words(message.guild.id):
         if content.startswith(word) or " " + word in content:
             try:
                 await message.delete()
@@ -182,7 +182,7 @@ async def on_message(
                 filtered_violations[message.author.id] = []
             return
 
-    for trigger, reply in trigger_responses.items():
+    for trigger, reply in trigger_responses.get(message.guild.id, {}).items():
         if trigger in content:
             await message.channel.send(reply)
             break

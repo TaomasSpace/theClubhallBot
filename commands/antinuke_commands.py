@@ -54,7 +54,9 @@ def setup(bot: commands.Bot):
             await interaction.response.send_message("Invalid category.", ephemeral=True)
             return
         dur_s = parse_duration(duration) if duration else None
-        set_anti_nuke_setting(category, int(enabled), threshold, punishment, dur_s)
+        set_anti_nuke_setting(
+            category, int(enabled), threshold, punishment, dur_s, interaction.guild.id
+        )
         await interaction.response.send_message("Saved.", ephemeral=True)
 
     @bot.tree.command(name="antinukeignoreuser", description="Toggle safe user")
@@ -62,11 +64,12 @@ def setup(bot: commands.Bot):
         if interaction.user.id != OWNER_ID:
             await interaction.response.send_message("No permission.", ephemeral=True)
             return
-        if user.id in get_safe_users():
-            remove_safe_user(user.id)
+        guild_id = interaction.guild.id
+        if user.id in get_safe_users(guild_id):
+            remove_safe_user(guild_id, user.id)
             await interaction.response.send_message("User removed from safe list.", ephemeral=True)
         else:
-            add_safe_user(user.id)
+            add_safe_user(guild_id, user.id)
             await interaction.response.send_message("User added to safe list.", ephemeral=True)
 
     @bot.tree.command(name="antinukeignorerole", description="Toggle safe role")
@@ -74,11 +77,12 @@ def setup(bot: commands.Bot):
         if interaction.user.id != OWNER_ID:
             await interaction.response.send_message("No permission.", ephemeral=True)
             return
-        if role.id in get_safe_roles():
-            remove_safe_role(role.id)
+        guild_id = interaction.guild.id
+        if role.id in get_safe_roles(guild_id):
+            remove_safe_role(guild_id, role.id)
             await interaction.response.send_message("Role removed from safe list.", ephemeral=True)
         else:
-            add_safe_role(role.id)
+            add_safe_role(guild_id, role.id)
             await interaction.response.send_message("Role added to safe list.", ephemeral=True)
 
     @bot.tree.command(name="antinukelog", description="Set anti nuke log channel")
@@ -86,7 +90,7 @@ def setup(bot: commands.Bot):
         if interaction.user.id != OWNER_ID:
             await interaction.response.send_message("No permission.", ephemeral=True)
             return
-        set_anti_nuke_log_channel(channel.id)
+        set_anti_nuke_log_channel(interaction.guild.id, channel.id)
         await interaction.response.send_message(
             f"Log channel set to {channel.mention}", ephemeral=True
         )
@@ -97,8 +101,9 @@ def setup(bot: commands.Bot):
             await interaction.response.send_message("No permission.", ephemeral=True)
             return
         lines = []
+        gid = interaction.guild.id
         for cat in CATEGORIES:
-            setting = get_anti_nuke_setting(cat)
+            setting = get_anti_nuke_setting(cat, gid)
             if setting:
                 en, th, p, dur = setting
                 desc = f"on" if en else "off"
@@ -109,9 +114,9 @@ def setup(bot: commands.Bot):
                 desc = "not set"
             lines.append(f"**{cat}**: {desc}")
 
-        users = [f"<@{u}>" for u in get_safe_users()] or ["None"]
-        roles = [f"<@&{r}>" for r in get_safe_roles()] or ["None"]
-        cid = get_anti_nuke_log_channel()
+        users = [f"<@{u}>" for u in get_safe_users(gid)] or ["None"]
+        roles = [f"<@&{r}>" for r in get_safe_roles(gid)] or ["None"]
+        cid = get_anti_nuke_log_channel(gid)
         log_line = f"<#{cid}>" if cid else "None"
         lines.append(f"Safe users: {', '.join(users)}")
         lines.append(f"Safe roles: {', '.join(roles)}")

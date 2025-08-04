@@ -740,7 +740,7 @@ def setup(bot: commands.Bot):
     async def addfilterword(interaction: discord.Interaction, word: str):
         from db.DBHelper import add_filtered_word
 
-        add_filtered_word(word)
+        add_filtered_word(interaction.guild.id, word)
         await interaction.response.send_message(
             f"\u2705 Added `{word}` to the filter.", ephemeral=True
         )
@@ -753,7 +753,7 @@ def setup(bot: commands.Bot):
     async def removefilterword(interaction: discord.Interaction, word: str):
         from db.DBHelper import remove_filtered_word
 
-        remove_filtered_word(word)
+        remove_filtered_word(interaction.guild.id, word)
         await interaction.response.send_message(
             f"\u2705 Removed `{word}` from the filter.", ephemeral=True
         )
@@ -762,7 +762,7 @@ def setup(bot: commands.Bot):
     async def filterwords(interaction: discord.Interaction):
         from db.DBHelper import get_filtered_words
 
-        words = get_filtered_words()
+        words = get_filtered_words(interaction.guild.id)
         if not words:
             await interaction.response.send_message("No filtered words.")
             return
@@ -775,8 +775,8 @@ def setup(bot: commands.Bot):
         from db.DBHelper import add_trigger_response
         from events import trigger_responses
 
-        add_trigger_response(trigger, response)
-        trigger_responses[trigger.lower()] = response
+        add_trigger_response(trigger, response, interaction.guild.id)
+        trigger_responses.setdefault(interaction.guild.id, {})[trigger.lower()] = response
         await interaction.response.send_message(
             f"\u2705 Added trigger `{trigger}`.", ephemeral=True
         )
@@ -788,8 +788,8 @@ def setup(bot: commands.Bot):
         from db.DBHelper import remove_trigger_response
         from events import trigger_responses
 
-        remove_trigger_response(trigger)
-        trigger_responses.pop(trigger.lower(), None)
+        remove_trigger_response(trigger, interaction.guild.id)
+        trigger_responses.get(interaction.guild.id, {}).pop(trigger.lower(), None)
         await interaction.response.send_message(
             f"\u2705 Removed trigger `{trigger}`.", ephemeral=True
         )
@@ -798,7 +798,7 @@ def setup(bot: commands.Bot):
     async def triggers(interaction: discord.Interaction):
         from db.DBHelper import get_trigger_responses
 
-        data = get_trigger_responses()
+        data = get_trigger_responses(interaction.guild.id)
         if not data:
             await interaction.response.send_message("No trigger responses.")
             return
