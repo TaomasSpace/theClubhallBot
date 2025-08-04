@@ -43,6 +43,9 @@ def has_role(member: discord.Member, role: int | str) -> bool:
 def has_command_permission(
     user: discord.Member, command: str, fallback_role_key: str
 ) -> bool:
+    if user.guild and user.id == user.guild.owner_id:
+        # The server owner always has access to every command.
+        return True
     role_id = get_command_permission(user.guild.id, command)
     if role_id is None:
         role_id = get_role(user.guild.id, fallback_role_key)
