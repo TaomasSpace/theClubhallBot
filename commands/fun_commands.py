@@ -226,6 +226,16 @@ def setup(bot: commands.Bot):
         embed.set_image(url=gif_url)
         await interaction.response.send_message(embed=embed)
 
+    @bot.tree.command(name="kiss", description="kiss another user")
+    async def kiss(interaction: discord.Interaction, user: discord.member):
+        gif = "https://api.otakugifs.xyz/gif?reaction=kiss&format=GIF"
+        embed = discord.Embed(
+            title=f"{interaction.user.display_name} kisses {user.display_name} ꨄ︎",
+            color=discord.Color.red(),
+        )
+        embed.set_image(url=gif)
+        await interaction.response.send_message(embed=embed)
+
     @bot.tree.command(name="good", description="Tell someone he/she is a good boy/girl")
     async def good(interaction: discord.Interaction, user: discord.Member):
         sheher_gifs = [
@@ -285,4 +295,5 @@ def setup(bot: commands.Bot):
         goon,
         dance,
         good,
+        kiss,
     )
