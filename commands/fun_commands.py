@@ -233,7 +233,7 @@ def setup(bot: commands.Bot):
             "https://api.otakugifs.xyz/gif?reaction=kiss&format=gif"
         )
 
-        gif = response.json
+        gif = response.json()
         gif = gif["url"]
         embed = discord.Embed(
             title=f"{interaction.user.display_name} kisses {user.display_name} ꨄ︎",
