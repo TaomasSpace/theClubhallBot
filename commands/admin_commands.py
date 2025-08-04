@@ -34,6 +34,7 @@ from db.DBHelper import (
     set_role,
     get_role,
     set_command_permission,
+    remove_command_permission,
 )
 from utils import has_role, has_command_permission, get_channel_webhook, parse_duration
 
@@ -905,6 +906,17 @@ def setup(bot: commands.Bot):
         )
 
     @bot.tree.command(
+        name="removecommandrole", description="Remove required role for a command"
+    )
+    @app_commands.describe(command="Command name")
+    @app_commands.checks.has_permissions(manage_guild=True)
+    async def removecommandrole(interaction: discord.Interaction, command: str):
+        remove_command_permission(command)
+        await interaction.response.send_message(
+            f"\u2705 Removed {command} command role.", ephemeral=True
+        )
+
+    @bot.tree.command(
         name="createrole",
         description="Create a role and assign to users (for goodyb & nannapat2410 only)",
     )
@@ -989,6 +1001,8 @@ def setup(bot: commands.Bot):
         setboostchannel,
         setboostmsg,
         setrole,
+        setcommandrole,
+        removecommandrole,
         createrole,
         manageViltrumite,
         manageYeager,
