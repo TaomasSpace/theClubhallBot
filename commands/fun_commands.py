@@ -227,7 +227,7 @@ def setup(bot: commands.Bot):
         await interaction.response.send_message(embed=embed)
 
     @bot.tree.command(name="kiss", description="kiss another user")
-    async def kiss(interaction: discord.Interaction, user: discord.member):
+    async def kiss(interaction: discord.Interaction, user: discord.Member):
         gif = "https://api.otakugifs.xyz/gif?reaction=kiss&format=GIF"
         embed = discord.Embed(
             title=f"{interaction.user.display_name} kisses {user.display_name} ꨄ︎",
