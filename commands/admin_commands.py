@@ -52,14 +52,24 @@ async def run_command_tests(bot: commands.Bot) -> dict[str, str]:
     class DummyUser:
         id = 0
         name = "tester"
+        display_name = "tester"
+
         roles: list[discord.Role] = []
         guild_permissions = discord.Permissions.none()
         premium_since = None
 
+    class DummyGuild:
+        def get_role(self, role_id: int):
+            return None
+
+    class DummyChannel:
+        id = 0
+
     class DummyInteraction:
         user = DummyUser()
-        guild = None
-        channel = None
+        guild = DummyGuild()
+        channel = DummyChannel()
+
         response = DummyResponse()
         followup = DummyFollowup()
 
@@ -70,11 +80,16 @@ async def run_command_tests(bot: commands.Bot) -> dict[str, str]:
             sig = inspect.signature(cmd.callback)
             params = list(sig.parameters.values())[1:]
             args = []
+            skip = False
             for p in params:
                 if p.default is inspect.Parameter.empty:
-
-                    raise TypeError("Missing parameters")
+                    results[cmd.name] = "Skipped (missing parameters)"
+                    skip = True
+                    break
                 args.append(p.default)
+            if skip:
+                continue
+
             await cmd.callback(dummy, *args)
             results[cmd.name] = "OK"
         except Exception as e:
