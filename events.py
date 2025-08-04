@@ -141,11 +141,12 @@ async def on_member_update(
 
 
 async def on_message(
-    bot: commands.Bot, message: discord.Message, lowercase_locked: set[int]
+    bot: commands.Bot, message: discord.Message, lowercase_locked: dict[int, set[int]]
 ):
     if message.author.bot or message.webhook_id or not message.guild:
         return
-    if message.author.id in lowercase_locked:
+    locked = lowercase_locked.get(message.guild.id, set())
+    if message.author.id in locked:
         try:
             await message.delete()
         except discord.Forbidden:
@@ -365,7 +366,7 @@ async def on_app_command_completion(
     await log_ch.send(embed=embed)
 
 
-def setup(bot: commands.Bot, lowercase_locked: set[int]):
+def setup(bot: commands.Bot, lowercase_locked: dict[int, set[int]]):
     async def ready_wrapper():
         await on_ready(bot)
 
