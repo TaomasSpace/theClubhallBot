@@ -8,6 +8,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 from datetime import datetime, timezone, timedelta
+from typing import Optional
 
 import db.DBHelper as DBHelperModule
 import db.initializeDB as initdb
@@ -29,16 +30,31 @@ from db.DBHelper import (
     create_giveaway,
     set_welcome_channel,
     set_leave_channel,
+    get_welcome_channel,
+    get_leave_channel,
     set_welcome_message,
     set_leave_message,
+    get_welcome_message,
+    get_leave_message,
     set_booster_channel,
     set_booster_message,
+    get_booster_channel,
+    get_booster_message,
     set_log_channel,
+    get_log_channel,
     set_role,
     get_role,
+    get_roles,
     set_command_permission,
     remove_command_permission,
+    get_command_permissions,
     remove_role,
+    get_filtered_words,
+    get_trigger_responses,
+    get_anti_nuke_setting,
+    get_safe_users,
+    get_safe_roles,
+    get_anti_nuke_log_channel,
 )
 from utils import has_role, has_command_permission, get_channel_webhook, parse_duration
 
@@ -910,6 +926,74 @@ def setup(bot: commands.Bot):
             f"\u2705 Log channel set to {channel.mention}.", ephemeral=True
         )
 
+    @bot.tree.command(name="serversettings", description="Show server configuration")
+    @app_commands.checks.has_permissions(manage_guild=True)
+    async def serversettings(interaction: discord.Interaction):
+        gid = interaction.guild.id
+        lines = []
+
+        def fmt_channel(cid: Optional[int]) -> str:
+            return f"<#{cid}>" if cid else "Not set"
+
+        lines.append(f"Welcome channel: {fmt_channel(get_welcome_channel(gid))}")
+        lines.append(f"Leave channel: {fmt_channel(get_leave_channel(gid))}")
+        lines.append(f"Booster channel: {fmt_channel(get_booster_channel(gid))}")
+        lines.append(f"Log channel: {fmt_channel(get_log_channel(gid))}")
+        lines.append(
+            f"Welcome message: {get_welcome_message(gid) or 'Not set'}"
+        )
+        lines.append(f"Leave message: {get_leave_message(gid) or 'Not set'}")
+        lines.append(f"Booster message: {get_booster_message(gid) or 'Not set'}")
+
+        role_map = get_roles(gid)
+        if role_map:
+            for name, rid in role_map.items():
+                lines.append(f"Role {name}: <@&{rid}>")
+        cmd_roles = get_command_permissions(gid)
+        if cmd_roles:
+            for cmd, rid in cmd_roles.items():
+                lines.append(f"Command {cmd}: <@&{rid}>")
+
+        filters = get_filtered_words(gid)
+        lines.append(
+            "Filtered words: " + (", ".join(filters) if filters else "None")
+        )
+        triggers = get_trigger_responses(gid)
+        lines.append(
+            "Triggers: " + (", ".join(triggers.keys()) if triggers else "None")
+        )
+
+        categories = [
+            "delete_roles",
+            "add_roles",
+            "kick",
+            "ban",
+            "delete_channels",
+            "anti_mention",
+            "webhook",
+        ]
+        for cat in categories:
+            setting = get_anti_nuke_setting(cat, gid)
+            if setting:
+                en, th, p, dur = setting
+                desc = "on" if en else "off"
+                desc += f", threshold={th}, punishment={p}"
+                if p == "timeout" and dur:
+                    desc += f" {dur}s"
+            else:
+                desc = "not set"
+            lines.append(f"Anti-nuke {cat}: {desc}")
+        users = [f"<@{u}>" for u in get_safe_users(gid)] or ["None"]
+        safe_roles = [f"<@&{r}>" for r in get_safe_roles(gid)] or ["None"]
+        cid = get_anti_nuke_log_channel(gid)
+        lines.append(f"Anti-nuke safe users: {', '.join(users)}")
+        lines.append(f"Anti-nuke safe roles: {', '.join(safe_roles)}")
+        lines.append(
+            f"Anti-nuke log channel: {fmt_channel(cid)}"
+        )
+
+        await interaction.response.send_message("\n".join(lines), ephemeral=True)
+
     @bot.tree.command(name="setrole", description="Configure a role used by the bot")
     @app_commands.describe(
         name="Which role to configure (admin/mod/sheher/hehim/channel_lock)",
@@ -1058,6 +1142,7 @@ def setup(bot: commands.Bot):
           setboostchannel,
           setboostmsg,
           setlogchannel,
+          serversettings,
           setrole,
           setcommandrole,
           removecommandrole,
