@@ -269,10 +269,16 @@ def get_booster_message() -> Optional[str]:
 
 
 def set_role(name: str, role_id: int) -> None:
+    old_id = get_role(name)
     _execute(
         "INSERT OR REPLACE INTO roles (name, role_id) VALUES (?, ?)",
         (name, str(role_id)),
     )
+    if old_id is not None and old_id != role_id:
+        _execute(
+            "UPDATE command_permissions SET role_id = ? WHERE role_id = ?",
+            (str(role_id), str(old_id)),
+        )
 
 
 def get_role(name: str) -> Optional[int]:
@@ -293,6 +299,10 @@ def get_command_permission(command: str) -> Optional[int]:
         (command,),
     )
     return int(row[0]) if row and row[0] else None
+
+
+def remove_command_permission(command: str) -> None:
+    _execute("DELETE FROM command_permissions WHERE command = ?", (command,))
 
 
 # ---------- shop helpers ----------

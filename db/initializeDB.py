@@ -12,10 +12,6 @@ def init_db():
         if not existing or not required_cols.issubset(existing):
             cursor.execute(f"DROP TABLE IF EXISTS {table}")
             cursor.execute(create_sql)
-    cursor.execute("PRAGMA table_info(dates)")
-    columns = {col[1] for col in cursor.fetchall()}
-    if "registered_date" not in columns:
-        cursor.execute("ALTER TABLE dates ADD COLUMN registered_date TEXT")
 
     cursor.execute(
         """
@@ -151,6 +147,11 @@ def init_db():
         )
         """
     )
+
+    cursor.execute("PRAGMA table_info(dates)")
+    columns = {col[1] for col in cursor.fetchall()}
+    if "registered_date" not in columns:
+        cursor.execute("ALTER TABLE dates ADD COLUMN registered_date TEXT")
 
     cursor.execute(
         """
