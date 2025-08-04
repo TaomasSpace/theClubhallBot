@@ -2,6 +2,7 @@ import asyncio
 import inspect
 import io
 
+
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -46,6 +47,7 @@ async def run_command_tests(bot: commands.Bot) -> dict[str, str]:
         def mention(self) -> str:  # pragma: no cover - simple placeholder
             return f"<@&{self.id}>"
 
+
     class DummyResponse:
         async def send_message(self, *args, **kwargs):
             pass
@@ -61,6 +63,7 @@ async def run_command_tests(bot: commands.Bot) -> dict[str, str]:
         def __init__(self):
             self.roles: list[DummyRole] = []
             self.members: list[DummyUser] = []  # type: ignore[name-defined]
+
 
         def get_role(self, role_id: int):
             for role in self.roles:
@@ -81,6 +84,7 @@ async def run_command_tests(bot: commands.Bot) -> dict[str, str]:
 
     class DummyUser:
         def __init__(self, user_id: int = 0, name: str = "tester", guild: DummyGuild | None = None):
+
             self.id = user_id
             self.name = name
             self.display_name = name
@@ -92,6 +96,7 @@ async def run_command_tests(bot: commands.Bot) -> dict[str, str]:
         @property
         def mention(self) -> str:  # pragma: no cover - simple placeholder
             return f"<@{self.id}>"
+
 
         async def add_roles(self, *roles, **kwargs):
             self.roles.extend(roles)
@@ -107,6 +112,7 @@ async def run_command_tests(bot: commands.Bot) -> dict[str, str]:
     dummy_guild = DummyGuild()
     dummy_role = DummyRole(name="role", role_id=1)
     dummy_guild.roles.append(dummy_role)
+
     dummy_user = DummyUser(guild=dummy_guild)
     dummy_target = DummyUser(user_id=1, name="target", guild=dummy_guild)
     dummy_guild.members.extend([dummy_user, dummy_target])
@@ -115,6 +121,7 @@ async def run_command_tests(bot: commands.Bot) -> dict[str, str]:
         user = dummy_user
         guild = dummy_guild
         channel = DummyChannel()
+
         response = DummyResponse()
         followup = DummyFollowup()
 
@@ -158,6 +165,7 @@ async def run_command_tests(bot: commands.Bot) -> dict[str, str]:
             return datetime.now(timezone.utc)
         return None
 
+
     for cmd in bot.tree.get_commands():
         try:
             sig = inspect.signature(cmd.callback)
@@ -168,6 +176,7 @@ async def run_command_tests(bot: commands.Bot) -> dict[str, str]:
                     args.append(get_dummy_arg(p))
                 else:
                     args.append(p.default)
+
             await cmd.callback(dummy, *args)
             results[cmd.name] = "OK"
         except Exception as e:
