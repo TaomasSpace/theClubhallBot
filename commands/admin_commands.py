@@ -35,6 +35,7 @@ from db.DBHelper import (
 )
 from utils import has_role, get_channel_webhook, parse_duration
 
+
 async def run_command_tests(bot: commands.Bot) -> dict[str, str]:
     results: dict[str, str] = {}
 
@@ -46,7 +47,6 @@ async def run_command_tests(bot: commands.Bot) -> dict[str, str]:
         @property
         def mention(self) -> str:  # pragma: no cover - simple placeholder
             return f"<@&{self.id}>"
-
 
     class DummyResponse:
         async def send_message(self, *args, **kwargs):
@@ -63,7 +63,6 @@ async def run_command_tests(bot: commands.Bot) -> dict[str, str]:
         def __init__(self):
             self.roles: list[DummyRole] = []
             self.members: list[DummyUser] = []  # type: ignore[name-defined]
-
 
         def get_role(self, role_id: int):
             for role in self.roles:
@@ -83,7 +82,12 @@ async def run_command_tests(bot: commands.Bot) -> dict[str, str]:
             return role
 
     class DummyUser:
-        def __init__(self, user_id: int = 0, name: str = "tester", guild: DummyGuild | None = None):
+        def __init__(
+            self,
+            user_id: int = 0,
+            name: str = "tester",
+            guild: DummyGuild | None = None,
+        ):
 
             self.id = user_id
             self.name = name
@@ -96,7 +100,6 @@ async def run_command_tests(bot: commands.Bot) -> dict[str, str]:
         @property
         def mention(self) -> str:  # pragma: no cover - simple placeholder
             return f"<@{self.id}>"
-
 
         async def add_roles(self, *roles, **kwargs):
             self.roles.extend(roles)
@@ -121,7 +124,7 @@ async def run_command_tests(bot: commands.Bot) -> dict[str, str]:
         user = dummy_user
         guild = dummy_guild
         channel = DummyChannel()
-
+        original_response = "DummyOriginalResponse"
         response = DummyResponse()
         followup = DummyFollowup()
 
@@ -164,7 +167,6 @@ async def run_command_tests(bot: commands.Bot) -> dict[str, str]:
         if ann is datetime:
             return datetime.now(timezone.utc)
         return None
-
 
     for cmd in bot.tree.get_commands():
         try:
