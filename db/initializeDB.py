@@ -5,6 +5,13 @@ from config import DB_PATH, MAX_COINS
 def init_db():
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
+
+    def _recreate(table: str, create_sql: str, required_cols: set[str]):
+        cursor.execute(f"PRAGMA table_info({table})")
+        existing = {col[1] for col in cursor.fetchall()}
+        if not existing or not required_cols.issubset(existing):
+            cursor.execute(f"DROP TABLE IF EXISTS {table}")
+            cursor.execute(create_sql)
     cursor.execute("PRAGMA table_info(dates)")
     columns = {col[1] for col in cursor.fetchall()}
     if "registered_date" not in columns:
@@ -158,57 +165,80 @@ def init_db():
         """
     )
 
-    cursor.execute(
+    _recreate(
+        "filtered_words",
         """
         CREATE TABLE IF NOT EXISTS filtered_words (
-            word TEXT PRIMARY KEY
+            guild_id TEXT,
+            word TEXT,
+            PRIMARY KEY (guild_id, word)
         )
-        """
+        """,
+        {"guild_id", "word"},
     )
 
-    cursor.execute(
+    _recreate(
+        "trigger_responses",
         """
         CREATE TABLE IF NOT EXISTS trigger_responses (
-            trigger TEXT PRIMARY KEY,
-            response TEXT NOT NULL
+            guild_id TEXT,
+            trigger TEXT,
+            response TEXT NOT NULL,
+            PRIMARY KEY (guild_id, trigger)
         )
-        """
+        """,
+        {"guild_id", "trigger", "response"},
     )
 
-    cursor.execute(
+    _recreate(
+        "anti_nuke_settings",
         """
         CREATE TABLE IF NOT EXISTS anti_nuke_settings (
-            category TEXT PRIMARY KEY,
+            guild_id TEXT,
+            category TEXT,
             enabled INTEGER DEFAULT 0,
             threshold INTEGER DEFAULT 1,
             punishment TEXT DEFAULT 'kick',
-            duration INTEGER
+            duration INTEGER,
+            PRIMARY KEY (guild_id, category)
         )
-        """
+        """,
+        {"guild_id", "category", "enabled", "threshold", "punishment", "duration"},
     )
 
-    cursor.execute(
+    _recreate(
+        "anti_nuke_safe_users",
         """
         CREATE TABLE IF NOT EXISTS anti_nuke_safe_users (
-            user_id TEXT PRIMARY KEY
+            guild_id TEXT,
+            user_id TEXT,
+            PRIMARY KEY (guild_id, user_id)
         )
-        """
+        """,
+        {"guild_id", "user_id"},
     )
 
-    cursor.execute(
+    _recreate(
+        "anti_nuke_safe_roles",
         """
         CREATE TABLE IF NOT EXISTS anti_nuke_safe_roles (
-            role_id TEXT PRIMARY KEY
+            guild_id TEXT,
+            role_id TEXT,
+            PRIMARY KEY (guild_id, role_id)
         )
-        """
+        """,
+        {"guild_id", "role_id"},
     )
 
-    cursor.execute(
+    _recreate(
+        "anti_nuke_log_channel",
         """
         CREATE TABLE IF NOT EXISTS anti_nuke_log_channel (
-            channel_id TEXT PRIMARY KEY
+            guild_id TEXT PRIMARY KEY,
+            channel_id TEXT
         )
-        """
+        """,
+        {"guild_id", "channel_id"},
     )
 
 
