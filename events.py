@@ -307,6 +307,10 @@ async def on_app_error(bot: commands.Bot, inter: discord.Interaction, error: Exc
             name="Guild", value=f"{inter.guild} (`{inter.guild_id}`)", inline=False
         )
     embed.add_field(name="Error ID", value=error_id, inline=False)
+    embed.add_field(
+        name="Error report",
+        value="You can report the error in with the error number in this server: https://discord.gg/CfYdVBdg7v",
+    )
     if central_log:
         await central_log.send(embed=embed)
     if log_ch and log_ch != central_log:
