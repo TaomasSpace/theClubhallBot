@@ -40,34 +40,31 @@ def init_db():
     """
     )
 
-    cursor.execute(
+    _recreate(
+        "server",
         """
         CREATE TABLE IF NOT EXISTS server (
-            id INTEGER PRIMARY KEY CHECK (id = 1),
+            guild_id TEXT PRIMARY KEY,
             welcome_channel_id TEXT,
             leave_channel_id TEXT,
             welcome_message TEXT,
             leave_message TEXT,
             booster_channel_id TEXT,
-            booster_message TEXT
+            booster_message TEXT,
+            log_channel_id TEXT
         )
-    """
+        """,
+        {
+            "guild_id",
+            "welcome_channel_id",
+            "leave_channel_id",
+            "welcome_message",
+            "leave_message",
+            "booster_channel_id",
+            "booster_message",
+            "log_channel_id",
+        },
     )
-    cursor.execute("PRAGMA table_info(server)")
-    columns = {col[1] for col in cursor.fetchall()}
-    for col in [
-        "welcome_channel_id",
-        "leave_channel_id",
-        "welcome_message",
-        "leave_message",
-        "booster_channel_id",
-        "booster_message",
-    ]:
-        if col not in columns:
-            cursor.execute(f"ALTER TABLE server ADD COLUMN {col} TEXT")
-    cursor.execute("SELECT id FROM server WHERE id = 1")
-    if cursor.fetchone() is None:
-        cursor.execute("INSERT INTO server (id) VALUES (1)")
     cursor.execute(
         """
     CREATE TABLE IF NOT EXISTS shop_roles (
@@ -76,21 +73,29 @@ def init_db():
     )
     """
     )
-    cursor.execute(
+    _recreate(
+        "roles",
         """
-    CREATE TABLE IF NOT EXISTS roles (
-        name     TEXT PRIMARY KEY,
-        role_id  TEXT
+        CREATE TABLE IF NOT EXISTS roles (
+            guild_id TEXT,
+            name     TEXT,
+            role_id  TEXT,
+            PRIMARY KEY (guild_id, name)
+        )
+        """,
+        {"guild_id", "name", "role_id"},
     )
-    """
-    )
-    cursor.execute(
+    _recreate(
+        "command_permissions",
         """
-    CREATE TABLE IF NOT EXISTS command_permissions (
-        command TEXT PRIMARY KEY,
-        role_id TEXT
-    )
-    """
+        CREATE TABLE IF NOT EXISTS command_permissions (
+            guild_id TEXT,
+            command TEXT,
+            role_id TEXT,
+            PRIMARY KEY (guild_id, command)
+        )
+        """,
+        {"guild_id", "command", "role_id"},
     )
     cursor.execute(
         """

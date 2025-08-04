@@ -9,7 +9,6 @@ from discord import app_commands
 from discord.ext import commands
 from datetime import datetime, timezone, timedelta
 
-from config import LOG_CHANNEL_ID
 import db.DBHelper as DBHelperModule
 import db.initializeDB as initdb
 from db.DBHelper import (
@@ -34,6 +33,7 @@ from db.DBHelper import (
     set_leave_message,
     set_booster_channel,
     set_booster_message,
+    set_log_channel,
     set_role,
     get_role,
     set_command_permission,
@@ -75,6 +75,7 @@ async def run_command_tests(bot: commands.Bot) -> dict[str, str]:
 
             class DummyGuild:
                 def __init__(self):
+                    self.id = 0
                     self.roles: list[DummyRole] = []
                     self.members: list[DummyUser] = []  # type: ignore[name-defined]
 
@@ -726,7 +727,7 @@ def setup(bot: commands.Bot):
         if not has_command_permission(interaction.user, "lock", "admin"):
             await interaction.response.send_message("No permission.", ephemeral=True)
             return
-        lock_id = get_role("channel_lock")
+        lock_id = get_role(interaction.guild.id, "channel_lock")
         role = interaction.guild.get_role(lock_id) if lock_id else None
         if role is None:
             await interaction.response.send_message("Role not found.", ephemeral=True)
@@ -741,7 +742,7 @@ def setup(bot: commands.Bot):
         if not has_command_permission(interaction.user, "unlock", "admin"):
             await interaction.response.send_message("No permission.", ephemeral=True)
             return
-        lock_id = get_role("channel_lock")
+        lock_id = get_role(interaction.guild.id, "channel_lock")
         role = interaction.guild.get_role(lock_id) if lock_id else None
         if role is None:
             await interaction.response.send_message("Role not found.", ephemeral=True)
@@ -829,7 +830,7 @@ def setup(bot: commands.Bot):
     async def setwelcomechannel(
         interaction: discord.Interaction, channel: discord.TextChannel
     ):
-        set_welcome_channel(channel.id)
+        set_welcome_channel(interaction.guild.id, channel.id)
         await interaction.response.send_message(
             f"\u2705 Welcome channel set to {channel.mention}.", ephemeral=True
         )
@@ -840,7 +841,7 @@ def setup(bot: commands.Bot):
     async def setleavechannel(
         interaction: discord.Interaction, channel: discord.TextChannel
     ):
-        set_leave_channel(channel.id)
+        set_leave_channel(interaction.guild.id, channel.id)
         await interaction.response.send_message(
             f"\u2705 Leave channel set to {channel.mention}.", ephemeral=True
         )
@@ -851,7 +852,7 @@ def setup(bot: commands.Bot):
     )
     @app_commands.checks.has_permissions(manage_guild=True)
     async def setwelcomemsg(interaction: discord.Interaction, message: str):
-        set_welcome_message(message)
+        set_welcome_message(interaction.guild.id, message)
         await interaction.response.send_message(
             "\u2705 Welcome message updated.", ephemeral=True
         )
@@ -862,7 +863,7 @@ def setup(bot: commands.Bot):
     )
     @app_commands.checks.has_permissions(manage_guild=True)
     async def setleavemsg(interaction: discord.Interaction, message: str):
-        set_leave_message(message)
+        set_leave_message(interaction.guild.id, message)
         await interaction.response.send_message(
             "\u2705 Leave message updated.", ephemeral=True
         )
@@ -873,7 +874,7 @@ def setup(bot: commands.Bot):
     async def setboostchannel(
         interaction: discord.Interaction, channel: discord.TextChannel
     ):
-        set_booster_channel(channel.id)
+        set_booster_channel(interaction.guild.id, channel.id)
         await interaction.response.send_message(
             f"\u2705 Booster channel set to {channel.mention}.", ephemeral=True
         )
@@ -884,9 +885,20 @@ def setup(bot: commands.Bot):
     )
     @app_commands.checks.has_permissions(manage_guild=True)
     async def setboostmsg(interaction: discord.Interaction, message: str):
-        set_booster_message(message)
+        set_booster_message(interaction.guild.id, message)
         await interaction.response.send_message(
             "\u2705 Booster message updated.", ephemeral=True
+        )
+
+    @bot.tree.command(name="setlogchannel", description="Set the log channel")
+    @app_commands.describe(channel="Channel for bot logs")
+    @app_commands.checks.has_permissions(manage_guild=True)
+    async def setlogchannel(
+        interaction: discord.Interaction, channel: discord.TextChannel
+    ):
+        set_log_channel(interaction.guild.id, channel.id)
+        await interaction.response.send_message(
+            f"\u2705 Log channel set to {channel.mention}.", ephemeral=True
         )
 
     @bot.tree.command(name="setrole", description="Configure a role used by the bot")
@@ -903,7 +915,7 @@ def setup(bot: commands.Bot):
                 "\u274c Invalid role name.", ephemeral=True
             )
             return
-        set_role(key, role.id)
+        set_role(interaction.guild.id, key, role.id)
         await interaction.response.send_message(
             f"\u2705 Set {key} role to {role.mention}.", ephemeral=True
         )
@@ -919,7 +931,7 @@ def setup(bot: commands.Bot):
                 "\u274c Invalid role name.", ephemeral=True
             )
             return
-        remove_role(key)
+        remove_role(interaction.guild.id, key)
         await interaction.response.send_message(
             f"\u2705 Removed {key} role.", ephemeral=True
         )
@@ -934,7 +946,7 @@ def setup(bot: commands.Bot):
     async def setcommandrole(
         interaction: discord.Interaction, command: str, role: discord.Role
     ):
-        set_command_permission(command, role.id)
+        set_command_permission(interaction.guild.id, command, role.id)
         await interaction.response.send_message(
             f"\u2705 Set {command} command role to {role.mention}.", ephemeral=True
         )
@@ -944,8 +956,10 @@ def setup(bot: commands.Bot):
     )
     @app_commands.describe(command="Command name")
     @app_commands.checks.has_permissions(manage_guild=True)
-    async def removecommandrole(interaction: discord.Interaction, command: str):
-        remove_command_permission(command)
+    async def removecommandrole(
+        interaction: discord.Interaction, command: str
+    ):
+        remove_command_permission(interaction.guild.id, command)
         await interaction.response.send_message(
             f"\u2705 Removed {command} command role.", ephemeral=True
         )
@@ -1029,14 +1043,15 @@ def setup(bot: commands.Bot):
         removetrigger,
         triggers,
         setwelcomechannel,
-        setleavechannel,
-        setwelcomemsg,
-        setleavemsg,
-        setboostchannel,
-        setboostmsg,
-        setrole,
-        setcommandrole,
-        removecommandrole,
+          setleavechannel,
+          setwelcomemsg,
+          setleavemsg,
+          setboostchannel,
+          setboostmsg,
+          setlogchannel,
+          setrole,
+          setcommandrole,
+          removecommandrole,
         createrole,
         manageViltrumite,
         manageYeager,
