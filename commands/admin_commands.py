@@ -517,27 +517,31 @@ def setup(bot: commands.Bot):
     )
     @app_commands.describe(user="the user you want to add/remove the Viltrumite role")
     async def manageViltrumite(interaction: discord.Interaction, user: discord.Member):
-        if (
-            not has_command_permission(interaction.user, "manageviltrumite", "admin")
-            and interaction.user.id != 1068512374719520768
-        ):
+        if not has_command_permission(interaction.user, "manageviltrumite", "admin"):
             await interaction.response.send_message(
                 "You dont have permission to use this command.", ephemeral=True
             )
             return
-
-        if has_role(user, 1387452893015052298):
-            await user.remove_roles(
-                discord.utils.get(interaction.guild.roles, name="Viltrumite")
+        role_id = get_role(interaction.guild.id, "viltrumite")
+        role = (
+            interaction.guild.get_role(role_id)
+            if role_id
+            else discord.utils.get(interaction.guild.roles, name="Viltrumite")
+        )
+        if role is None:
+            await interaction.response.send_message(
+                "\u274c Role 'Viltrumite' not found.", ephemeral=True
             )
+            return
+
+        if has_role(user, role.id):
+            await user.remove_roles(role)
             await interaction.response.send_message(
                 "Viltrumite role removed from " + user.display_name
             )
             return
         else:
-            await user.add_roles(
-                discord.utils.get(interaction.guild.roles, name="Viltrumite")
-            )
+            await user.add_roles(role)
             await interaction.response.send_message(
                 "Viltrumite role added to " + user.display_name
             )
@@ -549,27 +553,31 @@ def setup(bot: commands.Bot):
     )
     @app_commands.describe(user="the user you want to add/remove the Yeager role")
     async def manageYeager(interaction: discord.Interaction, user: discord.Member):
-        if (
-            not has_command_permission(interaction.user, "manageyeager", "admin")
-            and interaction.user.id != 1348356899354972180
-        ):
+        if not has_command_permission(interaction.user, "manageyeager", "admin"):
             await interaction.response.send_message(
                 "You dont have permission to use this command.", ephemeral=True
             )
             return
-
-        if has_role(user, 1392537949639544852):
-            await user.remove_roles(
-                discord.utils.get(interaction.guild.roles, name="yeager")
+        role_id = get_role(interaction.guild.id, "yeager")
+        role = (
+            interaction.guild.get_role(role_id)
+            if role_id
+            else discord.utils.get(interaction.guild.roles, name="yeager")
+        )
+        if role is None:
+            await interaction.response.send_message(
+                "\u274c Role 'yeager' not found.", ephemeral=True
             )
+            return
+
+        if has_role(user, role.id):
+            await user.remove_roles(role)
             await interaction.response.send_message(
                 "Yeager role removed from " + user.display_name
             )
             return
         else:
-            await user.add_roles(
-                discord.utils.get(interaction.guild.roles, name="yeager")
-            )
+            await user.add_roles(role)
             await interaction.response.send_message(
                 "Yeager role added to " + user.display_name
             )
@@ -581,27 +589,31 @@ def setup(bot: commands.Bot):
     )
     @app_commands.describe(user="the user you want to add/remove the ackerman  role")
     async def manageackerman(interaction: discord.Interaction, user: discord.Member):
-        if (
-            not has_command_permission(interaction.user, "manageackerman", "admin")
-            and interaction.user.id != 1348356899354972180
-        ):
+        if not has_command_permission(interaction.user, "manageackerman", "admin"):
             await interaction.response.send_message(
                 "You dont have permission to use this command.", ephemeral=True
             )
             return
-
-        if has_role(user, 1392537815132147904):
-            await user.remove_roles(
-                discord.utils.get(interaction.guild.roles, name="ackerman")
+        role_id = get_role(interaction.guild.id, "ackerman")
+        role = (
+            interaction.guild.get_role(role_id)
+            if role_id
+            else discord.utils.get(interaction.guild.roles, name="ackerman")
+        )
+        if role is None:
+            await interaction.response.send_message(
+                "\u274c Role 'ackerman' not found.", ephemeral=True
             )
+            return
+
+        if has_role(user, role.id):
+            await user.remove_roles(role)
             await interaction.response.send_message(
                 "ackerman role removed from " + user.display_name
             )
             return
         else:
-            await user.add_roles(
-                discord.utils.get(interaction.guild.roles, name="ackerman")
-            )
+            await user.add_roles(role)
             await interaction.response.send_message(
                 "ackerman role added to " + user.display_name
             )
@@ -679,10 +691,7 @@ def setup(bot: commands.Bot):
     async def giveaway(
         interaction: discord.Interaction, duration: int, prize: str, winners: int
     ):
-        if (
-            not has_command_permission(interaction.user, "giveaway", "admin")
-            and interaction.user.id != 875279455222898698
-        ):
+        if not has_command_permission(interaction.user, "giveaway", "admin"):
             await interaction.response.send_message(
                 "Only admins and owners can use this command", ephemeral=True
             )
