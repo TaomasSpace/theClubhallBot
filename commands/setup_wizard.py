@@ -15,6 +15,7 @@ from db.DBHelper import (
     set_booster_message,
     set_log_channel,
     set_anti_nuke_log_channel,
+
     add_filtered_word,
     add_trigger_response,
     set_anti_nuke_setting,
@@ -258,6 +259,7 @@ class AntiNukeModal(discord.ui.Modal):
         await self.wizard.advance(interaction)
 
 
+
 class FilterWordsModal(discord.ui.Modal, title="Filtered words"):
     words = discord.ui.TextInput(
         label="Words",
@@ -316,6 +318,7 @@ class WizardStep:
     instruction: Optional[str] = None
 
 
+
 class StepView(discord.ui.View):
     def __init__(self, wizard: "SetupWizard", step: WizardStep):
         super().__init__(timeout=None)
@@ -332,6 +335,7 @@ class StepView(discord.ui.View):
                 self.step.instruction or "No action required.", ephemeral=True
             )
             await self.wizard.advance(interaction)
+
 
     @discord.ui.button(label="Skip", style=discord.ButtonStyle.gray)
     async def skip(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -410,6 +414,7 @@ class SetupWizard:
                         "Use `/setrole <name> <@role>` after the wizard to register"
                         " role shortcuts."
                     ),
+
                 ),
                 WizardStep(
                     "Command permissions",
@@ -419,6 +424,7 @@ class SetupWizard:
                         "Use `/setcommandrole <command> <@role>` after the wizard"
                         " to limit command usage."
                     ),
+
                 ),
                 WizardStep(
                     "Filtered words",

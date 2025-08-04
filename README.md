@@ -21,3 +21,4 @@ Run `/setup-wizard` on your server to walk through a complete configuration.
 The wizard explains every step, lets you skip anything, and sets up channels
 and anti-nuke options. For role shortcuts and command restrictions it points
 you to the `/setrole` and `/setcommandrole` commands for later use.
+
