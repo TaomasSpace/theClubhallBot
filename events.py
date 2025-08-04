@@ -108,7 +108,7 @@ async def on_member_update(
     bot: commands.Bot, before: discord.Member, after: discord.Member
 ):
     if before.premium_since and not after.premium_since:
-        role_id = get_custom_role(str(after.id))
+        role_id = get_custom_role(after.guild.id, str(after.id))
         if role_id:
             role = after.guild.get_role(role_id)
             if role:
@@ -116,7 +116,7 @@ async def on_member_update(
                     await role.delete(reason="User stopped boosting")
                 except Exception:
                     pass
-            delete_custom_role(str(after.id))
+            delete_custom_role(after.guild.id, str(after.id))
     if not before.premium_since and after.premium_since:
         cid = get_booster_channel(after.guild.id)
         if cid:

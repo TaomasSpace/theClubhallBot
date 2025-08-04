@@ -353,20 +353,26 @@ def get_shop_roles():
     return rows
 
 
-def get_custom_role(user_id: str):
-    row = _fetchone("SELECT role_id FROM custom_roles WHERE user_id = ?", (user_id,))
+def get_custom_role(guild_id: int, user_id: str):
+    row = _fetchone(
+        "SELECT role_id FROM custom_roles WHERE guild_id = ? AND user_id = ?",
+        (str(guild_id), user_id),
+    )
     return int(row[0]) if row else None
 
 
-def set_custom_role(user_id: str, role_id: int):
+def set_custom_role(guild_id: int, user_id: str, role_id: int):
     _execute(
-        "INSERT OR REPLACE INTO custom_roles (user_id, role_id) VALUES (?, ?)",
-        (user_id, role_id),
+        "INSERT OR REPLACE INTO custom_roles (guild_id, user_id, role_id) VALUES (?, ?, ?)",
+        (str(guild_id), user_id, role_id),
     )
 
 
-def delete_custom_role(user_id: str):
-    _execute("DELETE FROM custom_roles WHERE user_id = ?", (user_id,))
+def delete_custom_role(guild_id: int, user_id: str):
+    _execute(
+        "DELETE FROM custom_roles WHERE guild_id = ? AND user_id = ?",
+        (str(guild_id), user_id),
+    )
 
 
 # ---------- anime title helpers ----------
