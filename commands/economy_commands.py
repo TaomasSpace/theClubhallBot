@@ -559,18 +559,13 @@ def setup(bot: commands.Bot):
         register_user(receiver_id, user.display_name)
         sender_balance = get_money(sender_id)
 
-        if interaction.user.id == 756537363509018736 and amount.lower() == "taoma":
-            receiver_balance = get_money(receiver_id)
-            amount_int = max(0, (sender_balance - receiver_balance) // 2 + 1)
-            amount_int = min(amount_int, sender_balance)
-        else:
-            try:
-                amount_int = int(amount)
-            except Exception:
-                await interaction.response.send_message(
-                    "Invalid amount.", ephemeral=True
-                )
-                return
+        try:
+            amount_int = int(amount)
+        except Exception:
+            await interaction.response.send_message(
+                "Invalid amount.", ephemeral=True
+            )
+            return
 
         if amount_int <= 0:
             await interaction.response.send_message(
