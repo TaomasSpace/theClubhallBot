@@ -83,23 +83,6 @@ async def run_command_tests(bot: commands.Bot) -> dict[str, str]:
             self.roles.append(role)
             return role
 
-    class DummyMessage:
-        def __init__(self, content="dummy"):
-            self.content = content
-            self.reactions = []
-
-        id = 10
-        channel = 10
-
-        async def add_reaction(self, emoji):
-            self.reactions.append(emoji)
-
-        async def edit(self, **kwargs):
-            self.content = kwargs.get("content", self.content)
-
-        async def reply(self, *args, **kwargs):
-            pass  # Placeholder
-
     class DummyAvatar:
         url = "https://example.com/avatar.png"
 
@@ -151,6 +134,23 @@ async def run_command_tests(bot: commands.Bot) -> dict[str, str]:
 
         async def set_permissions(self, *args, **kwargs):
             pass
+
+    class DummyMessage:
+        def __init__(self, content="dummy"):
+            self.content = content
+            self.reactions = []
+
+        id = 10
+        channel = DummyChannel
+
+        async def add_reaction(self, emoji):
+            self.reactions.append(emoji)
+
+        async def edit(self, **kwargs):
+            self.content = kwargs.get("content", self.content)
+
+        async def reply(self, *args, **kwargs):
+            pass  # Placeholder
 
     dummy_guild = DummyGuild()
     dummy_role = DummyRole(name="role", role_id=1)
