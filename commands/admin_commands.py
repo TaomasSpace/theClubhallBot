@@ -889,6 +889,41 @@ def setup(bot: commands.Bot):
             "\u2705 Booster message updated.", ephemeral=True
         )
 
+    @bot.tree.command(name="setrole", description="Configure a role used by the bot")
+    @app_commands.describe(
+        name="Which role to configure (admin/mod/sheher/hehim/channel_lock)",
+        role="The role to use",
+    )
+    @app_commands.checks.has_permissions(manage_guild=True)
+    async def setrole(interaction: discord.Interaction, name: str, role: discord.Role):
+        key = name.lower()
+        valid = {"admin", "mod", "sheher", "hehim", "channel_lock"}
+        if key not in valid:
+            await interaction.response.send_message(
+                "\u274c Invalid role name.", ephemeral=True
+            )
+            return
+        set_role(key, role.id)
+        await interaction.response.send_message(
+            f"\u2705 Set {key} role to {role.mention}.", ephemeral=True
+        )
+
+    @bot.tree.command(name="removerole", description="Remove a configured role")
+    @app_commands.describe(name="Role name")
+    @app_commands.checks.has_permissions(manage_guild=True)
+    async def removerole(interaction: discord.Interaction, name: str):
+        key = name.lower()
+        valid = {"admin", "mod", "sheher", "hehim", "channel_lock"}
+        if key not in valid:
+            await interaction.response.send_message(
+                "\u274c Invalid role name.", ephemeral=True
+            )
+            return
+        remove_role(key)
+        await interaction.response.send_message(
+            f"\u2705 Removed {key} role.", ephemeral=True
+        )
+
     @bot.tree.command(
         name="setcommandrole", description="Set required role for a command"
     )
@@ -999,6 +1034,7 @@ def setup(bot: commands.Bot):
         setleavemsg,
         setboostchannel,
         setboostmsg,
+        setrole,
         setcommandrole,
         removecommandrole,
         createrole,
