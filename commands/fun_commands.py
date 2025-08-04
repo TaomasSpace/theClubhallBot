@@ -33,65 +33,23 @@ def setup(bot: commands.Bot):
 
     @bot.tree.command(name="punch", description="Punch someone with anime style")
     async def punch(interaction: discord.Interaction, user: discord.Member):
-        punch_gifs = [
-            "https://media1.tenor.com/m/BoYBoopIkBcAAAAC/anime-smash.gif",
-            "https://media4.giphy.com/media/NuiEoMDbstN0J2KAiH/giphy.gif",
-            "https://i.pinimg.com/originals/8a/ab/09/8aab09880ff9226b1c73ee4c2ddec883.gif",
-            "https://i.pinimg.com/originals/8d/50/60/8d50607e59db86b5afcc21304194ba57.gif",
-            "https://i.imgur.com/g91XPGA.gif",
-            "https://i.makeagif.com/media/3-16-2021/CKcOa2.gif",
-            "https://i.pinimg.com/originals/a5/2e/ba/a52eba768035cb7ae66f15f3c66bb184.gif",
-            "https://i.gifer.com/BKZ9.gif",
-            "https://i.imgur.com/47ctNlt.gif",
-            "https://gifdb.com/images/high/anime-punch-shiki-granbell-radiant-oxj18jt2n2c6vvky.gif",
-            "https://i.pinimg.com/originals/48/d5/59/48d55975d1c4ec1aa74f4646962bb815.gif",
-            "https://i.gifer.com/9eUJ.gif",
-            "https://giffiles.alphacoders.com/131/13126.gif",
-            "https://media.tenor.com/0ssFlowQEUQAAAAM/naru-punch.gif",
-            "https://media0.giphy.com/media/arbHBoiUWUgmc/giphy.gif",
-            "https://i.pinimg.com/originals/17/5c/f2/175cf269b6df62b75a5d25a0ed45e954.gif",
-            "https://i.imgur.com/GsMjksq.gif",
-            "https://media.tenor.com/VuF2NpuuLJsAAAAM/kanon-anime.gif",
-            "https://i2.kym-cdn.com/photos/images/original/000/989/495/3b8.gif",
-            "https://i.gifer.com/1Ky5.gif",
-            "https://i.pinimg.com/originals/86/c3/ce/86c3ce1869454a96b138fe66992fa3b7.gif",
-            "https://i.imgur.com/q6qjskO.gif",
-            "https://racco.neocities.org/Saved%20Pictures/4ff4ab319bfb9a43bb8b526ef4fb222c.gif",
-            "https://i.makeagif.com/media/4-14-2015/5JqC6M.gif",
-            "https://static.wikia.nocookie.net/fzero-facts/images/d/d0/Falcon_Punch_%28anime_version%29.gif",
-            "https://gifdb.com/images/high/anime-punch-meliodas-seven-clovers-f4bn40bmcsmy98qw.gif",
-            "https://media.tenor.com/wTzNeEgfPicAAAAM/anime-punch.gif",
-            "https://64.media.tumblr.com/7e30bb1047071490ac65828b96ef71a8/tumblr_nhgcpaDTOj1snbyiqo1_500.gif",
-            "https://gifdb.com/images/high/anime-fight-funny-punch-s4n15b8fw49plyhd.gif",
-            "https://i.pinimg.com/originals/b2/b1/16/b2b116143040bc3bb2e1e89a87de0f5f.gif",
-            "https://gifdb.com/images/high/anime-saki-saki-powerful-punch-xzs7ab1am1a8e80o.gif",
-            "https://media.tenor.com/yA_KtmPI1EMAAAAM/hxh-hunter-x-hunter.gif",
-            "https://media.tenor.com/images/7a582f32ef2ed527c0f113f81a696ae3/tenor.gif",
-            "https://i.imgur.com/qWpGotd.gif",
-            "https://media4.giphy.com/media/2t9s7k3IlI6bcOdPj1/giphy.gif",
-            "https://gifdb.com/images/high/yoruichi-bleach-anime-punch-ground-explode-destroy-city-h51x0wsb4rb7qmpz.gif",
-            "https://i.pinimg.com/originals/d7/c3/0e/d7c30e46a937aaade4d7bc20eb09339b.gif",
-            "https://upgifs.com//img/gifs/2C12FgA3jVbby.gif",
-            "https://gifdb.com/images/high/anime-punch-damian-desmond-gun4qnn5009sa1ne.gif",
-            "https://giffiles.alphacoders.com/200/200628.gif",
-            "https://i.imgflip.com/1zx1tj.gif",
-        ]
+        response = requests.get(
+            "https://api.otakugifs.xyz/gif?reaction=punch&format=gif"
+        )
+
+        gif = response.json()
+        gif = gif["url"]
         if user.id == interaction.user.id:
             await interaction.response.send_message(
                 "You can't punch yourself ... or maybe you can?", ephemeral=True
             )
             return
-        if not punch_gifs:
-            await interaction.response.send_message(
-                "No Punch GIFs stored!", ephemeral=True
-            )
-            return
-        selected_gif = choice(punch_gifs)
+
         embed = discord.Embed(
             title=f"{interaction.user.display_name} punches {user.display_name}!",
             color=discord.Colour.red(),
         )
-        embed.set_image(url=selected_gif)
+        embed.set_image(url=gif)
         await interaction.response.send_message(embed=embed)
 
     @bot.tree.command(name="stab", description="Stab someone with anime style")
@@ -199,32 +157,16 @@ def setup(bot: commands.Bot):
 
     @bot.tree.command(name="dance", description="hit a cool dance")
     async def dance(interaction: discord.Interaction):
-        dance_gifs = [
-            "https://i.pinimg.com/originals/97/2d/aa/972daa47f0ce9cd21f79af88195b4c07.gif",
-            "https://media.tenor.com/GOYRQva4UeoAAAAM/anime-dance.gif",
-            "https://media.tenor.com/4QvbP2MXNjkAAAAM/guts-berserk.gif",
-            "https://i.pinimg.com/originals/ce/7a/f8/ce7af890d23444939a9ed0b019dc46c6.gif",
-            "https://media0.giphy.com/media/RLJxQtX8Hs7XytaoyX/200w.gif",
-            "https://media4.giphy.com/media/lyN5qwcbXWXr2fUjBa/200.gif",
-            "https://media2.giphy.com/media/euMGM3uD3NHva/200w.gif",
-            "https://media.tenor.com/PKD99ODryUMAAAAM/rinrinne-rinne.gif",
-            "https://i.imgur.com/AMA4d7I.gif",
-            "https://usagif.com/wp-content/uploads/gify/39-anime-dance-girl-usagif.gif",
-            "https://media1.giphy.com/media/11lxCeKo6cHkJy/200.gif",
-            "https://gamingforevermore.weebly.com/uploads/2/5/8/9/25893592/6064743_orig.gif",
-            "https://media1.giphy.com/media/M8ubTcdyKsJAj5DsLC/200w.gif",
-            "https://www.icegif.com/wp-content/uploads/2024/02/icegif-497.gif",
-            "https://i.imgur.com/jhFy1dS.gif",
-            "https://gifsec.com/wp-content/uploads/2022/10/anime-dance-gif-26.gif",
-            "https://i.redd.it/d5jtphmm52931.gif",
-            "https://images-wixmp-ed30a86b8c4ca887773594c2.wixmp.com/f/11a8fe33-328d-4dce-8c62-09fbfdfa4467/dh0aiaw-c412949f-3b1f-43f6-9c70-de76a18eaef1.gif?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1cm46YXBwOjdlMGQxODg5ODIyNjQzNzNhNWYwZDQxNWVhMGQyNmUwIiwiaXNzIjoidXJuOmFwcDo3ZTBkMTg4OTgyMjY0MzczYTVmMGQ0MTVlYTBkMjZlMCIsIm9iaiI6W1t7InBhdGgiOiJcL2ZcLzExYThmZTMzLTMyOGQtNGRjZS04YzYyLTA5ZmJmZGZhNDQ2N1wvZGgwYWlhdy1jNDEyOTQ5Zi0zYjFmLTQzZjYtOWM3MC1kZTc2YTE4ZWFlZjEuZ2lmIn1dXSwiYXVkIjpbInVybjpzZXJ2aWNlOmZpbGUuZG93bmxvYWQiXX0.s2bQH9zNTvXzUJMAp2BeuioND_4aq6IUTcrRDidBqvo",
-            "https://media.tenor.com/xXdBqOdY_jAAAAAM/nino-nakano.gif",
-        ]
-        gif_url = choice(dance_gifs)
+        response = requests.get(
+            "https://api.otakugifs.xyz/gif?reaction=dance&format=gif"
+        )
+
+        gif = response.json()
+        gif = gif["url"]
         embed = discord.Embed(
             title=f"{interaction.user.display_name} Dances", color=discord.Color.red()
         )
-        embed.set_image(url=gif_url)
+        embed.set_image(url=gif)
         await interaction.response.send_message(embed=embed)
 
     @bot.tree.command(name="kiss", description="kiss another user")
@@ -242,52 +184,49 @@ def setup(bot: commands.Bot):
         embed.set_image(url=gif)
         await interaction.response.send_message(embed=embed)
 
+    @bot.tree.command(name="peek", description="get a random peek gif")
+    async def peek(interaction: discord.Interaction):
+        response = requests.get(
+            "https://api.otakugifs.xyz/gif?reaction=peek&format=gif"
+        )
+
+        gif = response.json()
+        gif = gif["url"]
+        embed = discord.Embed(
+            title=f"{interaction.user.display_name} peeks around the corner",
+            color=discord.Color.red(),
+        )
+        embed.set_image(url=gif)
+        await interaction.response.send_message(embed=embed)
+
     @bot.tree.command(name="good", description="Tell someone he/she is a good boy/girl")
     async def good(interaction: discord.Interaction, user: discord.Member):
-        sheher_gifs = [
-            "https://c.tenor.com/EXlBWDEJhIQAAAAd/tenor.gif",
-            "https://c.tenor.com/ENcB_TMNJAYAAAAd/tenor.gif",
-            "https://c.tenor.com/6-MIKH3o1BkAAAAd/tenor.gif",
-            "https://c.tenor.com/hXlKC_Va6mgAAAAd/tenor.gif",
-            "https://c.tenor.com/h4iOZke1ESMAAAAd/tenor.gif",
-            "https://c.tenor.com/4MCocODtY4EAAAAd/tenor.gif",
-            "https://c.tenor.com/jsOSJ9i3C6YAAAAd/tenor.gif",
-        ]
-        hehim_gifs = [
-            "        https://c.tenor.com/FJApjvQ0aJQAAAAd/tenor.gif",
-            "https://c.tenor.com/sIMPVgqJ07QAAAAd/tenor.gif",
-            "https://media.discordapp.net/attachments/1241701136227110932/1241711528831356998/caption.gif?ex=680a1dfa&is=6808cc7a&hm=875565279cbad6af5b42c4610c96856f17446e3a95222ad26cbd81a97448ff80&=&width=440&height=848",
-            "https://c.tenor.com/ZzTZ9p6dsccAAAAd/tenor.gif",
-            "https://c.tenor.com/LZMc6NWsxgUAAAAd/tenor.gif",
-            "https://c.tenor.com/UA4AsiQLhZYAAAAd/tenor.gif",
-            "https://c.tenor.com/roTBuOK3MeMAAAAd/tenor.gif",
-            "https://c.tenor.com/txwU-nHbUiQAAAAd/tenor.gif",
-        ]
-        undefined_gifs = sheher_gifs + hehim_gifs
+
+        response = requests.get("https://api.otakugifs.xyz/gif?reaction=pat&format=gif")
+
+        gif = response.json()
+        gif = gif["url"]
         try:
             if has_role(user, SHEHER_ROLE_ID) and not user.name == "goodyb":
-                gif_url = choice(sheher_gifs)
                 embed = discord.Embed(
                     title=f"{interaction.user.display_name} calls {user.display_name} a good girl",
                     color=discord.Color.red(),
                 )
-                embed.set_image(url=gif_url)
+                embed.set_image(url=gif)
                 await interaction.response.send_message(embed=embed)
             elif has_role(user, HEHIM_ROLE_ID):
-                gif_url = choice(hehim_gifs)
                 embed = discord.Embed(
                     title=f"{interaction.user.display_name} calls {user.display_name} a good boy",
                     color=discord.Color.red(),
                 )
-                embed.set_image(url=gif_url)
+                embed.set_image(url=gif)
                 await interaction.response.send_message(embed=embed)
             else:
-                gif_url = choice(undefined_gifs)
                 embed = discord.Embed(
                     title=f"{interaction.user.display_name} calls {user.display_name} a good child",
                     color=discord.Color.red(),
                 )
-                embed.set_image(url=gif_url)
+                embed.set_image(url=gif)
                 await interaction.response.send_message(embed=embed)
         except Exception:
             await interaction.response.send_message(
@@ -302,4 +241,5 @@ def setup(bot: commands.Bot):
         dance,
         good,
         kiss,
+        peek,
     )
