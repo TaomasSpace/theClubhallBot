@@ -39,7 +39,6 @@ from db.DBHelper import (
     set_command_permission,
     remove_command_permission,
     remove_role,
-
 )
 from utils import has_role, has_command_permission, get_channel_webhook, parse_duration
 
@@ -53,6 +52,7 @@ async def run_command_tests(bot: commands.Bot) -> dict[str, str]:
         initdb.DB_PATH = tmp.name
         initdb.init_db()
         try:
+
             class DummyRole:
                 def __init__(self, name: str = "role", role_id: int = 0):
                     self.id = role_id
@@ -187,7 +187,9 @@ async def run_command_tests(bot: commands.Bot) -> dict[str, str]:
 
             dummy = DummyInteraction()
 
-            def get_dummy_arg(p: inspect.Parameter):  # pragma: no cover - heuristic mapping
+            def get_dummy_arg(
+                p: inspect.Parameter,
+            ):  # pragma: no cover - heuristic mapping
                 ann = p.annotation
                 name = p.name.lower()
                 origin = getattr(ann, "__origin__", None)
@@ -247,7 +249,6 @@ async def run_command_tests(bot: commands.Bot) -> dict[str, str]:
             DBHelperModule.DB_PATH = original_db
             initdb.DB_PATH = original_init_db
     return results
-
 
 
 active_prison_timers: dict[int, asyncio.Task] = {}
@@ -792,7 +793,9 @@ def setup(bot: commands.Bot):
         from events import trigger_responses
 
         add_trigger_response(trigger, response, interaction.guild.id)
-        trigger_responses.setdefault(interaction.guild.id, {})[trigger.lower()] = response
+        trigger_responses.setdefault(interaction.guild.id, {})[
+            trigger.lower()
+        ] = response
         await interaction.response.send_message(
             f"\u2705 Added trigger `{trigger}`.", ephemeral=True
         )
@@ -884,41 +887,6 @@ def setup(bot: commands.Bot):
         set_booster_message(message)
         await interaction.response.send_message(
             "\u2705 Booster message updated.", ephemeral=True
-        )
-
-    @bot.tree.command(name="setrole", description="Configure a role used by the bot")
-    @app_commands.describe(
-        name="Which role to configure (admin/mod/sheher/hehim/channel_lock)",
-        role="The role to use",
-    )
-    @app_commands.checks.has_permissions(manage_guild=True)
-    async def setrole(interaction: discord.Interaction, name: str, role: discord.Role):
-        key = name.lower()
-        valid = {"admin", "mod", "sheher", "hehim", "channel_lock"}
-        if key not in valid:
-            await interaction.response.send_message(
-                "\u274c Invalid role name.", ephemeral=True
-            )
-            return
-        set_role(key, role.id)
-        await interaction.response.send_message(
-            f"\u2705 Set {key} role to {role.mention}.", ephemeral=True
-        )
-
-    @bot.tree.command(name="removerole", description="Remove a configured role")
-    @app_commands.describe(name="Role name")
-    @app_commands.checks.has_permissions(manage_guild=True)
-    async def removerole(interaction: discord.Interaction, name: str):
-        key = name.lower()
-        valid = {"admin", "mod", "sheher", "hehim", "channel_lock"}
-        if key not in valid:
-            await interaction.response.send_message(
-                "\u274c Invalid role name.", ephemeral=True
-            )
-            return
-        remove_role(key)
-        await interaction.response.send_message(
-            f"\u2705 Removed {key} role.", ephemeral=True
         )
 
     @bot.tree.command(
