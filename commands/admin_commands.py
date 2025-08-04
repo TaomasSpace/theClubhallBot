@@ -1,6 +1,7 @@
 import asyncio
 import inspect
 import io
+import tempfile
 
 
 import discord
@@ -9,6 +10,8 @@ from discord.ext import commands
 from datetime import datetime, timezone, timedelta
 
 from config import LOG_CHANNEL_ID
+import db.DBHelper as DBHelperModule
+import db.initializeDB as initdb
 from db.DBHelper import (
     register_user,
     _fetchone,
@@ -34,204 +37,216 @@ from db.DBHelper import (
     set_role,
     get_role,
     set_command_permission,
+    remove_command_permission,
+    remove_role,
 )
 from utils import has_role, has_command_permission, get_channel_webhook, parse_duration
 
 
 async def run_command_tests(bot: commands.Bot) -> dict[str, str]:
     results: dict[str, str] = {}
-
-    class DummyRole:
-        def __init__(self, name: str = "role", role_id: int = 0):
-            self.id = role_id
-            self.name = name
-
-        @property
-        def mention(self) -> str:  # pragma: no cover - simple placeholder
-            return f"<@&{self.id}>"
-
-    class DummyResponse:
-        async def send_message(self, *args, **kwargs):
-            pass
-
-        async def defer(self, *args, **kwargs):
-            pass
-
-    class DummyFollowup:
-        async def send(self, *args, **kwargs):
-            pass
-
-    class DummyGuild:
-        def __init__(self):
-            self.roles: list[DummyRole] = []
-            self.members: list[DummyUser] = []  # type: ignore[name-defined]
-
-        def get_role(self, role_id: int):
-            for role in self.roles:
-                if role.id == role_id:
-                    return role
-            return None
-
-        def get_member(self, user_id: int):
-            for member in self.members:
-                if member.id == user_id:
-                    return member
-            return None
-
-        async def create_role(self, name: str, **kwargs):
-            role = DummyRole(name=name)
-            self.roles.append(role)
-            return role
-
-    class DummyAvatar:
-        url = "https://example.com/avatar.png"
-
-    class DummyWebhook:
-        async def send(self, *args, **kwargs):
-            pass
-
-    class DummyUser:
-        def __init__(
-            self,
-            user_id: int = 0,
-            name: str = "tester",
-            guild: DummyGuild | None = None,
-        ):
-
-            self.id = user_id
-            self.name = name
-            self.display_name = name
-            self.roles: list[DummyRole] = []
-            self.guild_permissions = discord.Permissions.none()
-            self.premium_since = None
-            self.guild = guild
-            self.display_avatar = DummyAvatar()
-
-        @property
-        def mention(self) -> str:  # pragma: no cover - simple placeholder
-            return f"<@{self.id}>"
-
-        async def add_roles(self, *roles, **kwargs):
-            self.roles.extend([r for r in roles if r is not None])
-
-        async def remove_roles(self, *roles, **kwargs):
-            for role in roles:
-                if role is not None and role in self.roles:
-                    self.roles.remove(role)
-
-    class DummyChannel:
-        id = 0
-        mention = "<#0>"
-
-        async def webhooks(self):
-            return []
-
-        async def create_webhook(self, name: str):
-            return DummyWebhook()
-
-        async def fetch_message(self, message_id):
-            return DummyMessage()
-
-        async def set_permissions(self, *args, **kwargs):
-            pass
-
-    class DummyMessage:
-        def __init__(self, content="dummy"):
-            self.content = content
-            self.reactions = []
-
-        id = 10
-        channel = DummyChannel
-
-        async def add_reaction(self, emoji):
-            self.reactions.append(emoji)
-
-        async def edit(self, **kwargs):
-            self.content = kwargs.get("content", self.content)
-
-        async def reply(self, *args, **kwargs):
-            pass  # Placeholder
-
-    dummy_guild = DummyGuild()
-    dummy_role = DummyRole(name="role", role_id=1)
-    dummy_guild.roles.append(dummy_role)
-
-    dummy_user = DummyUser(guild=dummy_guild)
-    dummy_target = DummyUser(user_id=1, name="target", guild=dummy_guild)
-    dummy_guild.members.extend([dummy_user, dummy_target])
-
-    class DummyInteraction:
-        user = dummy_user
-        guild = dummy_guild
-        channel = DummyChannel()
-        response = DummyResponse()
-        followup = DummyFollowup()
-
-        def __init__(self):
-            self._message = DummyMessage()
-
-        async def original_response(self):
-            return self._message
-
-    dummy = DummyInteraction()
-
-    def get_dummy_arg(p: inspect.Parameter):  # pragma: no cover - heuristic mapping
-        ann = p.annotation
-        name = p.name.lower()
-        origin = getattr(ann, "__origin__", None)
-        if origin is not None:
-            ann = origin
-        if ann in (discord.Member, discord.User):
-            return dummy_target
-        if ann is discord.Role:
-            return dummy_role
-        if ann in (
-            discord.TextChannel,
-            discord.VoiceChannel,
-            discord.StageChannel,
-            discord.CategoryChannel,
-            discord.ForumChannel,
-        ):
-            return DummyChannel()
-        if ann is discord.Guild:
-            return dummy_guild
-        if ann is int:
-            return 1
-        if ann is float:
-            return 1.0
-        if ann is bool:
-            return False
-        if ann is str or ann is inspect._empty:
-            if "time" in name or "duration" in name:
-                return "1h"
-            if "reason" in name:
-                return "test reason"
-            if "color" in name or "colour" in name:
-                return "#ffffff"
-            return "test"
-        if ann is datetime:
-            return datetime.now(timezone.utc)
-        return None
-
-    for cmd in bot.tree.get_commands():
-        if cmd.name == "test":
-            results[cmd.name] = "Skipped"
-            continue
+    with tempfile.NamedTemporaryFile() as tmp:
+        original_db = DBHelperModule.DB_PATH
+        original_init_db = initdb.DB_PATH
+        DBHelperModule.DB_PATH = tmp.name
+        initdb.DB_PATH = tmp.name
+        initdb.init_db()
         try:
-            sig = inspect.signature(cmd.callback)
-            params = list(sig.parameters.values())[1:]
-            args = []
-            for p in params:
-                if p.default is inspect.Parameter.empty:
-                    args.append(get_dummy_arg(p))
-                else:
-                    args.append(p.default)
+            class DummyRole:
+                def __init__(self, name: str = "role", role_id: int = 0):
+                    self.id = role_id
+                    self.name = name
 
-            await cmd.callback(dummy, *args)
-            results[cmd.name] = "OK"
-        except Exception as e:
-            results[cmd.name] = f"Error: {e}"
+                @property
+                def mention(self) -> str:  # pragma: no cover - simple placeholder
+                    return f"<@&{self.id}>"
+
+            class DummyResponse:
+                async def send_message(self, *args, **kwargs):
+                    pass
+
+                async def defer(self, *args, **kwargs):
+                    pass
+
+            class DummyFollowup:
+                async def send(self, *args, **kwargs):
+                    pass
+
+            class DummyGuild:
+                def __init__(self):
+                    self.roles: list[DummyRole] = []
+                    self.members: list[DummyUser] = []  # type: ignore[name-defined]
+
+                def get_role(self, role_id: int):
+                    for role in self.roles:
+                        if role.id == role_id:
+                            return role
+                    return None
+
+                def get_member(self, user_id: int):
+                    for member in self.members:
+                        if member.id == user_id:
+                            return member
+                    return None
+
+                async def create_role(self, name: str, **kwargs):
+                    role = DummyRole(name=name)
+                    self.roles.append(role)
+                    return role
+
+            class DummyAvatar:
+                url = "https://example.com/avatar.png"
+
+            class DummyWebhook:
+                async def send(self, *args, **kwargs):
+                    pass
+
+            class DummyUser:
+                def __init__(
+                    self,
+                    user_id: int = 0,
+                    name: str = "tester",
+                    guild: DummyGuild | None = None,
+                ):
+
+                    self.id = user_id
+                    self.name = name
+                    self.display_name = name
+                    self.roles: list[DummyRole] = []
+                    self.guild_permissions = discord.Permissions.none()
+                    self.premium_since = None
+                    self.guild = guild
+                    self.display_avatar = DummyAvatar()
+
+                @property
+                def mention(self) -> str:  # pragma: no cover - simple placeholder
+                    return f"<@{self.id}>"
+
+                async def add_roles(self, *roles, **kwargs):
+                    self.roles.extend([r for r in roles if r is not None])
+
+                async def remove_roles(self, *roles, **kwargs):
+                    for role in roles:
+                        if role is not None and role in self.roles:
+                            self.roles.remove(role)
+
+            class DummyChannel:
+                id = 0
+                mention = "<#0>"
+
+                async def webhooks(self):
+                    return []
+
+                async def create_webhook(self, name: str):
+                    return DummyWebhook()
+
+                async def fetch_message(self, message_id):
+                    return DummyMessage()
+
+                async def set_permissions(self, *args, **kwargs):
+                    pass
+
+            class DummyMessage:
+                def __init__(self, content="dummy"):
+                    self.content = content
+                    self.reactions = []
+
+                id = 10
+                channel = DummyChannel
+
+                async def add_reaction(self, emoji):
+                    self.reactions.append(emoji)
+
+                async def edit(self, **kwargs):
+                    self.content = kwargs.get("content", self.content)
+
+                async def reply(self, *args, **kwargs):
+                    pass  # Placeholder
+
+            dummy_guild = DummyGuild()
+            dummy_role = DummyRole(name="role", role_id=1)
+            dummy_guild.roles.append(dummy_role)
+
+            dummy_user = DummyUser(guild=dummy_guild)
+            dummy_target = DummyUser(user_id=1, name="target", guild=dummy_guild)
+            dummy_guild.members.extend([dummy_user, dummy_target])
+
+            class DummyInteraction:
+                user = dummy_user
+                guild = dummy_guild
+                channel = DummyChannel()
+                response = DummyResponse()
+                followup = DummyFollowup()
+
+                def __init__(self):
+                    self._message = DummyMessage()
+
+                async def original_response(self):
+                    return self._message
+
+            dummy = DummyInteraction()
+
+            def get_dummy_arg(p: inspect.Parameter):  # pragma: no cover - heuristic mapping
+                ann = p.annotation
+                name = p.name.lower()
+                origin = getattr(ann, "__origin__", None)
+                if origin is not None:
+                    ann = origin
+                if ann in (discord.Member, discord.User):
+                    return dummy_target
+                if ann is discord.Role:
+                    return dummy_role
+                if ann in (
+                    discord.TextChannel,
+                    discord.VoiceChannel,
+                    discord.StageChannel,
+                    discord.CategoryChannel,
+                    discord.ForumChannel,
+                ):
+                    return DummyChannel()
+                if ann is discord.Guild:
+                    return dummy_guild
+                if ann is int:
+                    return 1
+                if ann is float:
+                    return 1.0
+                if ann is bool:
+                    return False
+                if ann is str or ann is inspect._empty:
+                    if "time" in name or "duration" in name:
+                        return "1h"
+                    if "reason" in name:
+                        return "test reason"
+                    if "color" in name or "colour" in name:
+                        return "#ffffff"
+                    return "test"
+                if ann is datetime:
+                    return datetime.now(timezone.utc)
+                return None
+
+            for cmd in bot.tree.get_commands():
+                if cmd.name == "test":
+                    results[cmd.name] = "Skipped"
+                    continue
+                try:
+                    sig = inspect.signature(cmd.callback)
+                    params = list(sig.parameters.values())[1:]
+                    args = []
+                    for p in params:
+                        if p.default is inspect.Parameter.empty:
+                            args.append(get_dummy_arg(p))
+                        else:
+                            args.append(p.default)
+
+                    await cmd.callback(dummy, *args)
+                    results[cmd.name] = "OK"
+                except Exception as e:
+                    results[cmd.name] = f"Error: {e}"
+        finally:
+            DBHelperModule.DB_PATH = original_db
+            initdb.DB_PATH = original_init_db
     return results
+
 
 
 active_prison_timers: dict[int, asyncio.Task] = {}
@@ -889,6 +904,22 @@ def setup(bot: commands.Bot):
             f"\u2705 Set {key} role to {role.mention}.", ephemeral=True
         )
 
+    @bot.tree.command(name="removerole", description="Remove a configured role")
+    @app_commands.describe(name="Role name")
+    @app_commands.checks.has_permissions(manage_guild=True)
+    async def removerole(interaction: discord.Interaction, name: str):
+        key = name.lower()
+        valid = {"admin", "mod", "sheher", "hehim", "channel_lock"}
+        if key not in valid:
+            await interaction.response.send_message(
+                "\u274c Invalid role name.", ephemeral=True
+            )
+            return
+        remove_role(key)
+        await interaction.response.send_message(
+            f"\u2705 Removed {key} role.", ephemeral=True
+        )
+
     @bot.tree.command(
         name="setcommandrole", description="Set required role for a command"
     )
@@ -902,6 +933,17 @@ def setup(bot: commands.Bot):
         set_command_permission(command, role.id)
         await interaction.response.send_message(
             f"\u2705 Set {command} command role to {role.mention}.", ephemeral=True
+        )
+
+    @bot.tree.command(
+        name="removecommandrole", description="Remove required role for a command"
+    )
+    @app_commands.describe(command="Command name")
+    @app_commands.checks.has_permissions(manage_guild=True)
+    async def removecommandrole(interaction: discord.Interaction, command: str):
+        remove_command_permission(command)
+        await interaction.response.send_message(
+            f"\u2705 Removed {command} command role.", ephemeral=True
         )
 
     @bot.tree.command(
@@ -989,6 +1031,8 @@ def setup(bot: commands.Bot):
         setboostchannel,
         setboostmsg,
         setrole,
+        setcommandrole,
+        removecommandrole,
         createrole,
         manageViltrumite,
         manageYeager,
