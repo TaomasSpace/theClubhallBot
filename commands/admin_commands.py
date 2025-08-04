@@ -81,6 +81,20 @@ async def run_command_tests(bot: commands.Bot) -> dict[str, str]:
             self.roles.append(role)
             return role
 
+    class DummyMessage:
+        def __init__(self, content="dummy"):
+            self.content = content
+            self.reactions = []
+
+        async def add_reaction(self, emoji):
+            self.reactions.append(emoji)
+
+        async def edit(self, **kwargs):
+            self.content = kwargs.get("content", self.content)
+
+        async def reply(self, *args, **kwargs):
+            pass  # Placeholder
+
     class DummyUser:
         def __init__(
             self,
@@ -124,9 +138,14 @@ async def run_command_tests(bot: commands.Bot) -> dict[str, str]:
         user = dummy_user
         guild = dummy_guild
         channel = DummyChannel()
-        original_response = 102
         response = DummyResponse()
         followup = DummyFollowup()
+
+        def __init__(self):
+            self._message = DummyMessage()
+
+        async def original_response(self):
+            return self._message
 
     dummy = DummyInteraction()
 
