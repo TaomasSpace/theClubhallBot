@@ -26,7 +26,7 @@ from utils import get_channel_webhook
 
 rod_shop: dict[int, tuple[int, float]] = {}
 active_giveaway_tasks: dict[int, asyncio.Task] = {}
-filtered_violations: dict[int, list[float]] = {}
+filtered_violations: dict[int, dict[int, list[float]]] = {}
 trigger_responses: dict[int, dict[str, str]] = {}
 
 
@@ -167,10 +167,13 @@ async def on_message(
             except discord.Forbidden:
                 return
             now = datetime.now().timestamp()
-            history = filtered_violations.setdefault(message.author.id, [])
+            guild_violations = filtered_violations.setdefault(
+                message.guild.id, {}
+            )
+            history = guild_violations.setdefault(message.author.id, [])
             history.append(now)
             history = [t for t in history if now - t <= 60]
-            filtered_violations[message.author.id] = history
+            guild_violations[message.author.id] = history
             if len(history) >= 3:
                 try:
                     await message.author.timeout(
@@ -179,7 +182,7 @@ async def on_message(
                     )
                 except Exception:
                     pass
-                filtered_violations[message.author.id] = []
+                guild_violations[message.author.id] = []
             return
 
     for trigger, reply in trigger_responses.get(message.guild.id, {}).items():
