@@ -88,6 +88,8 @@ async def run_command_tests(bot: commands.Bot) -> dict[str, str]:
             self.content = content
             self.reactions = []
 
+        id = 10
+
         async def add_reaction(self, emoji):
             self.reactions.append(emoji)
 
@@ -768,9 +770,7 @@ def setup(bot: commands.Bot):
     @bot.tree.command(name="addtrigger", description="Add a trigger response")
     @app_commands.describe(trigger="Trigger word", response="Response message")
     @app_commands.checks.has_permissions(manage_messages=True)
-    async def addtrigger(
-        interaction: discord.Interaction, trigger: str, response: str
-    ):
+    async def addtrigger(interaction: discord.Interaction, trigger: str, response: str):
         from db.DBHelper import add_trigger_response
         from events import trigger_responses
 
@@ -875,9 +875,7 @@ def setup(bot: commands.Bot):
         role="The role to use",
     )
     @app_commands.checks.has_permissions(manage_guild=True)
-    async def setrole(
-        interaction: discord.Interaction, name: str, role: discord.Role
-    ):
+    async def setrole(interaction: discord.Interaction, name: str, role: discord.Role):
         key = name.lower()
         valid = {"admin", "mod", "sheher", "hehim", "channel_lock"}
         if key not in valid:
@@ -890,8 +888,12 @@ def setup(bot: commands.Bot):
             f"\u2705 Set {key} role to {role.mention}.", ephemeral=True
         )
 
-    @bot.tree.command(name="setcommandrole", description="Set required role for a command")
-    @app_commands.describe(command="Command name", role="Role allowed to use the command")
+    @bot.tree.command(
+        name="setcommandrole", description="Set required role for a command"
+    )
+    @app_commands.describe(
+        command="Command name", role="Role allowed to use the command"
+    )
     @app_commands.checks.has_permissions(manage_guild=True)
     async def setcommandrole(
         interaction: discord.Interaction, command: str, role: discord.Role
