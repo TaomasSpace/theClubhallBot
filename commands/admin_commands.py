@@ -2,6 +2,7 @@ import asyncio
 import inspect
 import io
 
+
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -71,6 +72,7 @@ async def run_command_tests(bot: commands.Bot) -> dict[str, str]:
             args = []
             for p in params:
                 if p.default is inspect.Parameter.empty:
+
                     raise TypeError("Missing parameters")
                 args.append(p.default)
             await cmd.callback(dummy, *args)
