@@ -16,46 +16,6 @@ SUPERPOWER_COST = 80_000
 SUPERPOWER_COOLDOWN_HOURS = 24
 STAT_NAMES = ["intelligence", "strength", "stealth"]
 
-TRIGGER_RESPONSES = {
-    "シャドウストーム": (
-        "Our beautiful majestic Emperor シャドウストーム! "
-        "Long live our beloved King 👑"
-    ),
-    "goodyb": (
-        "Our beautiful majestic Emperor goodyb! " "Long live our beloved King 👑"
-    ),
-    "Taoma": (
-        "Our beautiful majestic Emperor TAOMA™! " "Long live our beloved King 👑"
-    ),
-    "T*oma": (
-        "Our beautiful majestic Emperor TAOMA™! " "Long live our beloved King 👑"
-    ),
-    "Ta0ma": (
-        "Our beautiful majestic Emperor TAOMA™! " "Long live our beloved King 👑"
-    ),
-    "Ta*ma": (
-        "Our beautiful majestic Emperor TAOMA™! " "Long live our beloved King 👑"
-    ),
-    "Taom*": (
-        "Our beautiful majestic Emperor TAOMA™! " "Long live our beloved King 👑"
-    ),
-    "T a o m a": (
-        "Our beautiful majestic Emperor TAOMA™! " "Long live our beloved King 👑"
-    ),
-    "Taomi": (
-        "Our beautiful majestic Emperor TAOMA™! " "Long live our beloved King 👑"
-    ),
-    "Toami": (
-        "Our beautiful majestic Emperor TAOMA™! " "Long live our beloved King 👑"
-    ),
-    "taôma": (
-        "Our beautiful majestic Emperor TAOMA™! " "Long live our beloved King 👑"
-    ),
-    "Ta@ma": (
-        "Our beautiful majestic Emperor TAOMA™! " "Long live our beloved King 👑"
-    ),
-}
-
 ROLE_THRESHOLDS = {
     "intelligence": ("Neuromancer", 50),
     "strength": ("Warriour", 100),
