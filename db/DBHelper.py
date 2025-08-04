@@ -335,6 +335,27 @@ def get_filtered_words() -> list[str]:
     return [row[0] for row in rows]
 
 
+# ---------- trigger response helpers ----------
+
+def add_trigger_response(trigger: str, response: str):
+    _execute(
+        "INSERT OR REPLACE INTO trigger_responses (trigger, response) VALUES (?, ?)",
+        (trigger.lower(), response),
+    )
+
+
+def remove_trigger_response(trigger: str):
+    _execute("DELETE FROM trigger_responses WHERE trigger = ?", (trigger.lower(),))
+
+
+def get_trigger_responses() -> dict:
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT trigger, response FROM trigger_responses")
+    rows = cursor.fetchall()
+    conn.close()
+    return {trigger: response for trigger, response in rows}
+
 # ---------- anti nuke helpers ----------
 
 def get_anti_nuke_setting(category: str) -> Optional[Tuple[int, int, str, Optional[int]]]:

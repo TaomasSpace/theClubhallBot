@@ -735,6 +735,44 @@ def setup(bot: commands.Bot):
             return
         await interaction.response.send_message(", ".join(sorted(words)))
 
+    @bot.tree.command(name="addtrigger", description="Add a trigger response")
+    @app_commands.describe(trigger="Trigger word", response="Response message")
+    @app_commands.checks.has_permissions(manage_messages=True)
+    async def addtrigger(
+        interaction: discord.Interaction, trigger: str, response: str
+    ):
+        from db.DBHelper import add_trigger_response
+        from events import trigger_responses
+
+        add_trigger_response(trigger, response)
+        trigger_responses[trigger.lower()] = response
+        await interaction.response.send_message(
+            f"\u2705 Added trigger `{trigger}`.", ephemeral=True
+        )
+
+    @bot.tree.command(name="removetrigger", description="Remove a trigger response")
+    @app_commands.describe(trigger="Trigger word")
+    @app_commands.checks.has_permissions(manage_messages=True)
+    async def removetrigger(interaction: discord.Interaction, trigger: str):
+        from db.DBHelper import remove_trigger_response
+        from events import trigger_responses
+
+        remove_trigger_response(trigger)
+        trigger_responses.pop(trigger.lower(), None)
+        await interaction.response.send_message(
+            f"\u2705 Removed trigger `{trigger}`.", ephemeral=True
+        )
+
+    @bot.tree.command(name="triggers", description="Show all trigger responses")
+    async def triggers(interaction: discord.Interaction):
+        from db.DBHelper import get_trigger_responses
+
+        data = get_trigger_responses()
+        if not data:
+            await interaction.response.send_message("No trigger responses.")
+            return
+        await interaction.response.send_message(", ".join(sorted(data.keys())))
+
     @bot.tree.command(
         name="createrole",
         description="Create a role and assign to users (for goodyb & nannapat2410 only)",
@@ -810,6 +848,9 @@ def setup(bot: commands.Bot):
         addfilterword,
         removefilterword,
         filterwords,
+        addtrigger,
+        removetrigger,
+        triggers,
         createrole,
         manageViltrumite,
         manageYeager,

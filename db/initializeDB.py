@@ -134,6 +134,15 @@ def init_db():
 
     cursor.execute(
         """
+        CREATE TABLE IF NOT EXISTS trigger_responses (
+            trigger TEXT PRIMARY KEY,
+            response TEXT NOT NULL
+        )
+        """
+    )
+
+    cursor.execute(
+        """
         CREATE TABLE IF NOT EXISTS anti_nuke_settings (
             category TEXT PRIMARY KEY,
             enabled INTEGER DEFAULT 0,

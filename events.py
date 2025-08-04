@@ -9,12 +9,19 @@ import random
 
 from config import WELCOME_CHANNEL_ID, LOG_CHANNEL_ID
 from db.initializeDB import init_db
-from db.DBHelper import get_all_rods_from_shop, delete_custom_role, get_custom_role, _fetchone
+from db.DBHelper import (
+    get_all_rods_from_shop,
+    delete_custom_role,
+    get_custom_role,
+    _fetchone,
+    get_trigger_responses,
+)
 from utils import get_channel_webhook, has_role
 
 rod_shop: dict[int, tuple[int, float]] = {}
 active_giveaway_tasks: dict[int, asyncio.Task] = {}
 filtered_violations: dict[int, list[float]] = {}
+trigger_responses: dict[str, str] = {}
 
 async def end_giveaway(bot: commands.Bot, channel_id: int, message_id: int, prize: str, winners: int):
     channel = bot.get_channel(channel_id)
@@ -72,8 +79,9 @@ async def load_giveaways(bot: commands.Bot):
 
 async def on_ready(bot: commands.Bot):
     init_db()
-    global rod_shop
+    global rod_shop, trigger_responses
     rod_shop = get_all_rods_from_shop()
+    trigger_responses = get_trigger_responses()
     await bot.tree.sync()
     await load_giveaways(bot)
     print(f"Bot is online as {bot.user}")
@@ -114,7 +122,6 @@ async def on_message(bot: commands.Bot, message: discord.Message, lowercase_lock
             allowed_mentions=discord.AllowedMentions.all(),
         )
     content = message.content.lower()
-    from config import TRIGGER_RESPONSES
     from db.DBHelper import update_date, get_filtered_words
 
     for word in get_filtered_words():
@@ -139,8 +146,8 @@ async def on_message(bot: commands.Bot, message: discord.Message, lowercase_lock
                 filtered_violations[message.author.id] = []
             return
 
-    for trigger, reply in TRIGGER_RESPONSES.items():
-        if trigger.lower() in content:
+    for trigger, reply in trigger_responses.items():
+        if trigger in content:
             await message.channel.send(reply)
             break
     if message.author.bot:
