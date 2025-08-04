@@ -43,9 +43,9 @@ def has_role(member: discord.Member, role: int | str) -> bool:
 def has_command_permission(
     user: discord.Member, command: str, fallback_role_key: str
 ) -> bool:
-    role_id = get_command_permission(command)
+    role_id = get_command_permission(user.guild.id, command)
     if role_id is None:
-        role_id = get_role(fallback_role_key)
+        role_id = get_role(user.guild.id, fallback_role_key)
     if role_id is None:
         print(
             f"[PERM] No role found for command={command}, fallback={fallback_role_key}"

@@ -284,8 +284,8 @@ def setup(bot: commands.Bot):
         gif = response.json()
         gif = gif["url"]
         try:
-            sheher_id = get_role("sheher")
-            hehim_id = get_role("hehim")
+            sheher_id = get_role(interaction.guild.id, "sheher")
+            hehim_id = get_role(interaction.guild.id, "hehim")
             if sheher_id and has_role(user, sheher_id) and not user.name == "goodyb":
                 embed = discord.Embed(
                     title=f"{interaction.user.display_name} calls {user.display_name} a good girl",

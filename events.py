@@ -7,7 +7,6 @@ from discord.app_commands import CommandOnCooldown
 from discord.ext import commands
 import random
 
-from config import LOG_CHANNEL_ID
 from db.initializeDB import init_db
 from db.DBHelper import (
     get_all_rods_from_shop,
@@ -21,6 +20,7 @@ from db.DBHelper import (
     get_leave_message,
     get_booster_channel,
     get_booster_message,
+    get_log_channel,
 )
 from utils import get_channel_webhook
 
@@ -118,7 +118,7 @@ async def on_member_update(
                     pass
             delete_custom_role(str(after.id))
     if not before.premium_since and after.premium_since:
-        cid = get_booster_channel()
+        cid = get_booster_channel(after.guild.id)
         if cid:
             channel = bot.get_channel(cid)
             if channel:
@@ -127,7 +127,7 @@ async def on_member_update(
                     "member_mention": after.mention,
                     "server": after.guild.name,
                 }
-                template = get_booster_message()
+                template = get_booster_message(after.guild.id)
                 if template:
                     try:
                         message = template.format(**args)
@@ -196,7 +196,7 @@ async def on_member_join(bot: commands.Bot, member: discord.Member):
     role = discord.utils.get(member.guild.roles, name="Member")
     if role:
         await member.add_roles(role)
-    cid = get_welcome_channel()
+    cid = get_welcome_channel(member.guild.id)
     if cid:
         channel = bot.get_channel(cid)
         if channel:
@@ -206,7 +206,7 @@ async def on_member_join(bot: commands.Bot, member: discord.Member):
                 "server": member.guild.name,
                 "member_count": member.guild.member_count,
             }
-            template = get_welcome_message()
+            template = get_welcome_message(member.guild.id)
             if template:
                 try:
                     message = template.format(**args)
@@ -223,7 +223,7 @@ async def on_member_join(bot: commands.Bot, member: discord.Member):
 
 
 async def on_member_remove(bot: commands.Bot, member: discord.Member):
-    cid = get_leave_channel()
+    cid = get_leave_channel(member.guild.id)
     if cid:
         channel = bot.get_channel(cid)
         if channel:
@@ -233,7 +233,7 @@ async def on_member_remove(bot: commands.Bot, member: discord.Member):
                 "server": member.guild.name,
                 "member_count": member.guild.member_count,
             }
-            template = get_leave_message()
+            template = get_leave_message(member.guild.id)
             if template:
                 try:
                     message = template.format(**args)
@@ -282,7 +282,8 @@ async def on_raw_reaction_remove(
 
 
 async def on_app_error(bot: commands.Bot, inter: discord.Interaction, error: Exception):
-    log_ch = bot.get_channel(LOG_CHANNEL_ID)
+    cid = get_log_channel(inter.guild.id) if inter.guild else None
+    log_ch = bot.get_channel(cid) if cid else None
     if log_ch:
         embed = discord.Embed(
             title="Command error",
@@ -342,7 +343,8 @@ def _format_option(opt: dict, users_data: dict) -> str:
 async def on_app_command_completion(
     bot: commands.Bot, inter: discord.Interaction, command: app_commands.Command
 ):
-    log_ch = bot.get_channel(LOG_CHANNEL_ID)
+    cid = get_log_channel(inter.guild.id) if inter.guild else None
+    log_ch = bot.get_channel(cid) if cid else None
     if not log_ch:
         return
     opts = format_options(inter.data, inter)

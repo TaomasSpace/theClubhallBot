@@ -197,106 +197,138 @@ def set_last_weekly(user_id: str, ts: datetime):
 
 # ---------- server helpers ----------
 
-def set_welcome_channel(cid: int) -> None:
-    _execute("UPDATE server SET welcome_channel_id = ? WHERE id = 1", (str(cid),))
 
-
-def get_welcome_channel() -> Optional[int]:
-    row = _fetchone("SELECT welcome_channel_id FROM server WHERE id = 1")
-    return int(row[0]) if row and row[0] else None
-
-
-def set_leave_channel(cid: int) -> None:
-    _execute("UPDATE server SET leave_channel_id = ? WHERE id = 1", (str(cid),))
-
-
-def get_leave_channel() -> Optional[int]:
-    row = _fetchone("SELECT leave_channel_id FROM server WHERE id = 1")
-    return int(row[0]) if row and row[0] else None
-
-
-def set_welcome_message(msg: str) -> None:
-    _execute("UPDATE server SET welcome_message = ? WHERE id = 1", (msg,))
-
-
-def get_welcome_message() -> Optional[str]:
-    row = _fetchone("SELECT welcome_message FROM server WHERE id = 1")
-    return row[0] if row and row[0] else None
-
-
-def set_leave_message(msg: str) -> None:
-    _execute("UPDATE server SET leave_message = ? WHERE id = 1", (msg,))
-
-
-def get_leave_message() -> Optional[str]:
-    row = _fetchone("SELECT leave_message FROM server WHERE id = 1")
-    return row[0] if row and row[0] else None
-
-
-def set_booster_channel(cid: int) -> None:
-    _execute("UPDATE server SET booster_channel_id = ? WHERE id = 1", (str(cid),))
-
-
-def get_booster_channel() -> Optional[int]:
-    row = _fetchone("SELECT booster_channel_id FROM server WHERE id = 1")
-    return int(row[0]) if row and row[0] else None
-
-
-def set_booster_message(msg: str) -> None:
-    _execute("UPDATE server SET booster_message = ? WHERE id = 1", (msg,))
-
-
-def get_booster_message() -> Optional[str]:
-    row = _fetchone("SELECT booster_message FROM server WHERE id = 1")
-    return row[0] if row and row[0] else None
-
-
-def set_role(name: str, role_id: int) -> None:
-    old_id = get_role(name)
+def _set_guild_value(guild_id: int, column: str, value: Optional[str]) -> None:
     _execute(
-        "INSERT OR REPLACE INTO roles (name, role_id) VALUES (?, ?)",
-        (name, str(role_id)),
+        f"INSERT INTO server (guild_id, {column}) VALUES (?, ?) "
+        f"ON CONFLICT(guild_id) DO UPDATE SET {column}=excluded.{column}",
+        (str(guild_id), value),
+    )
+
+
+def _get_guild_value(guild_id: int, column: str) -> Optional[str]:
+    row = _fetchone(
+        f"SELECT {column} FROM server WHERE guild_id = ?",
+        (str(guild_id),),
+    )
+    return row[0] if row and row[0] else None
+
+
+def set_welcome_channel(guild_id: int, cid: int) -> None:
+    _set_guild_value(guild_id, "welcome_channel_id", str(cid))
+
+
+def get_welcome_channel(guild_id: int) -> Optional[int]:
+    val = _get_guild_value(guild_id, "welcome_channel_id")
+    return int(val) if val else None
+
+
+def set_leave_channel(guild_id: int, cid: int) -> None:
+    _set_guild_value(guild_id, "leave_channel_id", str(cid))
+
+
+def get_leave_channel(guild_id: int) -> Optional[int]:
+    val = _get_guild_value(guild_id, "leave_channel_id")
+    return int(val) if val else None
+
+
+def set_welcome_message(guild_id: int, msg: str) -> None:
+    _set_guild_value(guild_id, "welcome_message", msg)
+
+
+def get_welcome_message(guild_id: int) -> Optional[str]:
+    return _get_guild_value(guild_id, "welcome_message")
+
+
+def set_leave_message(guild_id: int, msg: str) -> None:
+    _set_guild_value(guild_id, "leave_message", msg)
+
+
+def get_leave_message(guild_id: int) -> Optional[str]:
+    return _get_guild_value(guild_id, "leave_message")
+
+
+def set_booster_channel(guild_id: int, cid: int) -> None:
+    _set_guild_value(guild_id, "booster_channel_id", str(cid))
+
+
+def get_booster_channel(guild_id: int) -> Optional[int]:
+    val = _get_guild_value(guild_id, "booster_channel_id")
+    return int(val) if val else None
+
+
+def set_booster_message(guild_id: int, msg: str) -> None:
+    _set_guild_value(guild_id, "booster_message", msg)
+
+
+def get_booster_message(guild_id: int) -> Optional[str]:
+    return _get_guild_value(guild_id, "booster_message")
+
+
+def set_log_channel(guild_id: int, cid: int) -> None:
+    _set_guild_value(guild_id, "log_channel_id", str(cid))
+
+
+def get_log_channel(guild_id: int) -> Optional[int]:
+    val = _get_guild_value(guild_id, "log_channel_id")
+    return int(val) if val else None
+
+
+def set_role(guild_id: int, name: str, role_id: int) -> None:
+    old_id = get_role(guild_id, name)
+    _execute(
+        "INSERT OR REPLACE INTO roles (guild_id, name, role_id) VALUES (?, ?, ?)",
+        (str(guild_id), name, str(role_id)),
     )
     if old_id is not None and old_id != role_id:
         _execute(
-            "UPDATE command_permissions SET role_id = ? WHERE role_id = ?",
-            (str(role_id), str(old_id)),
+            "UPDATE command_permissions SET role_id = ? WHERE guild_id = ? AND role_id = ?",
+            (str(role_id), str(guild_id), str(old_id)),
         )
 
 
-def get_role(name: str) -> Optional[int]:
-    row = _fetchone("SELECT role_id FROM roles WHERE name = ?", (name,))
+def get_role(guild_id: int, name: str) -> Optional[int]:
+    row = _fetchone(
+        "SELECT role_id FROM roles WHERE guild_id = ? AND name = ?",
+        (str(guild_id), name),
+    )
     return int(row[0]) if row and row[0] else None
 
 
-def remove_role(name: str) -> None:
-    role_id = get_role(name)
+def remove_role(guild_id: int, name: str) -> None:
+    role_id = get_role(guild_id, name)
     if role_id is None:
         return
-    _execute("DELETE FROM roles WHERE name = ?", (name,))
     _execute(
-        "UPDATE command_permissions SET role_id = NULL WHERE role_id = ?",
-        (str(role_id),),
+        "DELETE FROM roles WHERE guild_id = ? AND name = ?",
+        (str(guild_id), name),
+    )
+    _execute(
+        "UPDATE command_permissions SET role_id = NULL WHERE guild_id = ? AND role_id = ?",
+        (str(guild_id), str(role_id)),
     )
 
 
-def set_command_permission(command: str, role_id: int) -> None:
+def set_command_permission(guild_id: int, command: str, role_id: int) -> None:
     _execute(
-        "INSERT OR REPLACE INTO command_permissions (command, role_id) VALUES (?, ?)",
-        (command, str(role_id)),
+        "INSERT OR REPLACE INTO command_permissions (guild_id, command, role_id) VALUES (?, ?, ?)",
+        (str(guild_id), command, str(role_id)),
     )
 
 
-def get_command_permission(command: str) -> Optional[int]:
+def get_command_permission(guild_id: int, command: str) -> Optional[int]:
     row = _fetchone(
-        "SELECT role_id FROM command_permissions WHERE command = ?",
-        (command,),
+        "SELECT role_id FROM command_permissions WHERE guild_id = ? AND command = ?",
+        (str(guild_id), command),
     )
     return int(row[0]) if row and row[0] else None
 
 
-def remove_command_permission(command: str) -> None:
-    _execute("DELETE FROM command_permissions WHERE command = ?", (command,))
+def remove_command_permission(guild_id: int, command: str) -> None:
+    _execute(
+        "DELETE FROM command_permissions WHERE guild_id = ? AND command = ?",
+        (str(guild_id), command),
+    )
 
 
 # ---------- shop helpers ----------
