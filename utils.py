@@ -47,5 +47,11 @@ def has_command_permission(
     if role_id is None:
         role_id = get_role(fallback_role_key)
     if role_id is None:
+        print(
+            f"[PERM] No role found for command={command}, fallback={fallback_role_key}"
+        )
         return False
+    print(
+        f"[PERM] Required role_id: {role_id}, user roles: {[r.id for r in user.roles]}"
+    )
     return any(role.id == role_id for role in user.roles)
