@@ -208,27 +208,20 @@ def setup(bot: commands.Bot):
             await interaction.response.send_message(embed=embed)
 
     @bot.tree.command(name="woah", description="woah")
-    async def woah(interaction: discord.Interaction, user: discord.Member = None):
+    async def woah(interaction: discord.Interaction):
         response = requests.get(
             "https://api.otakugifs.xyz/gif?reaction=woah&format=gif"
         )
 
         gif = response.json()
         gif = gif["url"]
-        if user == None:
-            embed = discord.Embed(
-                title=f"{interaction.user.display_name} says woah!",
-                color=discord.Color.red(),
-            )
-            embed.set_image(url=gif)
-            await interaction.response.send_message(embed=embed)
-        else:
-            embed = discord.Embed(
-                title=f"{interaction.user.display_name} says woah to {user.display_name}!",
-                color=discord.Color.red(),
-            )
-            embed.set_image(url=gif)
-            await interaction.response.send_message(embed=embed)
+
+        embed = discord.Embed(
+            title=f"{interaction.user.display_name} says woah!",
+            color=discord.Color.red(),
+        )
+        embed.set_image(url=gif)
+        await interaction.response.send_message(embed=embed)
 
     @bot.tree.command(name="tickle", description="tickle another user")
     async def tickle(interaction: discord.Interaction, user: discord.Member):
