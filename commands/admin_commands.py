@@ -999,7 +999,6 @@ def setup(bot: commands.Bot):
         setleavemsg,
         setboostchannel,
         setboostmsg,
-        setrole,
         setcommandrole,
         removecommandrole,
         createrole,
