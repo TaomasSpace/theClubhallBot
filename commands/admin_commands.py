@@ -482,7 +482,7 @@ def setup(bot: commands.Bot):
             if task and not task.done():
                 task.cancel()
                 if role in user.roles:
-                    await user.remove_roles(role)
+                    await user.add_roles(role)
                 await interaction.response.send_message(
                     f"\U0001f54a\ufe0f Timer cancelled. {user.mention} has been freed.",
                     ephemeral=gooyb,
@@ -496,13 +496,13 @@ def setup(bot: commands.Bot):
             task = active_prison_timers.pop(key, None)
             if task and not task.done():
                 task.cancel()
-            await user.remove_roles(role)
+            await user.add_roles(role)
             await interaction.response.send_message(
                 f"\U0001f513 {user.mention} has been freed from prison.",
                 ephemeral=gooyb,
             )
             return
-        await user.add_roles(role)
+        await user.remove_roles(role)
         msg = f"\U0001f512 {user.mention} has been sent to prison."
         if time:
             seconds = parse_duration(time)
@@ -516,7 +516,7 @@ def setup(bot: commands.Bot):
             async def release_later():
                 try:
                     await asyncio.sleep(seconds)
-                    await user.remove_roles(role)
+                    await user.add_roles(role)
                     await interaction.followup.send(
                         f"\U0001f54a\ufe0f {user.mention} has served their time and is now free.",
                         ephemeral=False,
