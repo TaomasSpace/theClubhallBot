@@ -268,7 +268,7 @@ async def run_command_tests(bot: commands.Bot) -> dict[str, str]:
     return results
 
 
-active_prison_timers: dict[int, asyncio.Task] = {}
+active_prison_timers: dict[tuple[int, int], asyncio.Task] = {}
 
 
 def setup(bot: commands.Bot):
@@ -469,18 +469,20 @@ def setup(bot: commands.Bot):
             await interaction.response.send_message("No permission.", ephemeral=True)
             return
         gooyb = interaction.user.name == "goodyb"
-        role_name = "Guest of the Cyber Café"
-        role = discord.utils.get(interaction.guild.roles, name=role_name)
-        if not role:
+        role_id = get_role(interaction.guild.id, "prisoner")
+        role = interaction.guild.get_role(role_id) if role_id else None
+        if role is None:
             await interaction.response.send_message(
-                f"\u274c Role '{role_name}' not found.", ephemeral=True
+                "\u274c Prisoner role not configured.", ephemeral=True
             )
             return
+        key = (interaction.guild.id, user.id)
         if time == "cancel":
-            task = active_prison_timers.pop(user.id, None)
+            task = active_prison_timers.pop(key, None)
             if task and not task.done():
                 task.cancel()
-                await user.remove_roles(role)
+                if role in user.roles:
+                    await user.remove_roles(role)
                 await interaction.response.send_message(
                     f"\U0001f54a\ufe0f Timer cancelled. {user.mention} has been freed.",
                     ephemeral=gooyb,
@@ -490,17 +492,17 @@ def setup(bot: commands.Bot):
                     f"\u26a0\ufe0f No active timer for {user.mention}.", ephemeral=True
                 )
             return
-        if role not in user.roles:
-            task = active_prison_timers.pop(user.id, None)
+        if role in user.roles:
+            task = active_prison_timers.pop(key, None)
             if task and not task.done():
                 task.cancel()
-            await user.add_roles(role)
+            await user.remove_roles(role)
             await interaction.response.send_message(
                 f"\U0001f513 {user.mention} has been freed from prison.",
                 ephemeral=gooyb,
             )
             return
-        await user.remove_roles(role)
+        await user.add_roles(role)
         msg = f"\U0001f512 {user.mention} has been sent to prison."
         if time:
             seconds = parse_duration(time)
@@ -514,7 +516,7 @@ def setup(bot: commands.Bot):
             async def release_later():
                 try:
                     await asyncio.sleep(seconds)
-                    await user.add_roles(role)
+                    await user.remove_roles(role)
                     await interaction.followup.send(
                         f"\U0001f54a\ufe0f {user.mention} has served their time and is now free.",
                         ephemeral=False,
@@ -523,7 +525,7 @@ def setup(bot: commands.Bot):
                     pass
 
             task = asyncio.create_task(release_later())
-            active_prison_timers[user.id] = task
+            active_prison_timers[key] = task
             msg += f" They will be freed in {time}."
         await interaction.response.send_message(msg, ephemeral=False)
 
@@ -996,13 +998,13 @@ def setup(bot: commands.Bot):
 
     @bot.tree.command(name="setrole", description="Configure a role used by the bot")
     @app_commands.describe(
-        name="Which role to configure (admin/mod/sheher/hehim/channel_lock)",
+        name="Which role to configure (admin/mod/sheher/hehim/channel_lock/prisoner)",
         role="The role to use",
     )
     @app_commands.checks.has_permissions(manage_guild=True)
     async def setrole(interaction: discord.Interaction, name: str, role: discord.Role):
         key = name.lower()
-        valid = {"admin", "mod", "sheher", "hehim", "channel_lock"}
+        valid = {"admin", "mod", "sheher", "hehim", "channel_lock", "prisoner"}
         if key not in valid:
             await interaction.response.send_message(
                 "\u274c Invalid role name.", ephemeral=True
@@ -1018,7 +1020,7 @@ def setup(bot: commands.Bot):
     @app_commands.checks.has_permissions(manage_guild=True)
     async def removerole(interaction: discord.Interaction, name: str):
         key = name.lower()
-        valid = {"admin", "mod", "sheher", "hehim", "channel_lock"}
+        valid = {"admin", "mod", "sheher", "hehim", "channel_lock", "prisoner"}
         if key not in valid:
             await interaction.response.send_message(
                 "\u274c Invalid role name.", ephemeral=True
