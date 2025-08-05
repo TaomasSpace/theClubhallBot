@@ -941,7 +941,9 @@ def setup(bot: commands.Bot):
         lines.append(f"Leave channel: {fmt_channel(get_leave_channel(gid))}")
         lines.append(f"Booster channel: {fmt_channel(get_booster_channel(gid))}")
         lines.append(f"Log channel: {fmt_channel(get_log_channel(gid))}")
-        lines.append(f"Welcome message: {get_welcome_message(gid) or 'Not set'}")
+        lines.append(
+            f"Welcome message: {get_welcome_message(gid) or 'Not set'}"
+        )
         lines.append(f"Leave message: {get_leave_message(gid) or 'Not set'}")
         lines.append(f"Booster message: {get_booster_message(gid) or 'Not set'}")
 
@@ -955,7 +957,9 @@ def setup(bot: commands.Bot):
                 lines.append(f"Command {cmd}: <@&{rid}>")
 
         filters = get_filtered_words(gid)
-        lines.append("Filtered words: " + (", ".join(filters) if filters else "None"))
+        lines.append(
+            "Filtered words: " + (", ".join(filters) if filters else "None")
+        )
         triggers = get_trigger_responses(gid)
         lines.append(
             "Triggers: " + (", ".join(triggers.keys()) if triggers else "None")
@@ -986,7 +990,9 @@ def setup(bot: commands.Bot):
         cid = get_anti_nuke_log_channel(gid)
         lines.append(f"Anti-nuke safe users: {', '.join(users)}")
         lines.append(f"Anti-nuke safe roles: {', '.join(safe_roles)}")
-        lines.append(f"Anti-nuke log channel: {fmt_channel(cid)}")
+        lines.append(
+            f"Anti-nuke log channel: {fmt_channel(cid)}"
+        )
 
         await interaction.response.send_message("\n".join(lines), ephemeral=True)
 
@@ -1045,7 +1051,9 @@ def setup(bot: commands.Bot):
     )
     @app_commands.describe(command="Command name")
     @app_commands.checks.has_permissions(manage_guild=True)
-    async def removecommandrole(interaction: discord.Interaction, command: str):
+    async def removecommandrole(
+        interaction: discord.Interaction, command: str
+    ):
         remove_command_permission(interaction.guild.id, command)
         await interaction.response.send_message(
             f"\u2705 Removed {command} command role.", ephemeral=True
@@ -1130,16 +1138,16 @@ def setup(bot: commands.Bot):
         removetrigger,
         triggers,
         setwelcomechannel,
-        setleavechannel,
-        setwelcomemsg,
-        setleavemsg,
-        setboostchannel,
-        setboostmsg,
-        setlogchannel,
-        serversettings,
-        setrole,
-        setcommandrole,
-        removecommandrole,
+          setleavechannel,
+          setwelcomemsg,
+          setleavemsg,
+          setboostchannel,
+          setboostmsg,
+          setlogchannel,
+          serversettings,
+          setrole,
+          setcommandrole,
+          removecommandrole,
         createrole,
         manageViltrumite,
         manageYeager,
