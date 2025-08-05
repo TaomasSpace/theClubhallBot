@@ -23,6 +23,7 @@ from db.DBHelper import (
     get_booster_channel,
     get_booster_message,
     get_log_channel,
+    get_prison_role,
 )
 from utils import get_channel_webhook
 
@@ -200,6 +201,11 @@ async def on_member_join(bot: commands.Bot, member: discord.Member):
     role = discord.utils.get(member.guild.roles, name="Member")
     if role:
         await member.add_roles(role)
+    pid = get_prison_role(member.guild.id)
+    if pid:
+        prole = member.guild.get_role(pid)
+        if prole:
+            await member.add_roles(prole)
     cid = get_welcome_channel(member.guild.id)
     if cid:
         channel = bot.get_channel(cid)
