@@ -10,6 +10,7 @@ from commands.action_commands import setup as setup_action
 from commands.admin_commands import setup as setup_admin
 from commands.antinuke_commands import setup as setup_antinuke
 from commands.setup_wizard import setup as setup_wizard
+from commands.prison_commands import setup as setup_prison
 import events
 import anti_nuke
 
@@ -29,6 +30,7 @@ setup_action(bot)
 setup_admin(bot)
 setup_antinuke(bot)
 setup_wizard(bot)
+setup_prison(bot)
 events.setup(bot, lowercase_locked)
 anti_nuke.setup(bot)
 

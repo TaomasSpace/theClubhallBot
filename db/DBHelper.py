@@ -627,3 +627,39 @@ def get_anti_nuke_log_channel(guild_id: int) -> Optional[int]:
         (str(guild_id),),
     )
     return int(row[0]) if row else None
+
+
+# ---------- prison setup ----------
+
+
+def set_prison_settings(
+    guild_id: int,
+    prison_channel: int,
+    prison_role: int,
+    immunized_roles: list[int],
+    allowed_channels: list[int],
+    prisoner_exceptions: list[int],
+) -> None:
+    _execute(
+        """
+        INSERT OR REPLACE INTO prison_settings
+            (guild_id, prison_channel_id, prison_role_id, immunized_roles, allowed_channels, prisoner_exceptions)
+        VALUES (?, ?, ?, ?, ?, ?)
+        """,
+        (
+            str(guild_id),
+            str(prison_channel),
+            str(prison_role),
+            ",".join(map(str, immunized_roles)),
+            ",".join(map(str, allowed_channels)),
+            ",".join(map(str, prisoner_exceptions)),
+        ),
+    )
+
+
+def get_prison_role(guild_id: int) -> Optional[int]:
+    row = _fetchone(
+        "SELECT prison_role_id FROM prison_settings WHERE guild_id = ?",
+        (str(guild_id),),
+    )
+    return int(row[0]) if row and row[0] else None

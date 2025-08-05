@@ -240,6 +240,28 @@ def init_db():
         {"guild_id", "channel_id"},
     )
 
+    _recreate(
+        "prison_settings",
+        """
+        CREATE TABLE IF NOT EXISTS prison_settings (
+            guild_id TEXT PRIMARY KEY,
+            prison_channel_id TEXT,
+            prison_role_id TEXT,
+            immunized_roles TEXT,
+            allowed_channels TEXT,
+            prisoner_exceptions TEXT
+        )
+        """,
+        {
+            "guild_id",
+            "prison_channel_id",
+            "prison_role_id",
+            "immunized_roles",
+            "allowed_channels",
+            "prisoner_exceptions",
+        },
+    )
+
 
     cursor.execute("PRAGMA table_info(users)")
     existing = {col[1] for col in cursor.fetchall()}
