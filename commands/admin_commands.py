@@ -841,6 +841,17 @@ def setup(bot: commands.Bot):
             f"\u2705 Removed trigger `{trigger}`.", ephemeral=True
         )
 
+    @bot.tree.command(
+        name="removetriggerresponse",
+        description="Remove a trigger response",
+    )
+    @app_commands.describe(trigger="Trigger word")
+    @app_commands.checks.has_permissions(manage_messages=True)
+    async def removetriggerresponse(
+        interaction: discord.Interaction, trigger: str
+    ):
+        await removetrigger(interaction, trigger)
+
     @bot.tree.command(name="triggers", description="Show all trigger responses")
     async def triggers(interaction: discord.Interaction):
         from db.DBHelper import get_trigger_responses
@@ -1128,6 +1139,7 @@ def setup(bot: commands.Bot):
         filterwords,
         addtrigger,
         removetrigger,
+        removetriggerresponse,
         triggers,
         setwelcomechannel,
         setleavechannel,
