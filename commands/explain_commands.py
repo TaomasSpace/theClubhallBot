@@ -4,6 +4,16 @@ from discord.ext import commands
 
 from db.DBHelper import get_command_permission
 
+# Custom explanations for commands. Add entries here to provide
+# longer or more detailed descriptions than the default command
+# summary. Keys are command names, values are explanation strings.
+COMMAND_EXPLANATIONS: dict[str, str] = {
+    "explain": (
+        "Shows detailed information about a command, including what it does, "
+        "its parameters and the role needed to run it."
+    )
+}
+
 
 def setup(bot: commands.Bot):
     @bot.tree.command(
@@ -36,8 +46,10 @@ def setup(bot: commands.Bot):
             params_lines.append(f"`{name}`: {desc}")
         params_info = "\n".join(params_lines) if params_lines else "None"
 
+        explanation = COMMAND_EXPLANATIONS.get(cmd.name, cmd.description)
+
         await interaction.response.send_message(
-            f"**/{cmd.name}** - {cmd.description}\n"
+            f"**/{cmd.name}**\n{explanation}\n"
             f"**Parameters:**\n{params_info}\n"
             f"**Required Role:** {role_mention}",
             ephemeral=True,
