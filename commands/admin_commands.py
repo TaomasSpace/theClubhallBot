@@ -90,8 +90,9 @@ async def run_command_tests(bot: commands.Bot) -> dict[str, str]:
                     pass
 
             class DummyGuild:
-                def __init__(self):
+                def __init__(self, owner_id: int = 0):
                     self.id = 0
+                    self.owner_id = owner_id
                     self.roles: list[DummyRole] = []
                     self.members: list[DummyUser] = []  # type: ignore[name-defined]
 
@@ -186,6 +187,7 @@ async def run_command_tests(bot: commands.Bot) -> dict[str, str]:
             dummy_guild.roles.append(dummy_role)
 
             dummy_user = DummyUser(guild=dummy_guild)
+            dummy_guild.owner_id = dummy_user.id
             dummy_target = DummyUser(user_id=1, name="target", guild=dummy_guild)
             dummy_guild.members.extend([dummy_user, dummy_target])
 
