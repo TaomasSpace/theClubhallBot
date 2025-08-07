@@ -6,7 +6,9 @@ from db.DBHelper import get_command_permission
 
 
 def setup(bot: commands.Bot):
-    @bot.tree.command(name="explain", description="Explain a bot command and its permissions")
+    @bot.tree.command(
+        name="explain", description="Explain a bot command and its permissions"
+    )
     @app_commands.describe(command="Command to explain")
     async def explain(interaction: discord.Interaction, command: str):
         cmd = bot.tree.get_command(command)
@@ -26,10 +28,11 @@ def setup(bot: commands.Bot):
                     role_mention = f"Role ID {role_id}"
 
         params_lines: list[str] = []
-        for name, param in cmd.parameters.items():
+        for param in cmd.parameters:
+            name = getattr(param, "name", "")
             if name in ("self", "interaction"):
                 continue
-            desc = param.description or "No description"
+            desc = getattr(param, "description", None) or "No description"
             params_lines.append(f"`{name}`: {desc}")
         params_info = "\n".join(params_lines) if params_lines else "None"
 
