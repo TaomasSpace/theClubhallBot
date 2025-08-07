@@ -1,6 +1,5 @@
-import re
 from dataclasses import dataclass
-from typing import Callable, List, Optional
+from typing import Callable, List, Optional, Union
 
 import discord
 from discord import app_commands
@@ -27,189 +26,169 @@ from anti_nuke import CATEGORIES
 
 
 # ---------------------------------------------------------------------------
-# Helper utilities
-# ---------------------------------------------------------------------------
-
-def _parse_id(value: str) -> Optional[int]:
-    match = re.search(r"\d+", value)
-    return int(match.group()) if match else None
-
-
-def _parse_channel(guild: discord.Guild, value: str) -> Optional[discord.TextChannel]:
-    cid = _parse_id(value)
-    return guild.get_channel(cid) if cid else None
-
-
-def _parse_role(guild: discord.Guild, value: str) -> Optional[discord.Role]:
-    rid = _parse_id(value)
-    return guild.get_role(rid) if rid else None
-
-
-def _parse_member(guild: discord.Guild, value: str) -> Optional[discord.Member]:
-    uid = _parse_id(value)
-    return guild.get_member(uid) if uid else None
-
-
-# ---------------------------------------------------------------------------
-# Modal implementations for each step
+# Views and modals for each step
 # ---------------------------------------------------------------------------
 
 
-class WelcomeModal(discord.ui.Modal, title="Welcome system"):
-    channel = discord.ui.TextInput(
-        label="Welcome channel", required=False, placeholder="#channel or ID"
-    )
-    message = discord.ui.TextInput(
-        label="Welcome message",
+class MessageModal(discord.ui.Modal, title="Message"):
+    content = discord.ui.TextInput(
+        label="Message",
         style=discord.TextStyle.long,
         required=False,
-        placeholder="Use {member} for mention",
     )
 
-    def __init__(self, wizard: "SetupWizard"):
+    def __init__(self, view: "ChannelMessageView"):
         super().__init__()
-        self.wizard = wizard
+        self.view = view
 
     async def on_submit(self, interaction: discord.Interaction):
-        channel = _parse_channel(interaction.guild, self.channel.value)
-        if channel:
-            set_welcome_channel(interaction.guild.id, channel.id)
-        if self.message.value:
-            set_welcome_message(interaction.guild.id, self.message.value)
+        self.view.message_value = self.content.value
         await interaction.response.send_message(
-            "Welcome settings saved.", ephemeral=True
+            "Message stored, click Save to apply.", ephemeral=True
         )
-        await self.wizard.advance(interaction)
 
 
-class LeaveModal(discord.ui.Modal, title="Leave system"):
-    channel = discord.ui.TextInput(
-        label="Leave channel", required=False, placeholder="#channel or ID"
-    )
-    message = discord.ui.TextInput(
-        label="Leave message",
-        style=discord.TextStyle.long,
-        required=False,
-        placeholder="Use {member} for mention",
-    )
-
-    def __init__(self, wizard: "SetupWizard"):
-        super().__init__()
+class ChannelMessageView(discord.ui.View):
+    def __init__(
+        self,
+        wizard: "SetupWizard",
+        channel_setter: Callable[[int, int], None],
+        message_setter: Callable[[int, str], None],
+        success: str,
+        placeholder: str,
+    ):
+        super().__init__(timeout=None)
         self.wizard = wizard
+        self.channel_setter = channel_setter
+        self.message_setter = message_setter
+        self.success = success
+        self.message_value: Optional[str] = None
+        self.select = discord.ui.ChannelSelect(placeholder=placeholder, min_values=0, max_values=1)
+        self.add_item(self.select)
 
-    async def on_submit(self, interaction: discord.Interaction):
-        channel = _parse_channel(interaction.guild, self.channel.value)
+    @discord.ui.button(label="Set message", style=discord.ButtonStyle.blurple)
+    async def set_message(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
+        await interaction.response.send_modal(MessageModal(self))
+
+    @discord.ui.button(label="Save", style=discord.ButtonStyle.green)
+    async def save(self, interaction: discord.Interaction, button: discord.ui.Button):
+        channel = self.select.values[0] if self.select.values else None
         if channel:
-            set_leave_channel(interaction.guild.id, channel.id)
-        if self.message.value:
-            set_leave_message(interaction.guild.id, self.message.value)
-        await interaction.response.send_message("Leave settings saved.", ephemeral=True)
+            self.channel_setter(interaction.guild.id, channel.id)
+        if self.message_value:
+            self.message_setter(interaction.guild.id, self.message_value)
+        await interaction.response.send_message(self.success, ephemeral=True)
         await self.wizard.advance(interaction)
 
 
-class BoosterModal(discord.ui.Modal, title="Booster system"):
-    channel = discord.ui.TextInput(
-        label="Booster channel", required=False, placeholder="#channel or ID"
-    )
-    message = discord.ui.TextInput(
-        label="Booster message",
-        style=discord.TextStyle.long,
-        required=False,
-        placeholder="Message when someone boosts",
-    )
-
-    def __init__(self, wizard: "SetupWizard"):
-        super().__init__()
+class ChannelSelectView(discord.ui.View):
+    def __init__(
+        self,
+        wizard: "SetupWizard",
+        channel_setter: Callable[[int, int], None],
+        success: str,
+        placeholder: str,
+    ):
+        super().__init__(timeout=None)
         self.wizard = wizard
+        self.channel_setter = channel_setter
+        self.success = success
+        self.select = discord.ui.ChannelSelect(placeholder=placeholder)
+        self.add_item(self.select)
 
-    async def on_submit(self, interaction: discord.Interaction):
-        channel = _parse_channel(interaction.guild, self.channel.value)
-        if channel:
-            set_booster_channel(interaction.guild.id, channel.id)
-        if self.message.value:
-            set_booster_message(interaction.guild.id, self.message.value)
-        await interaction.response.send_message("Booster settings saved.", ephemeral=True)
+    @discord.ui.button(label="Save", style=discord.ButtonStyle.green)
+    async def save(self, interaction: discord.Interaction, button: discord.ui.Button):
+        channel = self.select.values[0]
+        self.channel_setter(interaction.guild.id, channel.id)
+        await interaction.response.send_message(self.success, ephemeral=True)
         await self.wizard.advance(interaction)
 
 
-class LogChannelModal(discord.ui.Modal, title="Log channel"):
-    channel = discord.ui.TextInput(
-        label="Log channel", required=False, placeholder="#channel or ID"
-    )
-
+class UserSelectView(discord.ui.View):
     def __init__(self, wizard: "SetupWizard"):
-        super().__init__()
+        super().__init__(timeout=None)
         self.wizard = wizard
+        self.select = discord.ui.UserSelect(placeholder="Select users")
+        self.add_item(self.select)
 
-    async def on_submit(self, interaction: discord.Interaction):
-        channel = _parse_channel(interaction.guild, self.channel.value)
-        if channel:
-            set_log_channel(interaction.guild.id, channel.id)
-        await interaction.response.send_message("Log channel set.", ephemeral=True)
-        await self.wizard.advance(interaction)
-
-
-class AntiNukeLogModal(discord.ui.Modal, title="Anti-nuke log channel"):
-    channel = discord.ui.TextInput(
-        label="Anti-nuke log channel", required=False, placeholder="#channel or ID"
-    )
-
-    def __init__(self, wizard: "SetupWizard"):
-        super().__init__()
-        self.wizard = wizard
-
-    async def on_submit(self, interaction: discord.Interaction):
-        channel = _parse_channel(interaction.guild, self.channel.value)
-        if channel:
-            set_anti_nuke_log_channel(interaction.guild.id, channel.id)
-        await interaction.response.send_message(
-            "Anti-nuke log channel set.", ephemeral=True
-        )
-        await self.wizard.advance(interaction)
-
-
-class SafeUsersModal(discord.ui.Modal, title="Anti-nuke safe users"):
-    users = discord.ui.TextInput(
-        label="Users",
-        style=discord.TextStyle.long,
-        required=False,
-        placeholder="Mention or IDs separated by spaces",
-    )
-
-    def __init__(self, wizard: "SetupWizard"):
-        super().__init__()
-        self.wizard = wizard
-
-    async def on_submit(self, interaction: discord.Interaction):
+    @discord.ui.button(label="Save", style=discord.ButtonStyle.green)
+    async def save(self, interaction: discord.Interaction, button: discord.ui.Button):
         guild = interaction.guild
-        for token in self.users.value.split():
-            member = _parse_member(guild, token)
-            if member:
-                add_safe_user(guild.id, member.id)
+        for member in self.select.values:
+            add_safe_user(guild.id, member.id)
         await interaction.response.send_message("Safe users updated.", ephemeral=True)
         await self.wizard.advance(interaction)
 
 
-class SafeRolesModal(discord.ui.Modal, title="Anti-nuke safe roles"):
-    roles = discord.ui.TextInput(
-        label="Roles",
-        style=discord.TextStyle.long,
-        required=False,
-        placeholder="Mention or IDs separated by spaces",
-    )
-
+class RoleSelectView(discord.ui.View):
     def __init__(self, wizard: "SetupWizard"):
-        super().__init__()
+        super().__init__(timeout=None)
         self.wizard = wizard
+        self.select = discord.ui.RoleSelect(placeholder="Select roles")
+        self.add_item(self.select)
 
-    async def on_submit(self, interaction: discord.Interaction):
+    @discord.ui.button(label="Save", style=discord.ButtonStyle.green)
+    async def save(self, interaction: discord.Interaction, button: discord.ui.Button):
         guild = interaction.guild
-        for token in self.roles.value.split():
-            role = _parse_role(guild, token)
-            if role:
-                add_safe_role(guild.id, role.id)
+        for role in self.select.values:
+            add_safe_role(guild.id, role.id)
         await interaction.response.send_message("Safe roles updated.", ephemeral=True)
         await self.wizard.advance(interaction)
+
+
+class WelcomeView(ChannelMessageView):
+    def __init__(self, wizard: "SetupWizard"):
+        super().__init__(
+            wizard,
+            set_welcome_channel,
+            set_welcome_message,
+            "Welcome settings saved.",
+            "Select welcome channel",
+        )
+
+
+class LeaveView(ChannelMessageView):
+    def __init__(self, wizard: "SetupWizard"):
+        super().__init__(
+            wizard,
+            set_leave_channel,
+            set_leave_message,
+            "Leave settings saved.",
+            "Select leave channel",
+        )
+
+
+class BoosterView(ChannelMessageView):
+    def __init__(self, wizard: "SetupWizard"):
+        super().__init__(
+            wizard,
+            set_booster_channel,
+            set_booster_message,
+            "Booster settings saved.",
+            "Select booster channel",
+        )
+
+
+class LogChannelView(ChannelSelectView):
+    def __init__(self, wizard: "SetupWizard"):
+        super().__init__(
+            wizard,
+            set_log_channel,
+            "Log channel set.",
+            "Select log channel",
+        )
+
+
+class AntiNukeLogView(ChannelSelectView):
+    def __init__(self, wizard: "SetupWizard"):
+        super().__init__(
+            wizard,
+            set_anti_nuke_log_channel,
+            "Anti-nuke log channel set.",
+            "Select anti-nuke log channel",
+        )
 
 
 class AntiNukeModal(discord.ui.Modal):
@@ -319,7 +298,9 @@ class WizardStep:
     title: str
     description: str
     importance: str
-    modal_factory: Optional[Callable[["SetupWizard"], discord.ui.Modal]] = None
+    ui_factory: Optional[
+        Callable[["SetupWizard"], Union[discord.ui.View, discord.ui.Modal]]
+    ] = None
     instruction: Optional[str] = None
 
 
@@ -331,10 +312,15 @@ class StepView(discord.ui.View):
         self.step = step
 
     @discord.ui.button(label="Configure", style=discord.ButtonStyle.green)
-    async def configure(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if self.step.modal_factory:
-            modal = self.step.modal_factory(self.wizard)
-            await interaction.response.send_modal(modal)
+    async def configure(
+        self, interaction: discord.Interaction, button: discord.ui.Button
+    ):
+        if self.step.ui_factory:
+            ui = self.step.ui_factory(self.wizard)
+            if isinstance(ui, discord.ui.Modal):
+                await interaction.response.send_modal(ui)
+            else:
+                await interaction.response.send_message(view=ui, ephemeral=True)
         else:
             await interaction.response.send_message(
                 self.step.instruction or "No action required.", ephemeral=True
@@ -361,43 +347,43 @@ class SetupWizard:
                 "Welcome system",
                 "Set channel and message for welcoming new members.",
                 "Medium",
-                lambda w: WelcomeModal(w),
+                lambda w: WelcomeView(w),
             ),
             WizardStep(
                 "Leave system",
                 "Set channel and message when members leave.",
                 "Low",
-                lambda w: LeaveModal(w),
+                lambda w: LeaveView(w),
             ),
             WizardStep(
                 "Booster system",
                 "Announce server boosters with custom message.",
                 "Low",
-                lambda w: BoosterModal(w),
+                lambda w: BoosterView(w),
             ),
             WizardStep(
                 "Log channel",
                 "Where general bot logs should go.",
                 "High",
-                lambda w: LogChannelModal(w),
+                lambda w: LogChannelView(w),
             ),
             WizardStep(
                 "Anti-nuke log channel",
                 "Channel used to report anti-nuke actions.",
                 "High",
-                lambda w: AntiNukeLogModal(w),
+                lambda w: AntiNukeLogView(w),
             ),
             WizardStep(
                 "Anti-nuke safe users",
                 "Users ignored by anti-nuke.",
                 "Medium",
-                lambda w: SafeUsersModal(w),
+                lambda w: UserSelectView(w),
             ),
             WizardStep(
                 "Anti-nuke safe roles",
                 "Roles ignored by anti-nuke.",
                 "Medium",
-                lambda w: SafeRolesModal(w),
+                lambda w: RoleSelectView(w),
             ),
         ]
         for cat in CATEGORIES.keys():
