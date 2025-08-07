@@ -172,6 +172,37 @@ COMMAND_EXPLANATIONS: dict[str, str] = {
         "You will be guided through modals to input channels, messages, roles, and configurations. "
         "Recommended to run this after adding the bot to your server."
     ),
+    "dance": (
+        "Sends a random anime dance GIF with a fun message. "
+        "No input required. Great for expressing yourself or just being silly."
+    ),
+    "kiss": (
+        "Sends a kiss GIF showing affection toward another user. "
+        "You must mention who you want to kiss. Purely visual and fun."
+    ),
+    "blush": (
+        "Sends a GIF of you blushing. You can optionally include another user as the reason for blushing. "
+        "If no user is mentioned, it just shows you blushing alone."
+    ),
+    "woah": (
+        "Sends a 'woah' GIF to show you're amazed or surprised. No input needed. "
+        "Just a fun visual reaction."
+    ),
+    "tickle": (
+        "Sends a tickling GIF toward another user. It's a playful command for fun interactions."
+    ),
+    "slap": (
+        "Sends a slap GIF showing you slapping another user. Sometimes a GIF might not load. "
+        "Intended for humorous, light-hearted interactions."
+    ),
+    "lick": (
+        "Licks another member and shows a corresponding anime GIF. "
+        "Used for very silly or affectionate roleplay. Only works if you mention a user."
+    ),
+    "good": (
+        "Tells another user they are a 'good boy', 'good girl', or 'good child', depending on their roles. "
+        "Includes a pat GIF. Can fail if roles aren’t configured properly."
+    ),
 }
 
 
