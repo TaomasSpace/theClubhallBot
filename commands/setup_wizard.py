@@ -294,12 +294,17 @@ class TriggerResponsesModal(discord.ui.Modal, title="Trigger responses"):
         self.wizard = wizard
 
     async def on_submit(self, interaction: discord.Interaction):
+        from events import trigger_responses
+
         for line in self.mappings.value.splitlines():
             if "|" not in line:
                 continue
             trigger, response = line.split("|", 1)
             if trigger and response:
-                add_trigger_response(trigger.strip(), response.strip(), interaction.guild.id)
+                trig = trigger.strip()
+                resp = response.strip()
+                add_trigger_response(trig, resp, interaction.guild.id)
+                trigger_responses.setdefault(interaction.guild.id, {})[trig.lower()] = resp
         await interaction.response.send_message("Trigger responses saved.", ephemeral=True)
         await self.wizard.advance(interaction)
 
