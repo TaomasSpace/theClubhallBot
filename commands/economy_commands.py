@@ -1100,3 +1100,22 @@ def setup(bot: commands.Bot):
         view.players[interaction.user.id] = interaction.user.display_name
         await interaction.response.send_message(view.render(), view=view)
         view.message = await interaction.original_response()
+
+    return (
+        money,
+        balance,
+        give,
+        remove,
+        donate,
+        request,
+        topcoins,
+        weekly,
+        daily,
+        superpower,
+        animetitle,
+        gamble,
+        casino,
+        duel,
+        blackjack,
+        poker,
+    )
