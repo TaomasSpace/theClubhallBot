@@ -1,4 +1,5 @@
 import discord
+from discord import app_commands
 from discord.ext import commands
 
 from config import *
@@ -14,27 +15,50 @@ from commands.explain_commands import setup as setup_explain
 import events
 import anti_nuke
 
-
 intents = discord.Intents.default()
 intents.message_content = True
 intents.guilds = True
 intents.members = True
 
-bot = commands.Bot(command_prefix="!", intents=intents)
 
-setup_fun(bot)
-setup_booster(bot)
-setup_economy(bot)
-setup_stats(bot, events.rod_shop)
-setup_action(bot)
-setup_admin(bot)
-setup_antinuke(bot)
-setup_wizard(bot)
-setup_explain(bot)
-events.setup(bot, lowercase_locked)
-anti_nuke.setup(bot)
+class MyBot(commands.Bot):
+    async def setup_hook(self):
+        setup_fun(bot)
+        setup_booster(bot)
+        setup_economy(bot)
+        setup_stats(bot, events.rod_shop)
+        setup_action(bot)
+        setup_admin(bot)
+        setup_antinuke(bot)
+        setup_wizard(bot)
+        setup_explain(bot)
+        events.setup(self, lowercase_locked)
+        anti_nuke.setup(self)
 
-with open("code.txt", "r") as file:
-    TOKEN = file.read().strip()
+        await self.tree.sync()
+
+        n = 0
+        for ac in self.tree.walk_commands():
+            if hasattr(ac, "to_command"):
+                try:
+                    cmd = ac.to_command()
+                    self.add_command(cmd)
+                    print("prefix:", cmd.qualified_name)
+                    n += 1
+                except commands.CommandRegistrationError:
+                    pass
+        print("mirrored:", n)
+
+
+bot = MyBot(command_prefix="!", intents=intents)
+
+
+@bot.command()
+async def ping(ctx):
+    await ctx.send("pong")
+
+
+with open("code.txt", "r") as f:
+    TOKEN = f.read().strip()
 
 bot.run(TOKEN)
