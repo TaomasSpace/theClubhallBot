@@ -5,7 +5,7 @@ from random import choice, random
 from typing import Optional
 from collections import defaultdict
 from db.DBHelper import get_role
-from utils import has_role
+from utils import has_role, get_channel_webhook, has_command_permission
 import requests
 
 lowercase_locked: dict[int, set[int]] = defaultdict(set)
@@ -314,13 +314,23 @@ def setup(bot: commands.Bot):
                 "Command didnt work, sry :(", ephemeral=True
             )
 
-    @bot.tree.command(name="getbot", description="get information about the bot")
+    @bot.tree.command(name="getbot", description="Get the bot for your server")
     async def getbot(interaction: discord.Interaction):
-        embed = discord.Embed(
-            title=f"This is the developer version of the Clubhallbot, so you cant get this bot for your server. BUT there is an official version that you can add to your own server. Use this link to add it to your server: https://discord.com/oauth2/authorize?client_id=1401961800504971316&permissions=8&integration_type=0&scope=bot+applications.commands",
-            color=discord.Color.red(),
-        )
-        await interaction.response.send_message(embed=embed)
+
+        channel = interaction.channel
+        webhook = await get_channel_webhook(channel)
+        try:
+            await webhook.send(
+                ephemeral=True,
+                content="This is the developer version of the Clubhallbot, so you cant get this bot for your server. BUT there is an official version that you can add to your own server. Use this link to add it to your server: https://discord.com/oauth2/authorize?client_id=1401961800504971316&permissions=8&integration_type=0&scope=bot+applications.commands",
+            )
+            await interaction.response.send_message(
+                "\u2705 Message sent.", ephemeral=True
+            )
+        except Exception as e:
+            await interaction.response.send_message(
+                f"\u274c Failed to send invite: {e}", ephemeral=True
+            )
 
     return (
         forcelowercase,
