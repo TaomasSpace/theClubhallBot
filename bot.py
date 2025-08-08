@@ -37,17 +37,21 @@ class MyBot(commands.Bot):
 
         await self.tree.sync()
 
-        n = 0
+        failed = []
+        mirrored = 0
+        print("---- slash commands seen in tree ----")
         for ac in self.tree.walk_commands():
+            print("slash:", ac.qualified_name)
             if hasattr(ac, "to_command"):
                 try:
                     cmd = ac.to_command()
                     self.add_command(cmd)
-                    print("prefix:", cmd.qualified_name)
-                    n += 1
-                except commands.CommandRegistrationError:
-                    pass
-        print("mirrored:", n)
+                    print("  -> prefix OK:", cmd.qualified_name)
+                    mirrored += 1
+                except commands.CommandRegistrationError as e:
+                    print("  -> prefix FAIL:", ac.qualified_name, "|", e)
+                    failed.append((ac.qualified_name, str(e)))
+        print(f"mirrored total: {mirrored}, failed: {len(failed)}")
 
 
 bot = MyBot(command_prefix="!", intents=intents)
