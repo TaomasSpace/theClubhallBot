@@ -22,6 +22,11 @@ intents.members = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
+
+# Expose all slash commands as prefix commands
+for app_cmd in bot.tree.get_commands():
+    bot.add_command(app_cmd.to_command())
+
 setup_fun(bot)
 setup_booster(bot)
 setup_economy(bot)
