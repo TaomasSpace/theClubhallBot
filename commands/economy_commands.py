@@ -114,6 +114,7 @@ def _evaluate_hand(cards: list[tuple[int, str]]) -> tuple:
         return (1, pair, kick[0], kick[1], kick[2])
     return (0, ranks[:5])
 
+
 from config import (
     WEEKLY_REWARD,
     DAILY_REWARD,
@@ -460,9 +461,7 @@ async def start_poker_game(
 
     ranks: dict[int, tuple] = {}
     for pid in active:
-        cards = [
-            _parse_card(c) for c in hands[pid] + community
-        ]
+        cards = [_parse_card(c) for c in hands[pid] + community]
         ranks[pid] = _evaluate_hand(cards)
 
     best = max(ranks.values())
@@ -474,10 +473,9 @@ async def start_poker_game(
     text = f"Community: {' '.join(community)}\n"
     for pid, name in active.items():
         text += f"<@{pid}>: {' '.join(hands[pid])}\n"
-    win_names = ', '.join(f"<@{pid}>" for pid in winners)
+    win_names = ", ".join(f"<@{pid}>" for pid in winners)
     text += f"Winner: {win_names} with {_hand_name(best[0])}! (+{prize} coins)"
     await channel.send(text)
-
 
 
 def setup(bot: commands.Bot):
@@ -562,9 +560,7 @@ def setup(bot: commands.Bot):
         try:
             amount_int = int(amount)
         except Exception:
-            await interaction.response.send_message(
-                "Invalid amount.", ephemeral=True
-            )
+            await interaction.response.send_message("Invalid amount.", ephemeral=True)
             return
 
         if amount_int <= 0:
@@ -939,7 +935,9 @@ def setup(bot: commands.Bot):
             role = discord.utils.get(guild.roles, name=current)
             if role:
                 try:
-                    await interaction.user.remove_roles(role, reason="Anime title reroll")
+                    await interaction.user.remove_roles(
+                        role, reason="Anime title reroll"
+                    )
                 except discord.Forbidden:
                     pass
 
@@ -1096,14 +1094,29 @@ def setup(bot: commands.Bot):
             )
             return
         if get_money(uid) < bet:
-            await interaction.response.send_message(
-                "Not enough coins.", ephemeral=True
-            )
+            await interaction.response.send_message("Not enough coins.", ephemeral=True)
             return
         view = PokerJoinView(bot, interaction.user.id, bet)
         view.players[interaction.user.id] = interaction.user.display_name
         await interaction.response.send_message(view.render(), view=view)
         view.message = await interaction.original_response()
+
+    bot.tree.add_command(
+        money,
+        balance,
+        donate,
+        request,
+        topcoins,
+        weekly,
+        daily,
+        superpower,
+        animetitle,
+        gamble,
+        casino,
+        duel,
+        blackjack,
+        poker,
+    )
 
     return (
         money,
