@@ -316,21 +316,11 @@ def setup(bot: commands.Bot):
 
     @bot.tree.command(name="getbot", description="Get the bot for your server")
     async def getbot(interaction: discord.Interaction):
-
-        channel = interaction.channel
-        webhook = await get_channel_webhook(channel)
-        try:
-            await webhook.send(
-                ephemeral=True,
-                content="This is the developer version of the Clubhallbot, so you cant get this bot for your server. BUT there is an official version that you can add to your own server. Use this link to add it to your server: https://discord.com/oauth2/authorize?client_id=1401961800504971316&permissions=8&integration_type=0&scope=bot+applications.commands",
-            )
-            await interaction.response.send_message(
-                "\u2705 Message sent.", ephemeral=True
-            )
-        except Exception as e:
-            await interaction.response.send_message(
-                f"\u274c Failed to send invite: {e}", ephemeral=True
-            )
+        await interaction.response.send_message(
+            "This is the developer version of the Clubhallbot, so you can't get this bot for your server. "
+            "BUT there is an official version you can add: https://discord.com/oauth2/authorize?client_id=1401961800504971316&permissions=8&integration_type=0&scope=bot+applications.commands",
+            ephemeral=True,
+        )
 
     return (
         forcelowercase,
