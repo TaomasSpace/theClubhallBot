@@ -314,6 +314,14 @@ def setup(bot: commands.Bot):
                 "Command didnt work, sry :(", ephemeral=True
             )
 
+    @bot.tree.command(name="getbot", description="get information about the bot")
+    async def getbot(interaction: discord.Interaction):
+        embed = discord.Embed(
+            title=f"This is the developer version of the Clubhallbot, so you cant get this bot for your server. BUT there is an official version that you can add to your own server. Use this link to add it to your server: https://discord.com/oauth2/authorize?client_id=1401961800504971316&permissions=8&integration_type=0&scope=bot+applications.commands",
+            color=discord.Color.red(),
+        )
+        await interaction.response.send_message(embed=embed)
+
     return (
         forcelowercase,
         punch,
@@ -326,4 +334,5 @@ def setup(bot: commands.Bot):
         blush,
         woah,
         tickle,
+        getbot,
     )
