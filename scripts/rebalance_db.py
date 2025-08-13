@@ -28,7 +28,7 @@ def rebalance():
     )
     for user_id, money, sp, intel, stren, stealth in cursor.fetchall():
         cursor.execute(
-            "UPDATE users SET money=?, stat_points=?, intelligence=?, strength=?, stealth=? WHERE user_id=? AND money > 1000000",
+            "UPDATE users SET money=?, stat_points=?, intelligence=?, strength=?, stealth=? WHERE user_id=?",
             (
                 money // SCALE_COINS,
                 sp // SCALE_STATS,
