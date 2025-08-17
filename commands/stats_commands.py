@@ -94,10 +94,11 @@ def setup(bot: commands.Bot, shop: dict[int, tuple[int, float]]):
 
     @bot.tree.command(name="buypoints", description="Buy stat‑points with coins")
     async def buypoints(interaction: discord.Interaction, amount: str = "1"):
-        amountasInt = int(amount)
+        amountasInt = 1
         if amount == "all":
             amountasInt = get_money(interaction.user.id)
-
+        else:
+            amountasInt = int(amount)
         if int(amountasInt) < 1:
             await interaction.response.send_message(
                 "Specify a positive amount.", ephemeral=True
