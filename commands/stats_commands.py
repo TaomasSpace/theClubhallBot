@@ -135,7 +135,7 @@ def setup(bot: commands.Bot, shop: dict[int, tuple[int, float]]):
             )
             return
         if points == "all":
-            get_stats(str(interaction.user.id))
+            user_stats = get_stats(str(interaction.user.id))
             pointsAsInt = user_stats["stat_points"]
         else:
             pointsAsInt = int(points)
