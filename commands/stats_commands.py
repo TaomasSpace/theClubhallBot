@@ -127,14 +127,19 @@ def setup(bot: commands.Bot, shop: dict[int, tuple[int, float]]):
         stat="Which stat? (intelligence/strength/stealth)",
         points="How many points to allocate",
     )
-    async def allocate(interaction: discord.Interaction, stat: str, points: int):
+    async def allocate(interaction: discord.Interaction, stat: str, points: str):
         stat = stat.lower()
         if stat not in STAT_NAMES:
             await interaction.response.send_message(
                 "Invalid stat name.", ephemeral=True
             )
             return
-        if points < 1:
+        if points == "all":
+            get_stats(uid)
+            pointsAsInt = user_stats["stat_points"]
+        else:
+            pointsAsInt = int(points)
+        if pointsAsInt < 1:
             await interaction.response.send_message(
                 "Points must be > 0.", ephemeral=True
             )
@@ -142,15 +147,15 @@ def setup(bot: commands.Bot, shop: dict[int, tuple[int, float]]):
         uid = str(interaction.user.id)
         register_user(uid, interaction.user.display_name)
         user_stats = get_stats(uid)
-        if user_stats["stat_points"] < points:
+        if user_stats["stat_points"] < pointsAsInt:
             await interaction.response.send_message(
                 "Not enough unspent points.", ephemeral=True
             )
             return
-        increase_stat(uid, stat, points)
+        increase_stat(uid, stat, pointsAsInt)
         await sync_stat_roles(interaction.user)
         await interaction.response.send_message(
-            f"🔧 {stat.title()} increased by {points}."
+            f"🔧 {stat.title()} increased by {pointsAsInt}."
         )
 
     @bot.tree.command(name="fishing", description="Phish for stat-points")
