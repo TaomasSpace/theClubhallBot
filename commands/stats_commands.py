@@ -96,7 +96,7 @@ def setup(bot: commands.Bot, shop: dict[int, tuple[int, float]]):
     async def buypoints(interaction: discord.Interaction, amount: str = "1"):
         amountasInt = 1
         if amount == "all":
-            amountasInt = get_money(interaction.user.id)
+            amountasInt = get_money(interaction.user.id) / price_per_point
         else:
             amountasInt = int(amount)
         if int(amountasInt) < 1:
