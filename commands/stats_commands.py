@@ -95,6 +95,7 @@ def setup(bot: commands.Bot, shop: dict[int, tuple[int, float]]):
     @bot.tree.command(name="buypoints", description="Buy stat‑points with coins")
     async def buypoints(interaction: discord.Interaction, amount: str = "1"):
         amountasInt = 1
+        price_per_point = int(STAT_PRICE)
         if amount == "all":
             amountasInt = get_money(interaction.user.id) / price_per_point
         else:
@@ -106,7 +107,6 @@ def setup(bot: commands.Bot, shop: dict[int, tuple[int, float]]):
             return
         uid = str(interaction.user.id)
         register_user(uid, interaction.user.display_name)
-        price_per_point = int(STAT_PRICE)
         cost = price_per_point * amountasInt
         balance = get_money(uid)
         if balance < cost:
