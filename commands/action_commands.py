@@ -3,7 +3,6 @@ from discord import app_commands
 from discord.ext import commands
 from datetime import datetime, timedelta
 from random import randint, random
-import math
 
 from db.DBHelper import (
     register_user,
@@ -98,9 +97,8 @@ def setup(bot: commands.Bot):
                 ephemeral=True,
             )
             return
-        int_level = max(3, stats["intelligence"])
-        eff = max(0.0, math.log2(int_level / 3.0))  # bei Int=3 -> eff=0
-        success = random() < min(0.20 + 0.03 * eff, 0.70)
+        int_level = stats["intelligence"]
+        success = random() < min(0.20 + 0.05 * (int_level - 3), 0.80)
         hack_cooldowns[interaction.user.id] = now
         if not success:
             loss = randint(1, 5) * int_level
@@ -111,8 +109,7 @@ def setup(bot: commands.Bot):
                 ephemeral=True,
             )
             return
-        base = randint(8, 14)
-        reward = base + int(6 * eff) + int(3 * math.sqrt(eff))
+        reward = min(60, randint(8, 14) + max(0, int_level - 3))
         added = safe_add_coins(uid, reward)
         if added > 0:
             await interaction.response.send_message(
