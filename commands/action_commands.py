@@ -109,7 +109,7 @@ def setup(bot: commands.Bot):
                 ephemeral=True,
             )
             return
-        reward = min(60, randint(8, 14) + max(0, int_level - 3))
+        reward = randint(5, 12) * int_level
         added = safe_add_coins(uid, reward)
         if added > 0:
             await interaction.response.send_message(
