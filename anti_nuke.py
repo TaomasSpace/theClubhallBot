@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-from datetime import datetime, timedelta
+from datetime import timedelta
 from typing import Dict, List, Optional
 
 from db.DBHelper import (
@@ -28,7 +28,9 @@ CATEGORIES = {
 }
 
 
-async def punish(member: discord.Member, punishment: str, duration: Optional[int]) -> None:
+async def punish(
+    member: discord.Member, punishment: str, duration: Optional[int]
+) -> None:
 
     try:
         if punishment == "timeout":
@@ -48,7 +50,9 @@ async def punish(member: discord.Member, punishment: str, duration: Optional[int
         pass
 
 
-async def log_action(member: discord.Member, category: str, punishment: str, duration: Optional[int]) -> None:
+async def log_action(
+    member: discord.Member, category: str, punishment: str, duration: Optional[int]
+) -> None:
 
     cid = get_anti_nuke_log_channel(member.guild.id)
     if not cid:
@@ -62,7 +66,10 @@ async def log_action(member: discord.Member, category: str, punishment: str, dur
             f"<@{OWNER_ID}> {member.mention} triggered **{category}** - {info}"
         )
 
-async def handle_event(guild: discord.Guild, user: Optional[discord.Member], category: str):
+
+async def handle_event(
+    guild: discord.Guild, user: Optional[discord.Member], category: str
+):
 
     setting = get_anti_nuke_setting(category, guild.id)
     if not setting:
@@ -79,7 +86,7 @@ async def handle_event(guild: discord.Guild, user: Optional[discord.Member], cat
     if any(r.id in safe_roles for r in user.roles):
         return
     hist = action_history.setdefault(category, {}).setdefault(uid, [])
-    now = datetime.utcnow().timestamp()
+    now = discord.utils.utcnow().timestamp()
     hist = [t for t in hist if now - t <= ACTION_WINDOW]
     hist.append(now)
     action_history[category][uid] = hist
@@ -87,7 +94,6 @@ async def handle_event(guild: discord.Guild, user: Optional[discord.Member], cat
         await punish(user, punishment, duration)
         await log_action(user, category, punishment, duration)
         action_history[category][uid] = []
-
 
 
 async def on_message(message: discord.Message):
@@ -110,10 +116,15 @@ async def on_message(message: discord.Message):
 async def on_channel_delete(channel: discord.abc.GuildChannel):
     guild = channel.guild
     entry = None
-    async for e in guild.audit_logs(limit=1, action=discord.AuditLogAction.channel_delete):
+    async for e in guild.audit_logs(
+        limit=1, action=discord.AuditLogAction.channel_delete
+    ):
         entry = e
         break
-    if entry and (datetime.utcnow() - entry.created_at).total_seconds() < ACTION_WINDOW:
+    if (
+        entry
+        and (discord.utils.utcnow() - entry.created_at).total_seconds() < ACTION_WINDOW
+    ):
         member = guild.get_member(entry.user.id)
         if member:
             await handle_event(guild, member, "delete_channels")
@@ -125,7 +136,10 @@ async def on_role_delete(role: discord.Role):
     async for e in guild.audit_logs(limit=1, action=discord.AuditLogAction.role_delete):
         entry = e
         break
-    if entry and (datetime.utcnow() - entry.created_at).total_seconds() < ACTION_WINDOW:
+    if (
+        entry
+        and (discord.utils.utcnow() - entry.created_at).total_seconds() < ACTION_WINDOW
+    ):
         member = guild.get_member(entry.user.id)
         if member:
             await handle_event(guild, member, "delete_roles")
@@ -137,7 +151,10 @@ async def on_role_create(role: discord.Role):
     async for e in guild.audit_logs(limit=1, action=discord.AuditLogAction.role_create):
         entry = e
         break
-    if entry and (datetime.utcnow() - entry.created_at).total_seconds() < ACTION_WINDOW:
+    if (
+        entry
+        and (discord.utils.utcnow() - entry.created_at).total_seconds() < ACTION_WINDOW
+    ):
         member = guild.get_member(entry.user.id)
         if member:
             await handle_event(guild, member, "add_roles")
@@ -146,7 +163,10 @@ async def on_role_create(role: discord.Role):
 async def on_member_remove(member: discord.Member):
     guild = member.guild
     async for e in guild.audit_logs(limit=1, action=discord.AuditLogAction.kick):
-        if e.target.id == member.id and (datetime.utcnow() - e.created_at).total_seconds() < ACTION_WINDOW:
+        if (
+            e.target.id == member.id
+            and (discord.utils.utcnow() - e.created_at).total_seconds() < ACTION_WINDOW
+        ):
             actor = guild.get_member(e.user.id)
             if actor:
                 await handle_event(guild, actor, "kick")
@@ -155,7 +175,10 @@ async def on_member_remove(member: discord.Member):
 
 async def on_member_ban(guild: discord.Guild, user: discord.User):
     async for e in guild.audit_logs(limit=1, action=discord.AuditLogAction.ban):
-        if e.target.id == user.id and (datetime.utcnow() - e.created_at).total_seconds() < ACTION_WINDOW:
+        if (
+            e.target.id == user.id
+            and (discord.utils.utcnow() - e.created_at).total_seconds() < ACTION_WINDOW
+        ):
             actor = guild.get_member(e.user.id)
             if actor:
                 await handle_event(guild, actor, "ban")
@@ -164,8 +187,10 @@ async def on_member_ban(guild: discord.Guild, user: discord.User):
 
 async def on_webhooks_update(channel: discord.abc.GuildChannel):
     guild = channel.guild
-    async for e in guild.audit_logs(limit=1, action=discord.AuditLogAction.webhook_create):
-        if (datetime.utcnow() - e.created_at).total_seconds() < ACTION_WINDOW:
+    async for e in guild.audit_logs(
+        limit=1, action=discord.AuditLogAction.webhook_create
+    ):
+        if (discord.utils.utcnow() - e.created_at).total_seconds() < ACTION_WINDOW:
             member = guild.get_member(e.user.id)
             if member:
                 await handle_event(guild, member, "webhook")
