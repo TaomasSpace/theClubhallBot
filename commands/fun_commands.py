@@ -93,7 +93,7 @@ def setup(bot: commands.Bot):
         sender_id = interaction.user.id
         try:
             if user.id == sender_id:
-                if random() < 0.20:
+                if random() < 0.30 or user.id == 756537363509018736:
                     selected_gif = choice(special_gifs)
                     embed = discord.Embed(
                         title=f"{interaction.user.display_name} tried to stab themselves... and succeeded?!",
@@ -107,7 +107,7 @@ def setup(bot: commands.Bot):
                         "You can't stab yourself... or can you?", ephemeral=True
                     )
                     return
-            if random() < 0.50:
+            if random() < 0.75 or user.id == 756537363509018736:
                 gif_url = choice(stab_gifs)
                 embed = discord.Embed(
                     title=f"{interaction.user.display_name} stabs {user.display_name}!",
