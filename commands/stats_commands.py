@@ -351,7 +351,7 @@ def setup(bot: commands.Bot, shop: dict[int, tuple[int, float]]):
         _execute = __import__("db.DBHelper", fromlist=["_execute"])._execute
         _execute(f"UPDATE users SET {stat} = ? WHERE user_id = ?", (rest, uid))
         await interaction.response.send_message(
-            f"\u2705 Set {interaction.user.display_name}'s **{stat}** to **{amount}**.",
+            f"\u2705 Removed from {interaction.user.display_name}'s **{stat}** **{amount}** stats points and added **{endMoney}** coins to your balance.",
             ephemeral=True,
         )
 
