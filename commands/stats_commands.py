@@ -315,6 +315,46 @@ def setup(bot: commands.Bot, shop: dict[int, tuple[int, float]]):
         )
         await inter.response.send_message(embed=embed)
 
+    @bot.tree.command(
+        name="refund", description="refund stat points for ~75% of its value"
+    )
+    @app_commands.describe(
+        stat="stat u wanna refund stat points from (Intelligence/Stealth/Strength)"
+    )
+    async def refund(interaction: discord.Interaction, stat: str, amount: int):
+        from config import STAT_NAMES
+
+        stat = stat.lower()
+        if stat not in STAT_NAMES:
+            await interaction.response.send_message(
+                "Invalid stat name.", ephemeral=True
+            )
+            return
+        if amount < 0:
+            await interaction.response.send_message(
+                "Amount must be \u2265 0.", ephemeral=True
+            )
+            return
+
+        uid = str(interaction.user.id)
+        register_user(uid, interaction.user.display_name)
+        userstats = get_stats(uid)
+        if amount > userstats[stat]:
+            await interaction.response.send_message(
+                "You dont have enough stat points on this stat.", ephemeral=True
+            )
+            return
+        rest = userstats[stat] - amount
+        startMoney = get_money(uid)
+        endMoney = startMoney + (amount * 49)
+        set_money(uid, endMoney)
+        _execute = __import__("db.DBHelper", fromlist=["_execute"])._execute
+        _execute(f"UPDATE users SET {stat} = ? WHERE user_id = ?", (rest, uid))
+        await interaction.response.send_message(
+            f"\u2705 Set {interaction.user.display_name}'s **{stat}** to **{amount}**.",
+            ephemeral=True,
+        )
+
     return (
         stats_cmd,
         quest,
