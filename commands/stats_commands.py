@@ -364,4 +364,5 @@ def setup(bot: commands.Bot, shop: dict[int, tuple[int, float]]):
         buyrod,
         addrod,
         rodshop,
+        refund,
     )
