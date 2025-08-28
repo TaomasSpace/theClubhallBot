@@ -1,7 +1,7 @@
 import sqlite3
 from datetime import datetime, timezone
 from typing import Dict, List, Optional, Tuple
-from config import DB_PATH, STAT_NAMES
+from config import DB_PATH, STAT_NAMES, ROD_SHOP
 
 
 def _fetchone(query: str, params=()):
@@ -44,8 +44,9 @@ def register_user(user_id: str, username: str):
 
 
 def get_rod_multiplier(level: int) -> float:
-    row = _fetchone("SELECT multiplier FROM rod_shop WHERE level = ?", (level,))
-    return row[0] if row else 1.0
+    # Use code-defined shop; fall back to 1.0 if unknown
+    entry = ROD_SHOP.get(level)
+    return float(entry[1]) if entry else 1.0
 
 
 def get_money(user_id: str) -> int:
