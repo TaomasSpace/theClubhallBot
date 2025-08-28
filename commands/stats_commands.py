@@ -294,6 +294,27 @@ def setup(bot: commands.Bot, shop: dict[int, tuple[int, float]]):
         )
         await inter.response.send_message(embed=embed)
 
+    @bot.tree.command(name="myrod", description="Show your fishing rod")
+    async def myrod(
+        interaction: discord.Interaction, user: discord.Member | None = None
+    ):
+        target = user or interaction.user
+        register_user(str(target.id), target.display_name)
+        rod_level = get_rod_level(str(target.id))
+        multiplier = get_rod_multiplier(rod_level)
+        if rod_level == 0:
+            desc = "You don't own a fishing rod."
+        else:
+            desc = f"Rod {rod_level} – {multiplier:.2f}× rewards"
+        embed = discord.Embed(
+            title=f"{target.display_name}'s Rod",
+            description=desc,
+            color=discord.Color.teal(),
+        )
+        await interaction.response.send_message(
+            embed=embed, ephemeral=(user is None)
+        )
+
     @bot.tree.command(
         name="refund", description="refund stat points for ~75% of its value"
     )
@@ -342,6 +363,7 @@ def setup(bot: commands.Bot, shop: dict[int, tuple[int, float]]):
         fish,
         buyrod,
         rodshop,
+        myrod,
         refund,
     )
 
