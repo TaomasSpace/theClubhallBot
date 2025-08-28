@@ -115,7 +115,7 @@ def setup(bot: commands.Bot, shop: dict[int, tuple[int, float]]):
         set_money(uid, balance - cost)
         add_stat_points(uid, amountasInt)
         await interaction.response.send_message(
-            f"🛒 Purchased {amountasInt} point(s) for {cost} coins."
+            f"Purchased {amountasInt} point(s) for {cost} coins."
         )
 
     @bot.tree.command(
@@ -153,7 +153,7 @@ def setup(bot: commands.Bot, shop: dict[int, tuple[int, float]]):
         increase_stat(uid, stat, pointsAsInt)
         await sync_stat_roles(interaction.user)
         await interaction.response.send_message(
-            f"📈 {stat.title()} increased by {pointsAsInt}."
+            f"{stat.title()} increased by {pointsAsInt}."
         )
 
     @bot.tree.command(name="fishing", description="Phish for stat-points")
@@ -311,9 +311,7 @@ def setup(bot: commands.Bot, shop: dict[int, tuple[int, float]]):
             description=desc,
             color=discord.Color.teal(),
         )
-        await interaction.response.send_message(
-            embed=embed, ephemeral=(user is None)
-        )
+        await interaction.response.send_message(embed=embed, ephemeral=(user is None))
 
     @bot.tree.command(
         name="refund", description="refund stat points for ~75% of its value"
@@ -366,4 +364,3 @@ def setup(bot: commands.Bot, shop: dict[int, tuple[int, float]]):
         myrod,
         refund,
     )
-
