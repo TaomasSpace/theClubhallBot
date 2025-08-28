@@ -241,6 +241,22 @@ def setup(bot: commands.Bot):
         embed.set_image(url=gif)
         await interaction.response.send_message(embed=embed)
 
+    @bot.tree.command(name="yawn", description="yawn")
+    async def yawn(interaction: discord.Interaction):
+        response = requests.get(
+            "https://api.otakugifs.xyz/gif?reaction=yawn&format=gif"
+        )
+
+        gif = response.json()
+        gif = gif["url"]
+
+        embed = discord.Embed(
+            title=f"{interaction.user.display_name} yawns!",
+            color=discord.Color.red(),
+        )
+        embed.set_image(url=gif)
+        await interaction.response.send_message(embed=embed)
+
     @bot.tree.command(name="tickle", description="tickle another user")
     async def tickle(interaction: discord.Interaction, user: discord.Member):
         response = requests.get(
