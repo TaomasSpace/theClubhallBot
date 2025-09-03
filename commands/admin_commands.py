@@ -517,9 +517,10 @@ def setup(bot: commands.Bot):
 
         try:
             await role.edit(mentionable=True, reason="chatrevive ping")
-            await interaction.response.send_message(
-                f"{role.mention} {question}", ephemeral=False
+            await interaction.channel.send(
+                f"{role.mention} {question}",
             )
+            await interaction.response.send_message(f"Done", ephemeral=True)
         finally:
             await role.edit(mentionable=False, reason="reset mentionable")
             return
