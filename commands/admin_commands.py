@@ -502,7 +502,10 @@ def setup(bot: commands.Bot):
             "What’s your go-to hype track?",
             "I’ve got (digital) cookies. Roll through. 🍪",
         ]
-        if not has_role(interaction.user, 1380267391598071859):
+        if (
+            not has_role(interaction.user, 1380267391598071859)
+            and not interaction.user.premium_since
+        ):
             await interaction.response.send_message(
                 "Only staff members can use this command", ephemeral=True
             )
