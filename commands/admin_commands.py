@@ -513,7 +513,7 @@ def setup(bot: commands.Bot):
         if question == None:
             question = random.choice(lines)
         await interaction.response.send_message(
-            "||<@&1379012192451428433>|| " + question, ephemeral=True
+            "||<@&1379012192451428433>|| " + question, ephemeral=False
         )
         return
 
