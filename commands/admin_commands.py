@@ -2,6 +2,7 @@ import asyncio
 import inspect
 import io
 import tempfile
+import random
 
 
 import discord
@@ -457,6 +458,62 @@ def setup(bot: commands.Bot):
             f"\U0001f389 Congratulation! You bought **{role.name}** for {price} clubhall coins."
         )
 
+    @bot.tree.command(name="chatrevive", description="blush (bcs of another user)")
+    async def chatrevive(interaction: discord.Interaction, question: str = None):
+        lines = [
+            "What's your favorite anime?",
+            "Get in here—I brought snacks. 🍿",
+            "Alright lurkers, say hi with one emoji 👋",
+            "What are we playing tonight?",
+            "Drop one must-watch anime (no repeats).",
+            "I have cold drinks for y'all. Pull up. 🧊",
+            "Song on repeat right now?",
+            "Tiny win of the day—go!",
+            "Show & tell: what's on your desk? (describe it)",
+            "If you could master one skill instantly, which?",
+            "Favorite comfort food?",
+            "Hot take in one sentence.",
+            "What’s your current wallpaper vibe?",
+            "Recommend ONE game I should try.",
+            "Sub or dub—what do you actually watch?",
+            "Describe your day in one word.",
+            "Share a fun fact you like.",
+            "What’s a feature every game should have?",
+            "First three to reply get bragging rights. 🏆",
+            "Confess a harmless tech sin.",
+            "What’s your go-to late night snack?",
+            "Best opening theme (OP) of all time?",
+            "What’s your main in your main game?",
+            "If today had an anime title, what is it?",
+            "What did you Google last?",
+            "Drop a cozy setup tip.",
+            "One show you wish you could rewatch blind.",
+            "Underrated game you love?",
+            "What’s your keyboard sound: thock or click?",
+            "I’ve got virtual pizza—grab a slice and chat. 🍕",
+            "One emoji = your mood.",
+            "Share your current side quest.",
+            "Recommend a YouTube channel worth binging.",
+            "What’s your desktop tab count… be honest 😅",
+            "Best boss fight you’ve ever had?",
+            "Spill a productivity trick that actually works.",
+            "Favorite studio: MAPPA, Ufotable, or other?",
+            "A character you’d have coffee with?",
+            "What’s your go-to hype track?",
+            "I’ve got (digital) cookies. Roll through. 🍪",
+        ]
+        if not has_role(interaction.user, 1380267391598071859):
+            await interaction.response.send_message(
+                "Only staff members can use this command", ephemeral=True
+            )
+            return
+        if question == None:
+            question = random.choice(lines)
+        await interaction.response.send_message(
+            "||<@&1379012192451428433>|| " + question, ephemeral=True
+        )
+        return
+
     @bot.tree.command(
         name="manageprisonmember", description="Send or free someone from prison"
     )
@@ -849,9 +906,7 @@ def setup(bot: commands.Bot):
     )
     @app_commands.describe(trigger="Trigger word")
     @app_commands.checks.has_permissions(manage_messages=True)
-    async def removetriggerresponse(
-        interaction: discord.Interaction, trigger: str
-    ):
+    async def removetriggerresponse(interaction: discord.Interaction, trigger: str):
         await removetrigger(interaction, trigger)
 
     @bot.tree.command(name="triggers", description="Show all trigger responses")
