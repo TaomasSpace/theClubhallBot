@@ -512,8 +512,11 @@ def setup(bot: commands.Bot):
             return
         if question == None:
             question = random.choice(lines)
+
+        role = interaction.guild.get_role(1379012192451428433)
+
         await interaction.response.send_message(
-            "||<@&1379012192451428433>|| " + question, ephemeral=False
+            f"{role.mention} {question}", ephemeral=False
         )
         return
 
