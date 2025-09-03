@@ -515,10 +515,14 @@ def setup(bot: commands.Bot):
 
         role = interaction.guild.get_role(1379012192451428433)
 
-        await interaction.response.send_message(
-            f"{role.mention} {question}", ephemeral=False
-        )
-        return
+        try:
+            await role.edit(mentionable=True, reason="chatrevive ping")
+            await interaction.channel.send(
+                f"{role.mention} {question}",
+            )
+        finally:
+            await role.edit(mentionable=False, reason="reset mentionable")
+            return
 
     @bot.tree.command(
         name="manageprisonmember", description="Send or free someone from prison"
