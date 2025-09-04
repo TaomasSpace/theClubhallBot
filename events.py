@@ -23,6 +23,11 @@ from db.DBHelper import (
     get_booster_message,
     get_log_channel,
     get_prison_role,
+    start_message_log as db_start_message_log,
+    get_active_message_logs,
+    increment_message_log,
+    get_message_log_counts,
+    clear_message_log,
 )
 from utils import get_channel_webhook
 
@@ -32,6 +37,8 @@ rod_shop: dict[int, tuple[int, float]] = ROD_SHOP.copy()
 active_giveaway_tasks: dict[int, asyncio.Task] = {}
 filtered_violations: dict[int, dict[int, list[float]]] = {}
 trigger_responses: dict[int, dict[str, str]] = {}
+message_log_tasks: dict[int, asyncio.Task] = {}
+active_message_logs: dict[int, tuple[int, float, int]] = {}
 
 ERROR_LOG_CHANNEL_ID = 1373912883527815262
 
@@ -100,6 +107,70 @@ async def load_giveaways(bot: commands.Bot):
         active_giveaway_tasks[int(mid)] = task
 
 
+async def end_message_log(bot: commands.Bot, guild_id: int):
+    channel_id, _, top = active_message_logs.get(guild_id, (None, None, 30))
+    channel = bot.get_channel(channel_id) if channel_id else None
+    users = get_message_log_counts(guild_id, top)
+    if channel:
+        if users:
+            lines = [
+                f"{idx + 1}. {name} – {count} messages"
+                for idx, (name, count) in enumerate(users)
+            ]
+            embed = discord.Embed(
+                title=f"Top {len(users)} chatters",
+                description="\n".join(lines),
+                colour=discord.Colour.blue(),
+            )
+            await channel.send(embed=embed)
+        else:
+            await channel.send("No messages were recorded.")
+    clear_message_log(guild_id)
+    active_message_logs.pop(guild_id, None)
+    message_log_tasks.pop(guild_id, None)
+
+
+async def start_message_log(
+    bot: commands.Bot, guild_id: int, channel_id: int, seconds: int, top: int
+) -> bool:
+    if guild_id in active_message_logs:
+        return False
+    end_dt = datetime.now(timezone.utc) + timedelta(seconds=seconds)
+    db_start_message_log(guild_id, channel_id, end_dt, top)
+    end_ts = end_dt.timestamp()
+    active_message_logs[guild_id] = (channel_id, end_ts, top)
+
+    async def runner():
+        try:
+            await asyncio.sleep(seconds)
+            await end_message_log(bot, guild_id)
+        except asyncio.CancelledError:
+            pass
+
+    task = asyncio.create_task(runner())
+    message_log_tasks[guild_id] = task
+    return True
+
+
+async def load_message_logs(bot: commands.Bot):
+    now = datetime.now(timezone.utc).timestamp()
+    for gid, cid, end_dt, top in get_active_message_logs():
+        end_ts = end_dt.timestamp()
+        active_message_logs[gid] = (cid, end_ts, top)
+        delay = end_ts - now
+
+        async def runner(d=delay, g=gid):
+            try:
+                if d > 0:
+                    await asyncio.sleep(d)
+                await end_message_log(bot, g)
+            except asyncio.CancelledError:
+                pass
+
+        task = asyncio.create_task(runner())
+        message_log_tasks[gid] = task
+
+
 async def on_ready(bot: commands.Bot):
     init_db()
     global rod_shop, trigger_responses
@@ -108,6 +179,7 @@ async def on_ready(bot: commands.Bot):
     trigger_responses = {g.id: get_trigger_responses(g.id) for g in bot.guilds}
     await bot.tree.sync()
     await load_giveaways(bot)
+    await load_message_logs(bot)
     print(f"Bot is online as {bot.user}")
 
 
@@ -150,6 +222,12 @@ async def on_message(
 ):
     if message.author.bot or message.webhook_id or not message.guild:
         return
+    if message.guild.id in active_message_logs:
+        _, end_ts, _ = active_message_logs[message.guild.id]
+        if datetime.now(timezone.utc).timestamp() < end_ts:
+            increment_message_log(
+                message.guild.id, str(message.author.id), message.author.display_name
+            )
     locked = lowercase_locked.get(message.guild.id, set())
     if message.author.id in locked:
         try:
