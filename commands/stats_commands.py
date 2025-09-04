@@ -26,6 +26,8 @@ from db.DBHelper import (
     get_money,
     set_money,
 )
+from utils import has_role, has_command_permission, get_channel_webhook, parse_duration
+
 
 rod_shop: dict[int, tuple[int, float]] = {}
 
@@ -366,6 +368,9 @@ def setup(bot: commands.Bot, shop: dict[int, tuple[int, float]]):
     async def logmessages(
         interaction: discord.Interaction, duration: str, top: int = 30
     ):
+        if not has_command_permission(interaction.user, "manageprisonmember", "mod"):
+            await interaction.response.send_message("No permission.", ephemeral=True)
+            return
         multipliers = {"s": 1, "m": 60, "h": 3600, "d": 86400}
         unit = duration[-1].lower()
         try:
@@ -392,9 +397,7 @@ def setup(bot: commands.Bot, shop: dict[int, tuple[int, float]]):
             if timeout <= 0:
                 break
             try:
-                message = await bot.wait_for(
-                    "message", timeout=timeout, check=check
-                )
+                message = await bot.wait_for("message", timeout=timeout, check=check)
             except asyncio.TimeoutError:
                 break
             counts[message.author.display_name] += 1
