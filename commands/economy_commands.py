@@ -814,7 +814,7 @@ def setup(bot: commands.Bot):
         if roll == 0.01:
             multiplier = 10
             message = "💎💎💎 MEGA JACKPOT! 10x WIN!"
-        if roll < 0.05:
+        elif roll < 0.05:
             multiplier = 3
             message = "💎 JACKPOT! 3x WIN!"
         elif roll < 0.30:
