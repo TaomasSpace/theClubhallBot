@@ -811,6 +811,9 @@ def setup(bot: commands.Bot):
         )
         await asyncio.sleep(2)
         roll = random()
+        if roll == 0.01:
+            multiplier = 10
+            message = "💎💎💎 MEGA JACKPOT! 10x WIN!"
         if roll < 0.05:
             multiplier = 3
             message = "💎 JACKPOT! 3x WIN!"
