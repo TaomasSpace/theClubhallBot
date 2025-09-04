@@ -1,4 +1,3 @@
-from . import customRole, grantrole, imitate
+from . import customRole, grantrole
 
-__all__ = ["customRole", "grantrole", "imitate"]
-
+__all__ = ["customRole", "grantrole"]
