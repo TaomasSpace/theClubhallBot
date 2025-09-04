@@ -23,12 +23,14 @@ from Commands.gameCommands.manageMoney import request, donate, balance
 from Commands.gameCommands.manageStats import stats, allocate, buyPoints
 from Commands.gameCommands.userInteractionCommands import hack
 
+
 load_dotenv(dotenv_path=".env")
 token = os.getenv("bot_token")
 
 events.setup(bot, forceLowerCase.lowercase_locked)
 
 # Booster Commands
+
 @bot.tree.command(name="customrole", description="Create or update your booster role")
 @app_commands.describe(name="Name of your role", color="Hex color like #FFAA00")
 @cooldown(rate=1, per=2.0, key=lambda i: i.user.id)
@@ -56,6 +58,7 @@ async def imitateCommand(
 
 
 # Fun Commands
+
 @cooldown(rate=1, per=2.0, key=lambda i: i.user.id)
 @bot.tree.command(name="punch", description="Punch someone with anime style")
 async def punchCommand(interaction: discord.Interaction, user: discord.Member):
