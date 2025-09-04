@@ -209,6 +209,27 @@ def setup(bot: commands.Bot):
             embed.set_image(url=gif)
             await interaction.response.send_message(embed=embed)
 
+    @bot.tree.command(name="mad", description="be mad (bcs of another user)")
+    async def mad(interaction: discord.Interaction, user: discord.Member = None):
+        response = requests.get("https://api.otakugifs.xyz/gif?reaction=mad&format=gif")
+
+        gif = response.json()
+        gif = gif["url"]
+        if user == None:
+            embed = discord.Embed(
+                title=f"{interaction.user.display_name} is mad",
+                color=discord.Color.red(),
+            )
+            embed.set_image(url=gif)
+            await interaction.response.send_message(embed=embed)
+        else:
+            embed = discord.Embed(
+                title=f"{interaction.user.display_name} is mad because of {user.display_name}",
+                color=discord.Color.red(),
+            )
+            embed.set_image(url=gif)
+            await interaction.response.send_message(embed=embed)
+
     @bot.tree.command(name="woah", description="woah")
     async def woah(interaction: discord.Interaction):
         response = requests.get(
