@@ -2,15 +2,15 @@ import discord
 from discord.ext import commands
 
 from config import *
-from commands.fun_commands import setup as setup_fun, lowercase_locked
-from commands.booster_commands import setup as setup_booster
-from commands.economy_commands import setup as setup_economy
-from commands.stats_commands import setup as setup_stats
-from commands.action_commands import setup as setup_action
-from commands.admin_commands import setup as setup_admin
-from commands.antinuke_commands import setup as setup_antinuke
-from commands.setup_wizard import setup as setup_wizard
-from commands.explain_commands import setup as setup_explain
+from Commands.fun_commands import setup as setup_fun, lowercase_locked
+from Commands.booster_commands import setup as setup_booster
+from Commands.economy_commands import setup as setup_economy
+from Commands.stats_commands import setup as setup_stats
+from Commands.action_commands import setup as setup_action
+from Commands.admin_commands import setup as setup_admin
+from Commands.antinuke_commands import setup as setup_antinuke
+from Commands.setup_wizard import setup as setup_wizard
+from Commands.explain_commands import setup as setup_explain
 import events
 import anti_nuke
 
