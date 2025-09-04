@@ -3,6 +3,8 @@ from discord import app_commands
 from discord.ext import commands
 from datetime import datetime, timedelta
 from random import choice, randint, random
+import asyncio
+from collections import Counter
 
 from config import (
     STAT_PRICE,
@@ -353,6 +355,65 @@ def setup(bot: commands.Bot, shop: dict[int, tuple[int, float]]):
             ephemeral=True,
         )
 
+    @bot.tree.command(
+        name="logmessages",
+        description="Log messages for a duration and show top users",
+    )
+    @app_commands.describe(
+        duration="Duration like 10m or 1h",
+        top="Number of users to show (default 30)",
+    )
+    async def logmessages(
+        interaction: discord.Interaction, duration: str, top: int = 30
+    ):
+        multipliers = {"s": 1, "m": 60, "h": 3600, "d": 86400}
+        unit = duration[-1].lower()
+        try:
+            amount = int(duration[:-1])
+            seconds = amount * multipliers[unit]
+        except (ValueError, KeyError):
+            await interaction.response.send_message(
+                "Invalid duration format. Use like '10m' or '1h'.",
+                ephemeral=True,
+            )
+            return
+        await interaction.response.send_message(
+            f"📝 Logging messages for {amount}{unit}...",
+            ephemeral=True,
+        )
+        counts: Counter[str] = Counter()
+
+        def check(msg: discord.Message) -> bool:
+            return msg.guild == interaction.guild and not msg.author.bot
+
+        end_time = asyncio.get_event_loop().time() + seconds
+        while True:
+            timeout = end_time - asyncio.get_event_loop().time()
+            if timeout <= 0:
+                break
+            try:
+                message = await bot.wait_for(
+                    "message", timeout=timeout, check=check
+                )
+            except asyncio.TimeoutError:
+                break
+            counts[message.author.display_name] += 1
+
+        top_users = counts.most_common(top)
+        if not top_users:
+            await interaction.followup.send("No messages were recorded.")
+            return
+        lines = [
+            f"{idx + 1}. {name} – {count} messages"
+            for idx, (name, count) in enumerate(top_users)
+        ]
+        embed = discord.Embed(
+            title=f"Top {len(top_users)} chatters",
+            description="\n".join(lines),
+            colour=discord.Colour.blue(),
+        )
+        await interaction.followup.send(embed=embed)
+
     return (
         stats_cmd,
         quest,
@@ -363,4 +424,5 @@ def setup(bot: commands.Bot, shop: dict[int, tuple[int, float]]):
         rodshop,
         myrod,
         refund,
+        logmessages,
     )
