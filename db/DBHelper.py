@@ -533,6 +533,63 @@ def get_trigger_responses(guild_id: int) -> dict:
     return {trigger: response for trigger, response in rows}
 
 
+# ---------- message log helpers ----------
+
+
+def start_message_log(guild_id: int, channel_id: int, end_time: datetime, top: int):
+    _execute(
+        "INSERT OR REPLACE INTO message_logs (guild_id, channel_id, end_time, top) VALUES (?, ?, ?, ?)",
+        (guild_id, channel_id, end_time.isoformat(), top),
+    )
+    _execute("DELETE FROM message_log_counts WHERE guild_id = ?", (guild_id,))
+
+
+def get_active_message_logs():
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT guild_id, channel_id, end_time, top FROM message_logs",
+    )
+    rows = cursor.fetchall()
+    conn.close()
+    return [
+        (int(gid), int(cid), datetime.fromisoformat(end), int(tp))
+        for gid, cid, end, tp in rows
+    ]
+
+
+def increment_message_log(guild_id: int, user_id: str, username: str):
+    _execute(
+        """
+        INSERT INTO message_log_counts (guild_id, user_id, username, count)
+        VALUES (?, ?, ?, 1)
+        ON CONFLICT(guild_id, user_id)
+        DO UPDATE SET count = count + 1, username = excluded.username
+        """,
+        (guild_id, user_id, username),
+    )
+
+
+def get_message_log_counts(guild_id: int, top: int):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        SELECT username, count FROM message_log_counts
+        WHERE guild_id = ? ORDER BY count DESC LIMIT ?
+        """,
+        (guild_id, top),
+    )
+    rows = cursor.fetchall()
+    conn.close()
+    return rows
+
+
+def clear_message_log(guild_id: int):
+    _execute("DELETE FROM message_logs WHERE guild_id = ?", (guild_id,))
+    _execute("DELETE FROM message_log_counts WHERE guild_id = ?", (guild_id,))
+
+
 # ---------- anti nuke helpers ----------
 
 

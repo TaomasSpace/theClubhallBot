@@ -262,6 +262,32 @@ def init_db():
         },
     )
 
+    _recreate(
+        "message_logs",
+        """
+        CREATE TABLE IF NOT EXISTS message_logs (
+            guild_id INTEGER PRIMARY KEY,
+            channel_id INTEGER NOT NULL,
+            end_time TEXT NOT NULL,
+            top INTEGER NOT NULL
+        )
+        """,
+        {"guild_id", "channel_id", "end_time", "top"},
+    )
+    _recreate(
+        "message_log_counts",
+        """
+        CREATE TABLE IF NOT EXISTS message_log_counts (
+            guild_id INTEGER,
+            user_id TEXT,
+            username TEXT,
+            count INTEGER DEFAULT 0,
+            PRIMARY KEY (guild_id, user_id)
+        )
+        """,
+        {"guild_id", "user_id", "username", "count"},
+    )
+
 
     cursor.execute("PRAGMA table_info(users)")
     existing = {col[1] for col in cursor.fetchall()}
