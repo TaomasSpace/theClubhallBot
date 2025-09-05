@@ -246,7 +246,7 @@ async def on_message(
 
     if message.content.__contains__("<@1253388384911491264>"):
         await message.channel.send(
-            "Hiii, how can i help you?<:gura_wave:983242554793394227>"
+            "Hiii, sadly you cant @ me as prefix yet, that will be a feature for the future tho. Please use the / commands"
         )
 
     content = message.content.lower()
