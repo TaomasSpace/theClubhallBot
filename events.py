@@ -245,10 +245,8 @@ async def on_message(
     from db.DBHelper import update_date, get_filtered_words
 
     if message.content.__contains__("<@1253388384911491264>"):
-        wh = await get_channel_webhook(message.channel)
-        await wh.send(
-            content="Hiii, how can i help you? :gura_wave:",
-            allowed_mentions=discord.AllowedMentions.all(),
+        await message.channel.send(
+            "Hiii, how can i help you?<:gura_wave:983242554793394227>"
         )
 
     content = message.content.lower()
