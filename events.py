@@ -166,6 +166,15 @@ async def on_message(
     content = message.content.lower()
     from db.DBHelper import update_date, get_filtered_words
 
+    if message.content.__contains__("<@1253388384911491264>"):
+        wh = await get_channel_webhook(message.channel)
+        await wh.send(
+            content="Hiii, how can i help you? :gura_wave:",
+            allowed_mentions=discord.AllowedMentions.all(),
+        )
+
+    content = message.content.lower()
+
     for word in get_filtered_words(message.guild.id):
         if content.startswith(word) or " " + word in content:
             try:
