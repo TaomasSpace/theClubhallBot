@@ -367,7 +367,7 @@ def setup(bot: commands.Bot, shop: dict[int, tuple[int, float]]):
     async def logmessages(
         interaction: discord.Interaction, duration: str, top: int = 30
     ):
-        if not has_command_permission(interaction.user, "manageprisonmember", "mod"):
+        if not has_command_permission(interaction.user, "logmessages", "mod"):
             await interaction.response.send_message("No permission.", ephemeral=True)
             return
         seconds = parse_duration(duration)
