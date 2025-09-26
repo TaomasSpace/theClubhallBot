@@ -281,7 +281,6 @@ async def on_message(
     if message.author.bot:
         return
     update_date(message.author.id, message.author.name)
-    await bot.process_commands(message)
 
 
 async def on_member_join(bot: commands.Bot, member: discord.Member):

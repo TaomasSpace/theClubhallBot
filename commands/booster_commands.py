@@ -2,6 +2,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 from db.DBHelper import get_custom_role, set_custom_role
+from .hybrid_helpers import add_prefix_command
 
 
 def setup(bot: commands.Bot):
@@ -83,5 +84,8 @@ def setup(bot: commands.Bot):
         await interaction.response.send_message(
             f"✅ {target.display_name} got your role **{role.name}**.", ephemeral=False
         )
+
+    add_prefix_command(bot, customrole)
+    add_prefix_command(bot, grantrole)
 
     return customrole, grantrole

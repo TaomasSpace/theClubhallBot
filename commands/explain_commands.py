@@ -3,6 +3,7 @@ from discord import app_commands
 from discord.ext import commands
 
 from db.DBHelper import get_command_permission
+from .hybrid_helpers import add_prefix_command
 
 # Custom explanations for commands. Add entries here to provide
 # longer or more detailed descriptions than the default command
@@ -245,6 +246,8 @@ def setup(bot: commands.Bot):
             f"**Required Role:** {role_mention}",
             ephemeral=True,
         )
+
+    add_prefix_command(bot, explain)
 
     @explain.autocomplete("command")
     async def explain_autocomplete(
