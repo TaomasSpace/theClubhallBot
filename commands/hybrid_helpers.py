@@ -108,6 +108,14 @@ def add_prefix_command(
 ) -> commands.Command:
     """Register a prefix equivalent for an app-command callback."""
 
+    command_obj: app_commands.Command | None = None
+    if isinstance(func, app_commands.Command):
+        command_obj = func
+        func = command_obj.callback
+        if name is None:
+            name = command_obj.name
+
+
     sig = inspect.signature(func)
     params = list(sig.parameters.values())
     if not params:
@@ -142,7 +150,11 @@ def add_prefix_command(
     wrapper.__name__ = f"{func.__name__}_prefix"
     wrapper.__signature__ = new_sig
     wrapper.__annotations__ = annotations
-    wrapper.__doc__ = func.__doc__
+    if command_obj is not None and command_obj.description:
+        wrapper.__doc__ = command_obj.description
+    else:
+        wrapper.__doc__ = func.__doc__
+
 
     return bot.command(name=name or func.__name__)(wrapper)
 
