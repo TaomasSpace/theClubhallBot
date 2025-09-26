@@ -20,7 +20,7 @@ intents.message_content = True
 intents.guilds = True
 intents.members = True
 
-bot = commands.Bot(command_prefix="!", intents=intents)
+bot = commands.Bot(command_prefix=["!", "<@1253388384911491264>"], intents=intents)
 
 setup_fun(bot)
 setup_booster(bot)
