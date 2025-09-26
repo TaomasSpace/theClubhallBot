@@ -26,6 +26,7 @@ from db.DBHelper import (
     set_money,
 )
 from utils import has_role, has_command_permission, parse_duration
+from .hybrid_helpers import add_prefix_command
 
 
 rod_shop: dict[int, tuple[int, float]] = {}
@@ -390,6 +391,20 @@ def setup(bot: commands.Bot, shop: dict[int, tuple[int, float]]):
             f"📝 Logging messages for {duration}...",
             ephemeral=True,
         )
+
+    for func, name in (
+        (stats_cmd, "stats"),
+        (quest, "quest"),
+        (buypoints, "buypoints"),
+        (allocate, "allocate"),
+        (fish, "fishing"),
+        (buyrod, "buyrod"),
+        (rodshop, "rodshop"),
+        (myrod, "myrod"),
+        (refund, "refund"),
+        (logmessages, "logmessages"),
+    ):
+        add_prefix_command(bot, func, name=name)
 
     return (
         stats_cmd,

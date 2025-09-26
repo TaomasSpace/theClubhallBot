@@ -58,6 +58,7 @@ from db.DBHelper import (
     get_anti_nuke_log_channel,
 )
 from utils import has_role, has_command_permission, get_channel_webhook, parse_duration
+from .hybrid_helpers import add_prefix_command
 
 
 async def run_command_tests(bot: commands.Bot) -> dict[str, str]:
@@ -1188,6 +1189,47 @@ def setup(bot: commands.Bot):
         if failed:
             msg += f"\n\u26a0\ufe0f Failed for: {', '.join(failed)}"
         await interaction.response.send_message(msg, ephemeral=True)
+
+    for func, name in (
+        (test_commands, "test"),
+        (setstatpoints, "setstatpoints"),
+        (lastdate, "lastdate"),
+        (setstat, "setstat"),
+        (addshoprole, "addshoprole"),
+        (shop, "shop"),
+        (buyrole, "buyrole"),
+        (chatrevive, "chatrevive"),
+        (managePrisonMember, "manageprisonmember"),
+        (manageViltrumite, "manageviltrumite"),
+        (manageYeager, "manageyeager"),
+        (manageackerman, "manageackerman"),
+        (addcolorreactionrole, "addcolorreactionrole"),
+        (imitate, "imitate"),
+        (giveaway, "giveaway"),
+        (lock_channel, "lock"),
+        (unlock_channel, "unlock"),
+        (addfilterword, "addfilterword"),
+        (removefilterword, "removefilterword"),
+        (filterwords, "filterwords"),
+        (addtrigger, "addtrigger"),
+        (removetrigger, "removetrigger"),
+        (removetriggerresponse, "removetriggerresponse"),
+        (triggers, "triggers"),
+        (setwelcomechannel, "setwelcomechannel"),
+        (setleavechannel, "setleavechannel"),
+        (setwelcomemsg, "setwelcomemsg"),
+        (setleavemsg, "setleavemsg"),
+        (setboostchannel, "setboostchannel"),
+        (setboostmsg, "setboostmsg"),
+        (setlogchannel, "setlogchannel"),
+        (serversettings, "serversettings"),
+        (setrole, "setrole"),
+        (removerole, "removerole"),
+        (setcommandrole, "setcommandrole"),
+        (removecommandrole, "removecommandrole"),
+        (createrole, "createrole"),
+    ):
+        add_prefix_command(bot, func, name=name)
 
     return (
         setstatpoints,

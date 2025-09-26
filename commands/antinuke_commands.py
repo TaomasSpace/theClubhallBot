@@ -4,6 +4,7 @@ from discord.ext import commands
 from typing import Optional
 
 from utils import parse_duration
+from .hybrid_helpers import add_prefix_command
 from db.DBHelper import (
     set_anti_nuke_setting,
     get_anti_nuke_setting,
@@ -122,4 +123,10 @@ def setup(bot: commands.Bot):
         lines.append(f"Safe roles: {', '.join(roles)}")
         lines.append(f"Log channel: {log_line}")
         await interaction.response.send_message("\n".join(lines), ephemeral=True)
+
+    add_prefix_command(bot, antinukeconfig)
+    add_prefix_command(bot, antinukeignoreuser)
+    add_prefix_command(bot, antinukeignorerole)
+    add_prefix_command(bot, antinukelog)
+    add_prefix_command(bot, antinukesettings)
 
