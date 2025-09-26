@@ -5,6 +5,7 @@ import inspect
 from dataclasses import dataclass
 from typing import Any, Literal, Mapping, Optional, Sequence, Union, get_args, get_origin
 
+
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -241,6 +242,7 @@ class PrefixAppCommand(commands.Command):
         ctx.kwargs = {}
 
 
+
 class PrefixFollowupAdapter:
     def __init__(self, ctx: commands.Context):
         self._ctx = ctx
@@ -268,6 +270,7 @@ class PrefixResponseAdapter:
             if len(args) > 1:
                 raise TypeError("send_message accepts at most one positional argument")
             kwargs["content"] = args[0]
+
         self._done = True
         self._deferred = False
         self._message = await respond(self._ctx, **kwargs)
@@ -297,6 +300,7 @@ class PrefixResponseAdapter:
             if len(args) > 1:
                 raise TypeError("edit_message accepts at most one positional argument")
             kwargs["content"] = args[0]
+
         if self._message:
             await self._message.edit(**kwargs)
         else:
@@ -309,6 +313,7 @@ class PrefixResponseAdapter:
             if len(args) > 1:
                 raise TypeError("edit_original_response accepts at most one positional argument")
             kwargs["content"] = args[0]
+
         if self._message:
             await self._message.edit(**kwargs)
         else:
@@ -364,6 +369,7 @@ def add_prefix_command(
         if name is None:
             name = command_obj.name
 
+
     sig = inspect.signature(func)
     params = list(sig.parameters.values())
     if not params:
@@ -378,6 +384,7 @@ def add_prefix_command(
     checks = list(getattr(func, "__discord_app_commands_checks__", []))
 
     async def wrapper(ctx: commands.Context, *converted):
+
         interaction = PrefixInteractionAdapter(ctx)
         for check in checks:
             try:
@@ -392,6 +399,7 @@ def add_prefix_command(
             raise commands.CommandError(str(exc)) from exc
 
     wrapper.__name__ = f"{func.__name__}_prefix"
+
     if command_obj is not None and command_obj.description:
         wrapper.__doc__ = command_obj.description
     else:
@@ -407,9 +415,11 @@ def add_prefix_command(
     return command
 
 
+
 async def respond(
     ctx: commands.Context,
     *args,
+
     content: str | None = None,
     embed: discord.Embed | None = None,
     embeds: list[discord.Embed] | None = None,
@@ -428,6 +438,7 @@ async def respond(
         if len(args) > 1:
             raise TypeError("respond accepts at most one positional argument")
         content = args[0]
+
 
     interaction = ctx.interaction
     if interaction:
