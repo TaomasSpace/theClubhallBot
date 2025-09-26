@@ -137,6 +137,7 @@ from db.DBHelper import (
     set_anime_title,
 )
 from utils import has_command_permission
+from .hybrid_helpers import add_prefix_command
 
 
 class RequestView(ui.View):
@@ -933,6 +934,25 @@ def setup(bot: commands.Bot):
         view.players[interaction.user.id] = interaction.user.display_name
         await interaction.response.send_message(view.render(), view=view)
         view.message = await interaction.original_response()
+
+    for command in (
+        money,
+        balance,
+        give,
+        remove,
+        donate,
+        request,
+        topcoins,
+        weekly,
+        daily,
+        superpower,
+        gamble,
+        casino,
+        duel,
+        blackjack,
+        poker,
+    ):
+        add_prefix_command(bot, command)
 
     return (
         money,

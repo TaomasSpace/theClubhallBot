@@ -22,6 +22,7 @@ from db.DBHelper import (
     add_safe_role,
 )
 from utils import parse_duration
+from .hybrid_helpers import add_prefix_command
 from anti_nuke import CATEGORIES
 
 
@@ -479,3 +480,5 @@ def setup(bot: commands.Bot):
     async def _setup_wizard(interaction: discord.Interaction):
         wizard = SetupWizard(interaction)
         await wizard.start()
+
+    add_prefix_command(bot, _setup_wizard, name="setupwizard")
