@@ -29,10 +29,8 @@ async def _respond(
     if ctx.interaction:
         interaction = ctx.interaction
         if interaction.response.is_done():
-            await interaction.followup.send(
-                content=content, embed=embed, ephemeral=ephemeral
-            )
-            return
+            await interaction.followup.send(content=content, embed=embed, ephemeral=ephemeral)
+
         else:
             await interaction.response.send_message(
                 content=content, embed=embed, ephemeral=ephemeral
@@ -55,9 +53,8 @@ def setup(bot: commands.Bot):
     @app_commands.describe(target="Member to steal from")
     async def steal(ctx: commands.Context, target: discord.Member):
         if target.id == ctx.author.id:
-            await _respond(
-                ctx, content="You can't steal from yourself!", ephemeral=True
-            )
+            await _respond(ctx, content="You can't steal from yourself!", ephemeral=True)
+
             return
         uid, tid = str(ctx.author.id), str(target.id)
         now = datetime.utcnow()
@@ -93,6 +90,7 @@ def setup(bot: commands.Bot):
             return
         target_balance = get_money(tid)
         if target_balance < 5:
+
             await _respond(
                 ctx, content="Target is too poor to bother...", ephemeral=True
             )
@@ -112,8 +110,8 @@ def setup(bot: commands.Bot):
         )
 
     @bot.hybrid_command(
-        name="hack",
-        description="Hack the bank to win coins (needs intelligence \u2265 3)",
+        name="hack", description="Hack the bank to win coins (needs intelligence \u2265 3)"
+
     )
     async def hack(ctx: commands.Context):
         uid = str(ctx.author.id)
