@@ -115,6 +115,7 @@ def add_prefix_command(
         if name is None:
             name = command_obj.name
 
+
     sig = inspect.signature(func)
     params = list(sig.parameters.values())
     if not params:
@@ -153,6 +154,7 @@ def add_prefix_command(
         wrapper.__doc__ = command_obj.description
     else:
         wrapper.__doc__ = func.__doc__
+
 
     return bot.command(name=name or func.__name__)(wrapper)
 

@@ -18,6 +18,34 @@ fight_cooldowns: dict[int, datetime] = {}
 steal_cooldowns: dict[int, datetime] = {}
 
 
+async def _respond(
+    ctx: commands.Context,
+    *,
+    content: str | None = None,
+    embed: discord.Embed | None = None,
+    ephemeral: bool = False,
+) -> None:
+    """Send a response for both prefix and slash command invocations."""
+
+    if ctx.interaction:
+        interaction = ctx.interaction
+        if interaction.response.is_done():
+            await interaction.followup.send(content=content, embed=embed, ephemeral=ephemeral)
+
+        else:
+            await interaction.response.send_message(
+                content=content, embed=embed, ephemeral=ephemeral
+            )
+        return
+
+    send_kwargs = {}
+    if content is not None:
+        send_kwargs["content"] = content
+    if embed is not None:
+        send_kwargs["embed"] = embed
+    await ctx.send(**send_kwargs)
+
+
 def setup(bot: commands.Bot):
     @bot.hybrid_command(
         name="steal",
@@ -27,6 +55,7 @@ def setup(bot: commands.Bot):
     async def steal(ctx: commands.Context, target: discord.Member):
         if target.id == ctx.author.id:
             await respond(ctx, content="You can't steal from yourself!", ephemeral=True)
+
             return
         uid, tid = str(ctx.author.id), str(target.id)
         now = datetime.utcnow()
@@ -35,6 +64,7 @@ def setup(bot: commands.Bot):
             remaining = timedelta(minutes=45) - (now - cooldown)
             minutes, seconds = divmod(int(remaining.total_seconds()), 60)
             await respond(
+
                 ctx,
                 content=f"\u23f3 You can steal again in **{minutes} minutes {seconds} seconds**.",
                 ephemeral=True,
@@ -46,6 +76,7 @@ def setup(bot: commands.Bot):
         target_stats = get_stats(tid)
         if actor_stats["stealth"] < 3:
             await respond(
+
                 ctx,
                 content="You need at least **3** Stealth to attempt a steal.",
                 ephemeral=True,
@@ -55,6 +86,7 @@ def setup(bot: commands.Bot):
         success_chance = actor_stealth / (actor_stealth + target_stealth)
         if random() > success_chance:
             await respond(
+
                 ctx,
                 content="\U0001f440 You were caught and failed to steal any coins!",
                 ephemeral=True,
@@ -63,6 +95,7 @@ def setup(bot: commands.Bot):
         target_balance = get_money(tid)
         if target_balance < 5:
             await respond(ctx, content="Target is too poor to bother...", ephemeral=True)
+
             return
         max_pct = min(0.05 + 0.02 * max(actor_stealth - target_stealth, 0), 0.25)
         stolen_pct = random() * max_pct
@@ -71,6 +104,7 @@ def setup(bot: commands.Bot):
         safe_add_coins(uid, stolen_amt)
         steal_cooldowns[ctx.author.id] = datetime.utcnow()
         await respond(
+
             ctx,
             content=(
                 f"\U0001f576\ufe0f Success! You stole **{stolen_amt}** coins from {target.display_name}."
@@ -80,6 +114,7 @@ def setup(bot: commands.Bot):
 
     @bot.hybrid_command(
         name="hack", description="Hack the bank to win coins (needs intelligence \u2265 3)"
+
     )
     async def hack(ctx: commands.Context):
         uid = str(ctx.author.id)
@@ -90,6 +125,7 @@ def setup(bot: commands.Bot):
             remaining = timedelta(minutes=45) - (now - cooldown)
             minutes, seconds = divmod(int(remaining.total_seconds()), 60)
             await respond(
+
                 ctx,
                 content=f"\u23f3 You can hack again in **{minutes} minutes {seconds} seconds**.",
                 ephemeral=True,
@@ -98,6 +134,7 @@ def setup(bot: commands.Bot):
         stats = get_stats(uid)
         if stats["intelligence"] < 3:
             await respond(
+
                 ctx,
                 content="\u274c You need at least **3** Intelligence to attempt a hack.",
                 ephemeral=True,
@@ -111,6 +148,7 @@ def setup(bot: commands.Bot):
             new_bal = max(0, get_money(uid) - loss)
             set_money(uid, new_bal)
             await respond(
+
                 ctx,
                 content=(
                     f"\U0001f4bb Hack failed! Security traced you and you lost **{loss}** coins."
@@ -122,6 +160,7 @@ def setup(bot: commands.Bot):
         added = safe_add_coins(uid, reward)
         if added > 0:
             await respond(
+
                 ctx,
                 content=(
                     f"\U0001f50b Hack successful! You siphoned **{added}** coins from the bank."
@@ -130,6 +169,7 @@ def setup(bot: commands.Bot):
             )
         else:
             await respond(
+
                 ctx,
                 content=(
                     "\u26a0\ufe0f Hack succeeded but server coin limit reached. No coins added."
@@ -144,6 +184,7 @@ def setup(bot: commands.Bot):
     async def fight(ctx: commands.Context, target: discord.Member):
         if target.id == ctx.author.id:
             await respond(ctx, content="You can't fight yourself!", ephemeral=True)
+
             return
         uid, tid = str(ctx.author.id), str(target.id)
         now = datetime.utcnow()
@@ -152,6 +193,7 @@ def setup(bot: commands.Bot):
             remaining = timedelta(minutes=45) - (now - cooldown)
             minutes, seconds = divmod(int(remaining.total_seconds()), 60)
             await respond(
+
                 ctx,
                 content=f"\u23f3 You can fight again in **{minutes} minutes {seconds} seconds**.",
                 ephemeral=True,
@@ -163,6 +205,7 @@ def setup(bot: commands.Bot):
         defn = get_stats(tid)
         if atk["strength"] < 3:
             await respond(
+
                 ctx,
                 content="You need at least **3** Strength to start a fight.",
                 ephemeral=True,
@@ -175,6 +218,7 @@ def setup(bot: commands.Bot):
             set_money(uid, get_money(uid) - penalty)
             safe_add_coins(tid, penalty)
             await respond(
+
                 ctx,
                 content=(
                     f"\U0001f3cb\ufe0f You lost the fight and paid **{penalty}** coins in damages to {target.display_name}."
@@ -189,6 +233,7 @@ def setup(bot: commands.Bot):
         safe_add_coins(uid, stolen)
         fight_cooldowns[ctx.author.id] = datetime.utcnow()
         await respond(
+
             ctx,
             content=(
                 f"\U0001f4aa Victory! You took **{stolen}** coins from {target.display_name}."
