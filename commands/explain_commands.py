@@ -2,8 +2,8 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from db.DBHelper import get_command_permission
 from .hybrid_helpers import add_prefix_command
+from permissions import describe_permission
 
 # Custom explanations for commands. Add entries here to provide
 # longer or more detailed descriptions than the default command
@@ -40,7 +40,8 @@ COMMAND_EXPLANATIONS: dict[str, str] = {
     ),
     "lastdate": (
         "Displays the last active date of a specific user. "
-        "Only usable by admins or server boosters. Useful for activity tracking or moderation."
+        "Only usable by members with the moderation role (ID 1380267391598071859). "
+        "Useful for activity tracking or moderation."
     ),
     "setstat": (
         "Sets a specific stat (intelligence, strength, or stealth) to a new value for a user. "
@@ -60,30 +61,30 @@ COMMAND_EXPLANATIONS: dict[str, str] = {
     ),
     "manageprisonmember": (
         "Sends a user to prison (restricting access) or frees them from it. "
-        "You can specify a duration or cancel an existing prison timer. Only for moderators/admins. "
+        "You can specify a duration or cancel an existing prison timer. Only for the moderation role (ID 1380267391598071859). "
         "Useful for soft moderation or fun punishment features."
     ),
     "antinukeconfig": (
         "Configures anti-nuke settings for your server. You choose a category (like delete_roles, kick, ban), "
         "set a threshold (number of actions before punishment), select a punishment (timeout, strip, kick, ban), "
         "optionally set duration (for timeout), and enable or disable the protection. "
-        "Only the server owner can use this command."
+        "Only members with the admin role (ID 1351479405699928108) can use this command."
     ),
     "antinukeignoreuser": (
         "Toggles whether a specific user is marked as safe from anti-nuke checks. "
-        "If the user is already marked safe, they are removed. Only usable by the server owner."
+        "If the user is already marked safe, they are removed. Only usable by the admin role (ID 1351479405699928108)."
     ),
     "antinukeignorerole": (
         "Toggles whether a specific role is marked as safe from anti-nuke checks. "
-        "If the role is already marked safe, it is removed. Only usable by the server owner."
+        "If the role is already marked safe, it is removed. Only usable by the admin role (ID 1351479405699928108)."
     ),
     "antinukelog": (
         "Sets the channel where anti-nuke actions are logged. "
-        "Only the server owner can use this. Important to review automatic punishments."
+        "Only the admin role (ID 1351479405699928108) can use this. Important to review automatic punishments."
     ),
     "antinukesettings": (
         "Displays the current anti-nuke settings and safe users/roles for your server. "
-        "Only the server owner can access this. Helps verify what protections are active."
+        "Only the admin role (ID 1351479405699928108) can access this. Helps verify what protections are active."
     ),
     "customrole": (
         "Creates or updates your personal booster role. "
@@ -132,7 +133,7 @@ COMMAND_EXPLANATIONS: dict[str, str] = {
     ),
     "forcelowercase": (
         "Toggles a setting that forces a specific user's messages to appear in lowercase. "
-        "Only users with 'Manage Messages' permission can use this. It's a fun moderation tool or prank."
+        "Only members with the moderation role (ID 1380267391598071859) can use this. It's a fun moderation tool or prank."
     ),
     "punch": (
         "Sends a random anime-style punch GIF showing you punching another user. "
@@ -171,7 +172,7 @@ COMMAND_EXPLANATIONS: dict[str, str] = {
         "Starts an interactive setup process to configure the server features like welcome messages, "
         "leave messages, booster settings, logging, and anti-nuke. "
         "You will be guided through modals to input channels, messages, roles, and configurations. "
-        "Recommended to run this after adding the bot to your server."
+        "Recommended to run this after adding the bot to your server. Requires the admin role (ID 1351479405699928108)."
     ),
     "dance": (
         "Sends a random anime dance GIF with a fun message. "
@@ -219,15 +220,7 @@ def setup(bot: commands.Bot):
             return
 
         guild = interaction.guild
-        role_mention = "No specific role required"
-        if guild is not None:
-            role_id = get_command_permission(guild.id, command)
-            if role_id is not None:
-                role = guild.get_role(role_id)
-                if role is not None:
-                    role_mention = role.mention
-                else:
-                    role_mention = f"Role ID {role_id}"
+        role_mention = describe_permission(guild, command)
 
         params_lines: list[str] = []
         for param in cmd.parameters:

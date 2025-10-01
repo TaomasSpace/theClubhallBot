@@ -3,7 +3,7 @@ from discord import app_commands
 from discord.ext import commands
 from typing import Optional
 
-from utils import parse_duration
+from utils import parse_duration, has_command_permission
 from .hybrid_helpers import add_prefix_command
 from db.DBHelper import (
     set_anti_nuke_setting,
@@ -17,8 +17,6 @@ from db.DBHelper import (
     set_anti_nuke_log_channel,
     get_anti_nuke_log_channel,
 )
-
-OWNER_ID = 756537363509018736
 
 CATEGORIES = [
     "delete_roles",
@@ -48,7 +46,7 @@ def setup(bot: commands.Bot):
         duration: Optional[str],
         enabled: bool,
     ):
-        if interaction.user.id != OWNER_ID:
+        if not has_command_permission(interaction.user, "antinukeconfig", "admin"):
             await interaction.response.send_message("No permission.", ephemeral=True)
             return
         if category not in CATEGORIES:
@@ -62,7 +60,9 @@ def setup(bot: commands.Bot):
 
     @bot.tree.command(name="antinukeignoreuser", description="Toggle safe user")
     async def antinukeignoreuser(interaction: discord.Interaction, user: discord.Member):
-        if interaction.user.id != OWNER_ID:
+        if not has_command_permission(
+            interaction.user, "antinukeignoreuser", "admin"
+        ):
             await interaction.response.send_message("No permission.", ephemeral=True)
             return
         guild_id = interaction.guild.id
@@ -75,7 +75,9 @@ def setup(bot: commands.Bot):
 
     @bot.tree.command(name="antinukeignorerole", description="Toggle safe role")
     async def antinukeignorerole(interaction: discord.Interaction, role: discord.Role):
-        if interaction.user.id != OWNER_ID:
+        if not has_command_permission(
+            interaction.user, "antinukeignorerole", "admin"
+        ):
             await interaction.response.send_message("No permission.", ephemeral=True)
             return
         guild_id = interaction.guild.id
@@ -88,7 +90,7 @@ def setup(bot: commands.Bot):
 
     @bot.tree.command(name="antinukelog", description="Set anti nuke log channel")
     async def antinukelog(interaction: discord.Interaction, channel: discord.TextChannel):
-        if interaction.user.id != OWNER_ID:
+        if not has_command_permission(interaction.user, "antinukelog", "admin"):
             await interaction.response.send_message("No permission.", ephemeral=True)
             return
         set_anti_nuke_log_channel(interaction.guild.id, channel.id)
@@ -98,7 +100,9 @@ def setup(bot: commands.Bot):
 
     @bot.tree.command(name="antinukesettings", description="Show anti nuke configuration")
     async def antinukesettings(interaction: discord.Interaction):
-        if interaction.user.id != OWNER_ID:
+        if not has_command_permission(
+            interaction.user, "antinukesettings", "admin"
+        ):
             await interaction.response.send_message("No permission.", ephemeral=True)
             return
         lines = []

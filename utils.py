@@ -1,7 +1,8 @@
 import discord
 from discord import ui
 from typing import Optional
-from db.DBHelper import get_command_permission, get_role
+
+from permissions import get_permission_rule, describe_permission
 
 webhook_cache: dict[int, discord.Webhook] = {}
 
@@ -43,18 +44,30 @@ def has_role(member: discord.Member, role: int | str) -> bool:
 def has_command_permission(
     user: discord.Member, command: str, fallback_role_key: str
 ) -> bool:
+    """Check if *user* may run *command* based on static role rules."""
+
     if user.guild and user.id == user.guild.owner_id:
         # The server owner always has access to every command.
         return True
-    role_id = get_command_permission(user.guild.id, command)
-    if role_id is None:
-        role_id = get_role(user.guild.id, fallback_role_key)
-    if role_id is None:
-        print(
-            f"[PERM] No role found for command={command}, fallback={fallback_role_key}"
-        )
+
+    rule = get_permission_rule(command)
+
+    if rule.allow_everyone:
+        return True
+
+    if not user.guild:
         return False
+
+    if rule.allow_boosters and getattr(user, "premium_since", None):
+        return True
+
+    if rule.role_ids and any(role.id in rule.role_ids for role in user.roles):
+        return True
+
     print(
-        f"[PERM] Required role_id: {role_id}, user roles: {[r.id for r in user.roles]}"
+        "[PERM] Access denied",
+        command,
+        describe_permission(user.guild, command),
+        [r.id for r in user.roles],
     )
-    return any(role.id == role_id for role in user.roles)
+    return False
