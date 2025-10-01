@@ -21,7 +21,7 @@ from db.DBHelper import (
     add_safe_user,
     add_safe_role,
 )
-from utils import parse_duration
+from utils import parse_duration, has_command_permission
 from .hybrid_helpers import add_prefix_command
 from anti_nuke import CATEGORIES
 
@@ -413,7 +413,7 @@ class SetupWizard:
                     "Restrict commands to specific roles.",
                     "Medium",
                     instruction=(
-                        "Use `/setcommandrole <command> <@role>` after the wizard"
+                        "Make sure staff members have the required Discord roles"
                         " to limit command usage."
                     ),
 
@@ -476,8 +476,10 @@ def setup(bot: commands.Bot):
     @bot.tree.command(
         name="setup-wizard", description="Start an interactive setup wizard for this server"
     )
-    @app_commands.checks.has_permissions(manage_guild=True)
     async def _setup_wizard(interaction: discord.Interaction):
+        if not has_command_permission(interaction.user, "setup-wizard", "admin"):
+            await interaction.response.send_message("No permission.", ephemeral=True)
+            return
         wizard = SetupWizard(interaction)
         await wizard.start()
 

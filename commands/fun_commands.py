@@ -7,7 +7,7 @@ from collections import defaultdict
 import requests
 
 from db.DBHelper import get_role
-from utils import has_role
+from utils import has_role, has_command_permission
 
 from .hybrid_helpers import respond
 
@@ -20,11 +20,12 @@ def setup(bot: commands.Bot):
         description="Force a member's messages to lowercase (toggle)",
     )
     @app_commands.describe(member="Member to lock/unlock")
-    @commands.has_permissions(manage_messages=True)
-    @app_commands.checks.has_permissions(manage_messages=True)
     async def forcelowercase(ctx: commands.Context, member: discord.Member):
         if not ctx.guild:
             await respond(ctx, content="This command can only be used in a server.", ephemeral=True)
+            return
+        if not has_command_permission(ctx.author, "forcelowercase", "mod"):
+            await respond(ctx, content="You don't have permission to use this command.", ephemeral=True)
             return
         locked = lowercase_locked[ctx.guild.id]
         if member.id in locked:

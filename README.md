@@ -19,6 +19,7 @@ The script automatically locates `users.db` in the project root so it can be run
 
 Run `/setup-wizard` on your server to walk through a complete configuration.
 The wizard explains every step, lets you skip anything, and sets up channels
-and anti-nuke options. For role shortcuts and command restrictions it points
-you to the `/setrole` and `/setcommandrole` commands for later use.
+and anti-nuke options. Command permissions are now hard-coded via role IDs in
+`permissions.py`, so make sure your staff members have the appropriate roles
+before starting the wizard.
 
