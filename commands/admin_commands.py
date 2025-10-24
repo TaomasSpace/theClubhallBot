@@ -841,19 +841,6 @@ def setup(bot: commands.Bot):
                 f"\u274c Trigger `{trigger}` not found.", ephemeral=True
             )
 
-    @bot.tree.command(
-        name="removetriggerresponse",
-        description="Remove a trigger response",
-    )
-    @app_commands.describe(trigger="Trigger word")
-    async def removetriggerresponse(interaction: discord.Interaction, trigger: str):
-        if not has_command_permission(
-            interaction.user, "removetriggerresponse", "mod"
-        ):
-            await interaction.response.send_message("No permission.", ephemeral=True)
-            return
-        await removetrigger(interaction, trigger)
-
     @bot.tree.command(name="triggers", description="Show all trigger responses")
     async def triggers(interaction: discord.Interaction):
         from db.DBHelper import get_trigger_responses
@@ -1104,7 +1091,6 @@ def setup(bot: commands.Bot):
         (filterwords, "filterwords"),
         (addtrigger, "addtrigger"),
         (removetrigger, "removetrigger"),
-        (removetriggerresponse, "removetriggerresponse"),
         (triggers, "triggers"),
         (setwelcomechannel, "setwelcomechannel"),
         (setleavechannel, "setleavechannel"),
@@ -1137,7 +1123,6 @@ def setup(bot: commands.Bot):
         filterwords,
         addtrigger,
         removetrigger,
-        removetriggerresponse,
         triggers,
         setwelcomechannel,
         setleavechannel,

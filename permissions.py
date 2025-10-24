@@ -48,7 +48,6 @@ COMMAND_PERMISSION_RULES: Mapping[str, PermissionRule] = dict(
         "removefilterword": PermissionRule(role_ids=frozenset({MOD_ROLE_ID})),
         "addtrigger": PermissionRule(role_ids=frozenset({MOD_ROLE_ID})),
         "removetrigger": PermissionRule(role_ids=frozenset({MOD_ROLE_ID})),
-        "removetriggerresponse": PermissionRule(role_ids=frozenset({MOD_ROLE_ID})),
         "setwelcomechannel": PermissionRule(role_ids=frozenset({ADMIN_ROLE_ID})),
         "setwelcomemsg": PermissionRule(role_ids=frozenset({ADMIN_ROLE_ID})),
         "setleavechannel": PermissionRule(role_ids=frozenset({ADMIN_ROLE_ID})),
