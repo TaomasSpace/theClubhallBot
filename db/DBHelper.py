@@ -514,11 +514,17 @@ def add_trigger_response(trigger: str, response: str, guild_id: int):
     )
 
 
-def remove_trigger_response(trigger: str, guild_id: int):
-    _execute(
+def remove_trigger_response(trigger: str, guild_id: int) -> bool:
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute(
         "DELETE FROM trigger_responses WHERE guild_id = ? AND trigger = ?",
         (str(guild_id), trigger.lower()),
     )
+    removed = cursor.rowcount > 0
+    conn.commit()
+    conn.close()
+    return removed
 
 
 def get_trigger_responses(guild_id: int) -> dict:
