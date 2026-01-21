@@ -3,7 +3,7 @@ from discord.ext import commands
 
 from config import *
 from commands.fun_commands import setup as setup_fun, lowercase_locked
-from commands.booster_commands import setup as setup_booster
+#from commands.booster_commands import setup as setup_booster
 from commands.economy_commands import setup as setup_economy
 from commands.stats_commands import setup as setup_stats
 from commands.action_commands import setup as setup_action
@@ -25,7 +25,7 @@ bot = commands.Bot(
 )
 
 setup_fun(bot)
-setup_booster(bot)
+#setup_booster(bot)
 setup_economy(bot)
 setup_stats(bot, ROD_SHOP)
 setup_action(bot)
