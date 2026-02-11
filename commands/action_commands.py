@@ -156,7 +156,7 @@ def setup(bot: commands.Bot):
                 ephemeral=True,
             )
             return
-        reward = randint(5, 12) * int_level
+        reward = randint(5, 12) * int_level / 2
         added = safe_add_coins(uid, reward)
         if added > 0:
             await respond(

@@ -682,109 +682,109 @@ def setup(bot: commands.Bot):
                 ephemeral=True,
             )
 
-    @bot.tree.command(
-        name="superpower",
-        description="Roll a random superpower for 80k coins (24 h cooldown)",
-    )
-    async def superpower(interaction: discord.Interaction):
-        uid = str(interaction.user.id)
-        register_user(uid, interaction.user.display_name)
-        balance = get_money(uid)
-        if balance < SUPERPOWER_COST:
-            await interaction.response.send_message(
-                f"❌ You need {SUPERPOWER_COST} coins.", ephemeral=True
-            )
-            return
-        now = datetime.utcnow()
-        last = get_timestamp(uid, "last_superpower")
-        if last and now - last < timedelta(hours=SUPERPOWER_COOLDOWN_HOURS):
-            remain = timedelta(hours=SUPERPOWER_COOLDOWN_HOURS) - (now - last)
-            hrs, sec = divmod(int(remain.total_seconds()), 3600)
-            mins = sec // 60
-            await interaction.response.send_message(
-                f"🕒 Next roll in {hrs}h {mins}m.", ephemeral=True
-            )
-            return
-        set_money(uid, balance - SUPERPOWER_COST)
-        rarities = [
-            ("Crappy-power", 0.40),
-            ("Somewhat useful", 0.30),
-            ("That's decent", 0.15),
-            ("Damn you're almost as cool as Anonym", 0.10),
-            ("Legendary (Anonym level power)", 0.05),
-        ]
-        roll = random()
-        cumulative = 0.0
-        rarity = rarities[-1][0]
-        for name, weight in rarities:
-            cumulative += weight
-            if roll < cumulative:
-                rarity = name
-                break
-        powers = {
-            "Crappy-power": [
-                "Make water slightly colder",
-                "Summon a single mosquito",
-                "Change TV to channel 3",
-                "Emit a faint squeak",
-                "Teleport two inches",
-                "Turn coffee lukewarm",
-            ],
-            "Somewhat useful": [
-                "Find missing socks",
-                "Instantly dry small puddles",
-                "Talk to houseplants",
-                "Always win at rock-paper-scissors",
-                "Keep cookies from burning",
-                "See through fog",
-            ],
-            "That's decent": [
-                "Predict tomorrow's weather",
-                "Phase through glass",
-                "Supercharged jump",
-                "Create short-lived force fields",
-                "Control flavor of water",
-                "Recharge batteries by touch",
-            ],
-            "Damn you're almost as cool as Anonym": [
-                "Invisibility for ten seconds",
-                "Time-skip one minute",
-                "Summon digital clones",
-                "Reverse gravity on objects",
-                "Superhuman reflexes",
-                "Mind-link with animals",
-            ],
-            "Legendary (Anonym level power)": [
-                "Teleport anywhere instantly",
-                "Command the elements",
-                "Stop time briefly",
-                "Heal any injury",
-                "Alter reality",
-                "Immortal resilience",
-            ],
-        }
-        power = choice(powers[rarity])
-        set_timestamp(uid, "last_superpower", now)
+#    @bot.tree.command(
+#        name="superpower",
+#        description="Roll a random superpower for 80k coins (24 h cooldown)",
+#    )
+#    async def superpower(interaction: discord.Interaction):
+##        uid = str(interaction.user.id)
+#        register_user(uid, interaction.user.display_name)
+#        balance = get_money(uid)
+#        if balance < SUPERPOWER_COST:
+###            await interaction.response.send_message(
+#                f"❌ You need {SUPERPOWER_COST} coins.", ephemeral=True
+#            )
+####            return
+#        now = datetime.utcnow()
+#        last = get_timestamp(uid, "last_superpower")
+##        if last and now - last < timedelta(hours=SUPERPOWER_COOLDOWN_HOURS):
+#            remain = timedelta(hours=SUPERPOWER_COOLDOWN_HOURS) - (now - last)
+##            hrs, sec = divmod(int(remain.total_seconds()), 3600)
+#            mins = sec // 60
+#            await interaction.response.send_message(
+#                f"🕒 Next roll in {hrs}h {mins}m.", ephemeral=True
+#            )
+#            return
+#        set_money(uid, balance - SUPERPOWER_COST)
+#        rarities = [
+#            ("Crappy-power", 0.40),
+#            ("Somewhat useful", 0.30),
+#            ("That's decent", 0.15),
+##            ("Damn you're almost as cool as Anonym", 0.10),
+#            ("Legendary (Anonym level power)", 0.05),
+#        ]
+#        roll = random()
+#        cumulative = 0.0
+#        rarity = rarities[-1][0]
+#        for name, weight in rarities:
+#            cumulative += weight
+#            if roll < cumulative:
+#                rarity = name
+###                break
+#        powers = {
+#            "Crappy-power": [
+#                "Make water slightly colder",
+#                "Summon a single mosquito",
+##                "Change TV to channel 3",
+###                "Emit a faint squeak",
+ ##               "Teleport two inches",
+   #             "Turn coffee lukewarm",
+    #        ],
+     #       "Somewhat useful": [
+      #          "Find missing socks",
+       #         "Instantly dry small puddles",
+        #        "Talk to houseplants",
+         #       "Always win at rock-paper-scissors",
+          #      "Keep cookies from burning",
+#                "See through fog",
+ #           ],
+  ###          "That's decent": [
+     #           "Predict tomorrow's weather",
+      #          "Phase through glass",
+       #         "Supercharged jump",
+        ##        "Create short-lived force fields",
+          #      "Control flavor of water",
+#                "Recharge batteries by touch",
+ #           ],
+  #          "Damn you're almost as cool as Anonym": [
+   #             "Invisibility for ten seconds",
+    #            "Time-skip one minute",
+     #           "Summon digital clones",
+      #          "Reverse gravity on objects",
+       #         "Superhuman reflexes",
+        #        "Mind-link with animals",
+         #   ],
+          #  "Legendary (Anonym level power)": [
+           #     "Teleport anywhere instantly",
+            #    "Command the elements",
+             #   "Stop time briefly",
+####                "Heal any injury",
+    #            "Alter reality",
+     #           "Immortal resilience",
+      ##      ],
+        #}
+#        power = choice(powers[rarity])
+ #       set_timestamp(uid, "last_superpower", now)
+#
+ #       role_name = f"{power} ({rarity})"
+  #      guild = interaction.guild
+   #     role = discord.utils.get(guild.roles, name=role_name)
+    ###    if role is None:
+       #     try:
+        #        role = await guild.create_role(
+         ##           name=role_name, reason="Superpower reward"
+#                )
+ #           except discord.Forbidden:
+  #              role = None
+   ####     if role:
+       #     try:
+        #        await interaction.user.add_roles(role, reason="Rolled superpower")
+         #   except discord.Forbidden:
+          #      pass
 
-        role_name = f"{power} ({rarity})"
-        guild = interaction.guild
-        role = discord.utils.get(guild.roles, name=role_name)
-        if role is None:
-            try:
-                role = await guild.create_role(
-                    name=role_name, reason="Superpower reward"
-                )
-            except discord.Forbidden:
-                role = None
-        if role:
-            try:
-                await interaction.user.add_roles(role, reason="Rolled superpower")
-            except discord.Forbidden:
-                pass
-
-        await interaction.response.send_message(
-            f"{interaction.user.display_name} rolled **{power}**! ({rarity})"
-        )
+     #    await interaction.response.send_message(
+   #          f"{interaction.user.display_name} rolled **{power}**! ({rarity})"
+       #  )
 
     @bot.tree.command(
         name="gamble", description="Gamble your coins for a chance to win more!"
@@ -945,7 +945,7 @@ def setup(bot: commands.Bot):
         topcoins,
         weekly,
         daily,
-        superpower,
+         #superpower,
         gamble,
         casino,
         duel,
@@ -964,7 +964,7 @@ def setup(bot: commands.Bot):
         topcoins,
         weekly,
         daily,
-        superpower,
+         #superpower,
         gamble,
         casino,
         duel,
