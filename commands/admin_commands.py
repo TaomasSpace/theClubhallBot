@@ -497,7 +497,7 @@ def setup(bot: commands.Bot):
             "What’s your go-to hype track?",
             "I’ve got (digital) cookies. Roll through. 🍪",
         ]
-        if not has_command_permission(interaction.user, "chatrevive", "mod"):
+        if not has_command_permission(interaction.user, "chatrevive", "mod") and not interaction.user.premium_since:
             await interaction.response.send_message(
                 "Only staff members can use this command", ephemeral=True
             )
