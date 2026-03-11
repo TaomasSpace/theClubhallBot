@@ -270,7 +270,7 @@ async def on_message(
             return
 
     for trigger, reply in trigger_responses.get(message.guild.id, {}).items():
-        if content.startswith(trigger + " ") or " " + trigger + " " in content or content.endswith(" " + trigger):
+        if content.startswith(trigger + " ") or " " + trigger + " " in content or content.endswith(" " + trigger) or trigger == content:
             await message.channel.send(reply)
             break
     if message.author.bot:
