@@ -43,6 +43,8 @@ from db.DBHelper import (
     get_booster_message,
     set_log_channel,
     get_log_channel,
+    set_skullboard_settings,
+    get_skullboard_settings,
     get_role,
     get_roles,
     get_filtered_words,
@@ -55,6 +57,16 @@ from db.DBHelper import (
 from utils import has_role, has_command_permission, get_channel_webhook, parse_duration
 from permissions import COMMAND_PERMISSION_RULES, describe_permission
 from .hybrid_helpers import add_prefix_command
+
+
+def normalize_skullboard_emoji(raw: str) -> str:
+    value = raw.strip()
+    if not value:
+        return "💀"
+    if value.lower() in {":skull:", "skull"}:
+        return "💀"
+    parsed = discord.PartialEmoji.from_str(value)
+    return str(parsed) if parsed.name else value
 
 
 async def run_command_tests(bot: commands.Bot) -> dict[str, str]:
@@ -946,6 +958,52 @@ def setup(bot: commands.Bot):
             f"\u2705 Log channel set to {channel.mention}.", ephemeral=True
         )
 
+    @bot.tree.command(
+        name="skullboard",
+        description="Configure the skullboard (emoji, minimum reactions, channel)",
+    )
+    @app_commands.describe(
+        emoji="Emoji to track (default: 💀)",
+        amount="Minimum reactions needed (default: 3)",
+        channel="Where skullboard posts are sent (default: this channel)",
+    )
+    async def skullboard(
+        interaction: discord.Interaction,
+        emoji: str = "💀",
+        amount: int = 3,
+        channel: discord.TextChannel | None = None,
+    ):
+        if not has_command_permission(interaction.user, "skullboard", "admin"):
+            await interaction.response.send_message("No permission.", ephemeral=True)
+            return
+        if not interaction.guild:
+            await interaction.response.send_message(
+                "This command can only be used in a server.", ephemeral=True
+            )
+            return
+        if amount < 1:
+            await interaction.response.send_message(
+                "Amount must be at least 1.", ephemeral=True
+            )
+            return
+
+        target_channel = channel or interaction.channel
+        if not isinstance(target_channel, (discord.TextChannel, discord.Thread)):
+            await interaction.response.send_message(
+                "Please use this command in a text channel, or provide one.",
+                ephemeral=True,
+            )
+            return
+
+        chosen_emoji = normalize_skullboard_emoji(emoji)
+        set_skullboard_settings(
+            interaction.guild.id, chosen_emoji, amount, target_channel.id
+        )
+        await interaction.response.send_message(
+            f"\u2705 Skullboard configured: emoji {chosen_emoji}, amount **{amount}**, channel {target_channel.mention}.",
+            ephemeral=True,
+        )
+
     @bot.tree.command(name="serversettings", description="Show server configuration")
     async def serversettings(interaction: discord.Interaction):
         if not has_command_permission(interaction.user, "serversettings", "admin"):
@@ -961,6 +1019,14 @@ def setup(bot: commands.Bot):
         lines.append(f"Leave channel: {fmt_channel(get_leave_channel(gid))}")
         lines.append(f"Booster channel: {fmt_channel(get_booster_channel(gid))}")
         lines.append(f"Log channel: {fmt_channel(get_log_channel(gid))}")
+        skullboard = get_skullboard_settings(gid)
+        if skullboard:
+            sb_emoji, sb_amount, sb_channel = skullboard
+            lines.append(
+                f"Skullboard: emoji={sb_emoji}, amount={sb_amount}, channel={fmt_channel(sb_channel)}"
+            )
+        else:
+            lines.append("Skullboard: Not set")
         lines.append(f"Welcome message: {get_welcome_message(gid) or 'Not set'}")
         lines.append(f"Leave message: {get_leave_message(gid) or 'Not set'}")
         lines.append(f"Booster message: {get_booster_message(gid) or 'Not set'}")
@@ -1099,6 +1165,7 @@ def setup(bot: commands.Bot):
         (setboostchannel, "setboostchannel"),
         (setboostmsg, "setboostmsg"),
         (setlogchannel, "setlogchannel"),
+        (skullboard, "skullboard"),
         (serversettings, "serversettings"),
         (createrole, "createrole"),
     ):
@@ -1131,6 +1198,7 @@ def setup(bot: commands.Bot):
         setboostchannel,
         setboostmsg,
         setlogchannel,
+        skullboard,
         serversettings,
         createrole,
         manageViltrumite,

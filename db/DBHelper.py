@@ -279,6 +279,54 @@ def get_log_channel(guild_id: int) -> Optional[int]:
     return int(val) if val else None
 
 
+def set_skullboard_settings(
+    guild_id: int, emoji: str, min_reactions: int, channel_id: int
+) -> None:
+    _execute(
+        """
+        INSERT OR REPLACE INTO skullboard_settings (guild_id, emoji, min_reactions, channel_id)
+        VALUES (?, ?, ?, ?)
+        """,
+        (str(guild_id), emoji, int(min_reactions), str(channel_id)),
+    )
+
+
+def get_skullboard_settings(guild_id: int) -> Optional[Tuple[str, int, int]]:
+    row = _fetchone(
+        """
+        SELECT emoji, min_reactions, channel_id
+        FROM skullboard_settings
+        WHERE guild_id = ?
+        """,
+        (str(guild_id),),
+    )
+    if not row:
+        return None
+    return str(row[0]), int(row[1]), int(row[2])
+
+
+def set_skullboard_post(guild_id: int, source_message_id: int, board_message_id: int):
+    _execute(
+        """
+        INSERT OR REPLACE INTO skullboard_posts (guild_id, source_message_id, board_message_id)
+        VALUES (?, ?, ?)
+        """,
+        (str(guild_id), str(source_message_id), str(board_message_id)),
+    )
+
+
+def get_skullboard_post(guild_id: int, source_message_id: int) -> Optional[int]:
+    row = _fetchone(
+        """
+        SELECT board_message_id
+        FROM skullboard_posts
+        WHERE guild_id = ? AND source_message_id = ?
+        """,
+        (str(guild_id), str(source_message_id)),
+    )
+    return int(row[0]) if row else None
+
+
 def set_role(guild_id: int, name: str, role_id: int) -> None:
     old_id = get_role(guild_id, name)
     _execute(

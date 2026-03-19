@@ -55,6 +55,7 @@ COMMAND_PERMISSION_RULES: Mapping[str, PermissionRule] = dict(
         "setboostchannel": PermissionRule(role_ids=frozenset({ADMIN_ROLE_ID})),
         "setboostmsg": PermissionRule(role_ids=frozenset({ADMIN_ROLE_ID})),
         "setlogchannel": PermissionRule(role_ids=frozenset({ADMIN_ROLE_ID})),
+        "skullboard": PermissionRule(role_ids=frozenset({ADMIN_ROLE_ID})),
         "serversettings": PermissionRule(role_ids=frozenset({ADMIN_ROLE_ID})),
         "createrole": PermissionRule(role_ids=frozenset({ADMIN_ROLE_ID})),
         "give": PermissionRule(role_ids=frozenset({ADMIN_ROLE_ID})),

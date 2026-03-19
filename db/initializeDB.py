@@ -190,6 +190,32 @@ def init_db():
     )
 
     _recreate(
+        "skullboard_settings",
+        """
+        CREATE TABLE IF NOT EXISTS skullboard_settings (
+            guild_id TEXT PRIMARY KEY,
+            emoji TEXT NOT NULL,
+            min_reactions INTEGER NOT NULL,
+            channel_id TEXT NOT NULL
+        )
+        """,
+        {"guild_id", "emoji", "min_reactions", "channel_id"},
+    )
+
+    _recreate(
+        "skullboard_posts",
+        """
+        CREATE TABLE IF NOT EXISTS skullboard_posts (
+            guild_id TEXT NOT NULL,
+            source_message_id TEXT NOT NULL,
+            board_message_id TEXT NOT NULL,
+            PRIMARY KEY (guild_id, source_message_id)
+        )
+        """,
+        {"guild_id", "source_message_id", "board_message_id"},
+    )
+
+    _recreate(
         "anti_nuke_settings",
         """
         CREATE TABLE IF NOT EXISTS anti_nuke_settings (

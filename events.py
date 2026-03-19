@@ -28,6 +28,9 @@ from db.DBHelper import (
     increment_message_log,
     get_message_log_counts,
     clear_message_log,
+    get_skullboard_settings,
+    get_skullboard_post,
+    set_skullboard_post,
 )
 from utils import get_channel_webhook
 
@@ -338,9 +341,147 @@ async def on_member_remove(bot: commands.Bot, member: discord.Member):
             await channel.send(message)
 
 
+async def _resolve_text_channel(bot: commands.Bot, channel_id: int):
+    channel = bot.get_channel(channel_id)
+    if channel is not None:
+        return channel
+    try:
+        return await bot.fetch_channel(channel_id)
+    except Exception:
+        return None
+
+
+async def _count_human_reactions(reaction: discord.Reaction) -> int:
+    users = [u async for u in reaction.users() if not u.bot]
+    return len(users)
+
+
+def _build_skullboard_embed(
+    message: discord.Message, emoji: str, reaction_count: int
+) -> discord.Embed:
+    embed = discord.Embed(
+        title=f"{message.author.display_name}",
+        description=message.content or "*No text content*",
+        colour=discord.Colour.gold(),
+        timestamp=message.created_at,
+    )
+    embed.set_author(
+        name=f"{message.author}",
+        icon_url=message.author.display_avatar.url,
+    )
+    embed.add_field(
+        name="Author",
+        value=f"{message.author.mention}\n({message.author})",
+        inline=True,
+    )
+    embed.add_field(name="Channel", value=message.channel.mention, inline=True)
+    embed.add_field(
+        name="Jump to Message",
+        value=f"[Click here]({message.jump_url})",
+        inline=True,
+    )
+    if message.attachments:
+        image_attachment = next(
+            (
+                attachment
+                for attachment in message.attachments
+                if attachment.content_type
+                and attachment.content_type.startswith("image/")
+            ),
+            None,
+        )
+        if image_attachment:
+            embed.set_image(url=image_attachment.url)
+        else:
+            embed.add_field(
+                name="Attachment",
+                value=message.attachments[0].url,
+                inline=False,
+            )
+    embed.set_footer(text=f"{emoji} {reaction_count}")
+    return embed
+
+
+async def handle_skullboard_reaction_add(
+    bot: commands.Bot, payload: discord.RawReactionActionEvent
+):
+    if payload.guild_id is None:
+        return
+
+    settings = get_skullboard_settings(payload.guild_id)
+    if not settings:
+        return
+    configured_emoji, min_reactions, target_channel_id = settings
+
+    if str(payload.emoji) != configured_emoji:
+        return
+
+    guild = bot.get_guild(payload.guild_id)
+    if guild is None:
+        return
+    member = payload.member or guild.get_member(payload.user_id)
+    if member is None:
+        try:
+            member = await guild.fetch_member(payload.user_id)
+        except Exception:
+            return
+    if member.bot:
+        return
+
+    source_channel = await _resolve_text_channel(bot, payload.channel_id)
+    if source_channel is None or not hasattr(source_channel, "fetch_message"):
+        return
+
+    try:
+        source_message = await source_channel.fetch_message(payload.message_id)
+    except Exception:
+        return
+
+    if source_message.author.bot:
+        return
+
+    matching_reaction = next(
+        (r for r in source_message.reactions if str(r.emoji) == configured_emoji),
+        None,
+    )
+    if matching_reaction is None:
+        return
+
+    reaction_count = await _count_human_reactions(matching_reaction)
+    if reaction_count < min_reactions:
+        return
+
+    target_channel = await _resolve_text_channel(bot, target_channel_id)
+    if target_channel is None or not hasattr(target_channel, "send"):
+        return
+
+    embed = _build_skullboard_embed(source_message, configured_emoji, reaction_count)
+    post_content = f"{configured_emoji} **{reaction_count}**"
+    existing_board_message_id = get_skullboard_post(
+        payload.guild_id, payload.message_id
+    )
+
+    if existing_board_message_id and hasattr(target_channel, "fetch_message"):
+        try:
+            board_message = await target_channel.fetch_message(existing_board_message_id)
+            await board_message.edit(content=post_content, embed=embed)
+            return
+        except Exception:
+            pass
+
+    posted = await target_channel.send(content=post_content, embed=embed)
+    try:
+        await posted.add_reaction(configured_emoji)
+    except Exception:
+        pass
+    set_skullboard_post(payload.guild_id, payload.message_id, posted.id)
+
+
 async def on_raw_reaction_add(
     bot: commands.Bot, payload: discord.RawReactionActionEvent
 ):
+    await handle_skullboard_reaction_add(bot, payload)
+
     if payload.member is None or payload.member.bot:
         return
     row = _fetchone(
