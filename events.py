@@ -1,4 +1,5 @@
 import asyncio
+import io
 import logging
 from datetime import datetime, timezone, timedelta
 import uuid
@@ -8,6 +9,14 @@ from discord import app_commands
 from discord.app_commands import CommandOnCooldown
 from discord.ext import commands
 import random
+
+try:
+    from PIL import Image, ImageDraw, ImageFont, ImageOps
+except Exception:
+    Image = None
+    ImageDraw = None
+    ImageFont = None
+    ImageOps = None
 
 from db.initializeDB import init_db
 from db.DBHelper import (
@@ -356,6 +365,174 @@ async def _count_human_reactions(reaction: discord.Reaction) -> int:
     return len(users)
 
 
+def _load_font(size: int):
+    if ImageFont is None:
+        raise RuntimeError("Pillow is not available")
+    for name in ("arial.ttf", "segoeui.ttf", "DejaVuSans.ttf"):
+        try:
+            return ImageFont.truetype(name, size=size)
+        except Exception:
+            continue
+    return ImageFont.load_default()
+
+
+def _wrap_text_lines(
+    draw,
+    text: str,
+    font,
+    max_width: int,
+    max_lines: int,
+) -> list[str]:
+    if not text:
+        return ["(no text content)"]
+
+    lines: list[str] = []
+    truncated = False
+    for raw_line in text.splitlines() or [""]:
+        words = raw_line.split(" ")
+        current = ""
+        for word in words:
+            candidate = word if not current else f"{current} {word}"
+            if draw.textlength(candidate, font=font) <= max_width:
+                current = candidate
+            else:
+                if current:
+                    lines.append(current)
+                    current = word
+                else:
+                    lines.append(word)
+                    current = ""
+                if len(lines) >= max_lines:
+                    truncated = True
+                    break
+        if len(lines) >= max_lines:
+            truncated = True
+            break
+        if current:
+            lines.append(current)
+            if len(lines) >= max_lines:
+                truncated = True
+                break
+    if not lines:
+        lines = ["(no text content)"]
+    if truncated and lines:
+        lines[-1] = lines[-1][: max(0, len(lines[-1]) - 1)] + "…"
+    return lines[:max_lines]
+
+
+async def _build_skullboard_snapshot_file(
+    message: discord.Message,
+) -> discord.File | None:
+    if None in (Image, ImageDraw, ImageFont, ImageOps):
+        return None
+
+    width = 980
+    outer_padding = 24
+    header_height = 100
+    avatar_size = 64
+    bubble_padding = 20
+    content_box_y = 130
+    content_box_width = width - (outer_padding * 2)
+
+    title_font = _load_font(30)
+    body_font = _load_font(28)
+    meta_font = _load_font(22)
+
+    tmp_image = Image.new("RGB", (width, 600), (15, 17, 22))
+    draw = ImageDraw.Draw(tmp_image)
+    content_max_width = content_box_width - (bubble_padding * 2)
+    lines = _wrap_text_lines(
+        draw,
+        message.content or "(no text content)",
+        body_font,
+        content_max_width,
+        max_lines=8,
+    )
+    line_height = body_font.getbbox("Ag")[3] - body_font.getbbox("Ag")[1] + 6
+    content_height = (bubble_padding * 2) + (line_height * len(lines)) + 42
+    height = max(260, content_box_y + content_height + outer_padding)
+
+    image = Image.new("RGB", (width, height), (15, 17, 22))
+    draw = ImageDraw.Draw(image)
+    draw.rounded_rectangle(
+        ((0, 0), (width - 1, height - 1)),
+        radius=16,
+        outline=(42, 48, 60),
+        width=2,
+        fill=(15, 17, 22),
+    )
+    draw.rectangle(
+        ((8, 20), (12, height - 20)),
+        fill=(251, 216, 64),
+    )
+
+    avatar = None
+    try:
+        avatar_bytes = await message.author.display_avatar.read()
+        avatar = Image.open(io.BytesIO(avatar_bytes)).convert("RGBA")
+        resampling = (
+            Image.Resampling.LANCZOS
+            if hasattr(Image, "Resampling")
+            else Image.LANCZOS
+        )
+        avatar = ImageOps.fit(avatar, (avatar_size, avatar_size), method=resampling)
+    except Exception:
+        avatar = None
+    if avatar is not None:
+        mask = Image.new("L", (avatar_size, avatar_size), 0)
+        ImageDraw.Draw(mask).ellipse((0, 0, avatar_size, avatar_size), fill=255)
+        avatar_x = outer_padding + 8
+        avatar_y = outer_padding + 8
+        image.paste(avatar, (avatar_x, avatar_y), mask)
+    else:
+        avatar_x = outer_padding + 8
+        avatar_y = outer_padding + 8
+        draw.ellipse(
+            ((avatar_x, avatar_y), (avatar_x + avatar_size, avatar_y + avatar_size)),
+            fill=(66, 80, 103),
+        )
+
+    text_x = avatar_x + avatar_size + 16
+    draw.text(
+        (text_x, avatar_y + 4),
+        str(message.author),
+        fill=(237, 242, 252),
+        font=title_font,
+    )
+    draw.text(
+        (text_x, avatar_y + 44),
+        message.created_at.strftime("%d %b %Y • %H:%M"),
+        fill=(148, 154, 171),
+        font=meta_font,
+    )
+
+    content_box = (
+        outer_padding,
+        content_box_y,
+        outer_padding + content_box_width,
+        content_box_y + content_height,
+    )
+    draw.rounded_rectangle(
+        ((content_box[0], content_box[1]), (content_box[2], content_box[3])),
+        radius=14,
+        fill=(44, 49, 60),
+    )
+    content_y = content_box_y + bubble_padding + 10
+    for line in lines:
+        draw.text(
+            (outer_padding + bubble_padding, content_y),
+            line,
+            fill=(232, 236, 247),
+            font=body_font,
+        )
+        content_y += line_height
+
+    snapshot = io.BytesIO()
+    image.save(snapshot, format="PNG", optimize=True)
+    snapshot.seek(0)
+    return discord.File(snapshot, filename=f"skullboard_snapshot_{message.id}.png")
+
+
 def _build_skullboard_embed(
     message: discord.Message, emoji: str, reaction_count: int
 ) -> discord.Embed:
@@ -381,23 +558,11 @@ def _build_skullboard_embed(
         inline=True,
     )
     if message.attachments:
-        image_attachment = next(
-            (
-                attachment
-                for attachment in message.attachments
-                if attachment.content_type
-                and attachment.content_type.startswith("image/")
-            ),
-            None,
+        embed.add_field(
+            name="Attachment",
+            value=message.attachments[0].url,
+            inline=False,
         )
-        if image_attachment:
-            embed.set_image(url=image_attachment.url)
-        else:
-            embed.add_field(
-                name="Attachment",
-                value=message.attachments[0].url,
-                inline=False,
-            )
     embed.set_footer(text=f"{emoji} {reaction_count}")
     return embed
 
@@ -464,12 +629,19 @@ async def handle_skullboard_reaction_add(
     if existing_board_message_id and hasattr(target_channel, "fetch_message"):
         try:
             board_message = await target_channel.fetch_message(existing_board_message_id)
-            await board_message.edit(content=post_content, embed=embed)
+            await board_message.edit(content=post_content)
             return
         except Exception:
             pass
 
-    posted = await target_channel.send(content=post_content, embed=embed)
+    snapshot_file = await _build_skullboard_snapshot_file(source_message)
+    if snapshot_file is not None:
+        embed.set_image(url=f"attachment://{snapshot_file.filename}")
+        posted = await target_channel.send(
+            content=post_content, embed=embed, file=snapshot_file
+        )
+    else:
+        posted = await target_channel.send(content=post_content, embed=embed)
     try:
         await posted.add_reaction(configured_emoji)
     except Exception:
